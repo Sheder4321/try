@@ -10203,7 +10203,6 @@ function initAllEventListeners() {
     // СБРОС РЕЖИМОВ ПРИ ВЫХОДЕ
     // ============================================================
     canvas.addEventListener('mouseleave', function(e) {
-        // Сбрасываем ластик
         isErasing = false;
         eraserCooldown = false;
         resetAllModes();
@@ -10215,7 +10214,6 @@ function initAllEventListeners() {
     });
 
     window.addEventListener('blur', function() {
-        // Сбрасываем ластик
         isErasing = false;
         eraserCooldown = false;
         resetAllModes();
@@ -10227,7 +10225,6 @@ function initAllEventListeners() {
     });
 
     document.addEventListener('mouseup', function(e) {
-        // ===== ГЛАВНОЕ: СБРАСЫВАЕМ ЛАСТИК ПРИ ОТПУСКАНИИ КНОПКИ ГДЕ УГОДНО =====
         isErasing = false;
         eraserCooldown = false;
         
@@ -10354,7 +10351,6 @@ function initAllEventListeners() {
             return;
         }
 
-        // ===== ЛАСТИК - НАЧИНАЕМ СТИРАТЬ ТОЛЬКО ПРИ ЗАЖАТИИ =====
         if (mode === 'eraser') {
             if (isErasing) return;
             isErasing = true;
@@ -10439,7 +10435,6 @@ function initAllEventListeners() {
             return;
         }
 
-        // ===== ЛАСТИК - СТИРАЕМ ТОЛЬКО ПОКА ЗАЖАТА КНОПКА =====
         if (mode === 'eraser' && isErasing) {
             if (!eraserCooldown) {
                 eraseAt(coords);
@@ -10509,7 +10504,6 @@ function initAllEventListeners() {
             return;
         }
 
-        // ===== ЛАСТИК - СБРАСЫВАЕМ ПРИ ОТПУСКАНИИ =====
         if (mode === 'eraser') {
             isErasing = false;
             eraserCooldown = false;
@@ -10611,11 +10605,6 @@ function initAllEventListeners() {
         showHint('💾 Сохранено!');
     });
 }
-
-// ============================================================
-// ЛАСТИК - С ЗАЩИТОЙ ОТ ДВОЙНОГО СРАБАТЫВАНИЯ
-// ============================================================
-
 // ============================================================
 // ЛАСТИК - ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================================
@@ -10671,6 +10660,152 @@ function eraseAt(coords) {
         }
     }
 }
+
+// ============================================================
+// ВСТАВКА ИЗ БУФЕРА ОБМЕНА (Ctrl+V) - ИСПРАВЛЕННАЯ
+// ============================================================
+
+// Функция для вставки изображения из data URL
+function insertImageFromDataUrl(dataUrl) {
+    if (!canvas) {
+        console.warn('⚠️ Canvas не инициализирован');
+        return;
+    }
+    
+    console.log('🖼️ Вставляем изображение, размер:', dataUrl.length);
+    
+    const centerX = camera.x + canvas.width / (2 * zoom);
+    const centerY = camera.y + canvas.height / (2 * zoom);
+    
+    const img = new Image();
+    img.onload = function() {
+        console.log('✅ Изображение загружено:', img.width, 'x', img.height);
+        
+        const maxSize = 600;
+        let w = img.width, h = img.height;
+        if (w > maxSize) { h = h * maxSize / w; w = maxSize; }
+        if (h > maxSize) { w = w * maxSize / h; h = maxSize; }
+        
+        const offset = Math.random() * 30;
+        
+        const obj = {
+            id: nextId++,
+            type: 'image',
+            x: centerX - w / 2 + offset,
+            y: centerY - h / 2 + offset,
+            width: w,
+            height: h,
+            imgData: dataUrl,
+            userId: getCurrentUserId()
+        };
+        objects.push(obj);
+        selected = [obj.id];
+        
+        saveBoardHistory();
+        render();
+        showHint('🖼️ Изображение вставлено из буфера обмена');
+        saveBoardToServer();
+    };
+    img.onerror = function() {
+        console.error('❌ Ошибка загрузки изображения');
+        showHint('❌ Не удалось вставить изображение');
+    };
+    img.src = dataUrl;
+}
+
+// Функция для вставки текста
+function insertTextOnBoard(text) {
+    if (!canvas) {
+        console.warn('⚠️ Canvas не инициализирован');
+        return;
+    }
+    
+    const centerX = camera.x + canvas.width / (2 * zoom);
+    const centerY = camera.y + canvas.height / (2 * zoom);
+    
+    const textObj = {
+        id: nextId++,
+        type: 'text',
+        x: centerX,
+        y: centerY,
+        width: 300,
+        height: 40,
+        text: text,
+        font: 'Arial',
+        size: 24,
+        color: '#000000',
+        userId: getCurrentUserId()
+    };
+    updateTextDimensions(textObj);
+    objects.push(textObj);
+    selected = [textObj.id];
+    
+    saveBoardHistory();
+    render();
+    showHint('📝 Текст вставлен из буфера обмена');
+    saveBoardToServer();
+}
+
+// ===== ЕДИНСТВЕННЫЙ ОБРАБОТЧИК PASTE =====
+document.addEventListener('paste', function(e) {
+    console.log('📋📋📋 PASTE СРАБОТАЛ! 📋📋📋');
+    
+    // Проверяем, что не в поле ввода
+    const target = e.target;
+    if (target instanceof HTMLInputElement || 
+        target instanceof HTMLTextAreaElement || 
+        target.closest('#text-editor') ||
+        target.closest('.subtask-answer-input') ||
+        target.closest('.modal-content')) {
+        console.log('📋 В поле ввода, пропускаем');
+        return;
+    }
+    
+    // Проверяем, что canvas существует
+    if (!canvas) {
+        console.warn('⚠️ Canvas не найден');
+        return;
+    }
+    
+    e.preventDefault();
+    console.log('📋 Вставляем на доску');
+    
+    const items = e.clipboardData.items;
+    console.log('📋 Элементов в буфере:', items.length);
+    
+    // Перебираем элементы буфера
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        console.log('📋 Тип элемента', i, ':', item.type);
+        
+        // Если это изображение
+        if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile();
+            if (file) {
+                console.log('📷 Найдено изображение, размер:', file.size);
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    insertImageFromDataUrl(event.target.result);
+                };
+                reader.readAsDataURL(file);
+                showStatus('⏳ Вставка изображения...');
+                return;
+            }
+        }
+    }
+    
+    // Если нет изображения - проверяем текст
+    const text = e.clipboardData.getData('text');
+    if (text && text.trim().length > 0) {
+        console.log('📝 Найден текст:', text.substring(0, 50));
+        insertTextOnBoard(text.trim());
+        return;
+    }
+    
+    console.log('📋 В буфере нет данных для вставки');
+}, true);
+
+console.log('✅ Обработчик вставки загружен!'); 
 
 checkAuth();
 
