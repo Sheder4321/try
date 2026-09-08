@@ -189,22 +189,33 @@
     // ============================================================
     // ПОДКЛЮЧЕНИЕ К БД
     // ============================================================
+    console.log('🔍 Проверка переменных окружения:');
+    console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('🔍 DATABASE_URL value:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 50) + '...' : 'NOT SET');
+    
     const pool = new Pool({
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        database: process.env.DB_DATABASE,
-    });
-
-    pool.connect((err) => {
-        if (err) {
-            console.error('❌ Ошибка подключения к БД:', err.message);
-        } else {
-            console.log('✅ Подключено к PostgreSQL');
-            initDatabase();
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
         }
     });
+    
+    pool.connect(async (err) => {
+        if (err) {
+            console.error('❌ Ошибка подключения к БД:', err.message);
+            console.error('❌ Проверьте DATABASE_URL в настройках Render');
+            console.error('❌ Текущее значение DATABASE_URL:', process.env.DATABASE_URL || 'НЕ УСТАНОВЛЕНА');
+            // Продолжаем работу без БД для тестирования
+            return;
+        }
+    console.log('✅ Подключено к PostgreSQL');
+    try {
+        await initDatabase();
+        console.log('✅ База данных инициализирована');
+    } catch (e) {
+        console.error('❌ Ошибка инициализации БД:', e.message);
+    }
+});
 
     async function initDatabase() {
         try {
