@@ -221,7 +221,7 @@
         try {
             console.log('📊 Создание таблиц...');
             
-            // Создаём таблицу users
+            // 1. Создаём все таблицы по порядку
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
@@ -233,9 +233,7 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            console.log('✅ Таблица users создана');
     
-            // Создаём таблицу classes
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS classes (
                     id SERIAL PRIMARY KEY,
@@ -245,9 +243,7 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            console.log('✅ Таблица classes создана');
     
-            // Создаём таблицу class_students
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_students (
                     class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
@@ -256,9 +252,7 @@
                     PRIMARY KEY (class_id, student_id)
                 )
             `);
-            console.log('✅ Таблица class_students создана');
     
-            // Создаём таблицу boards
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS boards (
                     id SERIAL PRIMARY KEY,
@@ -268,9 +262,7 @@
                     UNIQUE(user_id)
                 )
             `);
-            console.log('✅ Таблица boards создана');
     
-            // Создаём таблицу shared_boards
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS shared_boards (
                     id SERIAL PRIMARY KEY,
@@ -282,9 +274,7 @@
                     UNIQUE(teacher_id, student_id, class_id)
                 )
             `);
-            console.log('✅ Таблица shared_boards создана');
     
-            // Создаём таблицу class_boards
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_boards (
                     id SERIAL PRIMARY KEY,
@@ -294,9 +284,7 @@
                     UNIQUE(class_id)
                 )
             `);
-            console.log('✅ Таблица class_boards создана');
     
-            // Создаём таблицу assignments
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS assignments (
                     id SERIAL PRIMARY KEY,
@@ -313,9 +301,7 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            console.log('✅ Таблица assignments создана');
     
-            // Создаём таблицу submissions
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS submissions (
                     id SERIAL PRIMARY KEY,
@@ -331,9 +317,7 @@
                     UNIQUE(assignment_id, student_id)
                 )
             `);
-            console.log('✅ Таблица submissions создана');
     
-            // Создаём таблицу submission_files
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS submission_files (
                     id SERIAL PRIMARY KEY,
@@ -345,14 +329,12 @@
                     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            console.log('✅ Таблица submission_files создана');
     
-            // Создаём таблицу class_invites
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_invites (
                     id SERIAL PRIMARY KEY,
                     class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
-                    token VARCHAR(100) UNIQUE NOT NULL,
+                    token VARCHAR(100) UNIQUE NOT NULL DEFAULT 'invite_' || gen_random_uuid(),
                     created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
                     max_uses INTEGER DEFAULT 1,
                     used_count INTEGER DEFAULT 0,
@@ -361,9 +343,7 @@
                     is_active BOOLEAN DEFAULT TRUE
                 )
             `);
-            console.log('✅ Таблица class_invites создана');
     
-            // Создаём таблицу annotation_comments
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS annotation_comments (
                     id SERIAL PRIMARY KEY,
@@ -379,9 +359,7 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            console.log('✅ Таблица annotation_comments создана');
     
-            // Создаём таблицу voice_comments
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS voice_comments (
                     id SERIAL PRIMARY KEY,
@@ -394,9 +372,7 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            console.log('✅ Таблица voice_comments создана');
     
-            // Создаём таблицу text_comments
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS text_comments (
                     id SERIAL PRIMARY KEY,
@@ -408,7 +384,6 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            console.log('✅ Таблица text_comments создана');
     
             console.log('✅ Все таблицы созданы!');
             
