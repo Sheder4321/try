@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Присоединение к классу</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .container h1 {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .container .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .info-box .label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+        }
+        .info-box .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 2px;
+        }
+        .status-box {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .status-box.loading {
+            background: #f0f4ff;
+            color: #667eea;
+        }
+        .status-box.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #059669;
+        }
+        .status-box.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #dc2626;
+        }
+        .status-box.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 2px solid #3b82f6;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-success {
+            background: #34c759;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #2db84d;
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #666;
+        }
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        .login-prompt {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+        }
+        .login-prompt a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .login-prompt a:hover {
+            text-decoration: underline;
+        }
+        .expires-info {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-top: 12px;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Присоединение к классу</h1>
+        <p class="subtitle">Вас пригласили присоединиться к образовательному классу</p>
+        
+        <div id="status" class="status-box loading">
+            ⏳ Загрузка информации о приглашении...
+        </div>
+        
+        <div id="info" class="hidden">
+            <div class="info-box">
+                <div class="label">📚 Класс</div>
+                <div class="value" id="class-name">—</div>
+            </div>
+            <div class="info-box">
+                <div class="label">👨‍🏫 Учитель</div>
+                <div class="value" id="teacher-name">—</div>
+            </div>
+            <div class="info-box">
+                <div class="label">⏰ Срок действия</div>
+                <div class="value" id="expires-at">—</div>
+            </div>
+        </div>
+        
+        <div id="actions" class="hidden">
+            <button class="btn btn-primary" id="join-btn" onclick="joinClass()">
+                🔗 Присоединиться к классу
+            </button>
+        </div>
+        
+        <div id="login-prompt" class="login-prompt hidden">
+            🔐 Чтобы присоединиться, <a href="#" onclick="showLogin()">войдите в систему</a> или <a href="#" onclick="showRegister()">зарегистрируйтесь</a>
+        </div>
+        
+        <div id="already-member" class="hidden">
+            <div class="status-box info">
+                ✅ Вы уже состоите в этом классе
+            </div>
+            <button class="btn btn-success" onclick="goToClass()">
+                📚 Перейти к классу
+            </button>
+        </div>
+        
+        <div class="expires-info" id="expires-info">
+            Приглашение действительно до указанной даты
+        </div>
+    </div>
+    
+    <script>
+        // Получаем токен из URL
+        const token = window.location.pathname.split('/').pop();
+        let inviteData = null;
+        let isAuthenticated = false;
+        let userData = null;
+        
+        // Проверяем авторизацию
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            if (token && user) {
+                try {
+                    userData = JSON.parse(user);
+                    isAuthenticated = true;
+                    return true;
+                } catch(e) {}
+            }
+            return false;
+        }
+        
+        // Загрузка информации о приглашении
+        async function loadInvite() {
+            const statusEl = document.getElementById('status');
+            
+            try {
+                console.log('📥 Загрузка приглашения:', token);
+                const response = await fetch(`/api/invite/${token}`);
+                console.log('📥 Ответ:', response.status);
+                
+                const data = await response.json();
+                console.log('📥 Данные:', data);
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка загрузки');
+                }
+                
+                inviteData = data;
+                
+                // Показываем информацию
+                document.getElementById('class-name').textContent = data.class_name;
+                document.getElementById('teacher-name').textContent = data.teacher_name;
+                document.getElementById('expires-at').textContent = new Date(data.expires_at).toLocaleString();
+                
+                document.getElementById('info').classList.remove('hidden');
+                
+                // Проверяем, авторизован ли пользователь
+                if (isAuthenticated) {
+                    if (data.is_already_member) {
+                        // Уже в классе
+                        statusEl.className = 'status-box info';
+                        statusEl.textContent = '✅ Вы уже состоите в этом классе!';
+                        document.getElementById('already-member').classList.remove('hidden');
+                        document.getElementById('actions').classList.add('hidden');
+                        document.getElementById('login-prompt').classList.add('hidden');
+                    } else {
+                        // Можно присоединиться
+                        statusEl.className = 'status-box success';
+                        statusEl.textContent = '✅ Вы можете присоединиться к классу!';
+                        document.getElementById('actions').classList.remove('hidden');
+                        document.getElementById('login-prompt').classList.add('hidden');
+                        document.getElementById('already-member').classList.add('hidden');
+                    }
+                } else {
+                    // Не авторизован - предлагаем войти
+                    statusEl.className = 'status-box info';
+                    statusEl.textContent = '🔐 Для присоединения необходимо авторизоваться';
+                    document.getElementById('actions').classList.add('hidden');
+                    document.getElementById('login-prompt').classList.remove('hidden');
+                    document.getElementById('already-member').classList.add('hidden');
+                }
+                
+            } catch (error) {
+                console.error('❌ Ошибка:', error);
+                statusEl.className = 'status-box error';
+                statusEl.textContent = '❌ ' + error.message;
+                document.getElementById('info').classList.add('hidden');
+                document.getElementById('actions').classList.add('hidden');
+                document.getElementById('login-prompt').classList.add('hidden');
+                document.getElementById('already-member').classList.add('hidden');
+            }
+        }
+        
+        // Присоединение к классу
+        async function joinClass() {
+            const btn = document.getElementById('join-btn');
+            const statusEl = document.getElementById('status');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Присоединение...';
+            statusEl.className = 'status-box loading';
+            statusEl.textContent = '⏳ Присоединяемся к классу...';
+            
+            try {
+                const response = await fetch(`/api/invite/${token}/join`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка присоединения');
+                }
+                
+                statusEl.className = 'status-box success';
+                statusEl.textContent = '✅ ' + data.message;
+                btn.textContent = '✅ Присоединились!';
+                btn.className = 'btn btn-success';
+                
+                // Через 2 секунды перенаправляем
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+                
+            } catch (error) {
+                statusEl.className = 'status-box error';
+                statusEl.textContent = '❌ ' + error.message;
+                btn.disabled = false;
+                btn.textContent = '🔗 Попробовать снова';
+                btn.className = 'btn btn-primary';
+            }
+        }
+        
+        function goToClass() {
+            window.location.href = '/';
+        }
+        
+        function showLogin() {
+            window.location.href = '/#login';
+        }
+        
+        function showRegister() {
+            window.location.href = '/#register';
+        }
+        
+        // Проверяем авторизацию при загрузке
+        checkAuth();
+        loadInvite();
+        
+        // Слушаем изменения в localStorage (если пользователь вошёл в другой вкладке)
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'token' || e.key === 'user') {
+                checkAuth();
+                loadInvite();
+            }
+        });
+    </script>
+</body>
+</html>
