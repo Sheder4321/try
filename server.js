@@ -193,13 +193,22 @@
     // ============================================================
     // ПОДКЛЮЧЕНИЕ К БД
     // ============================================================
-    const pool = new Pool({
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        database: process.env.DB_DATABASE,
-    });
+    const pool = new Pool(
+        process.env.DATABASE_URL
+            ? {
+                connectionString: process.env.DATABASE_URL,
+                ssl: process.env.DATABASE_URL.includes('localhost') 
+                    ? false 
+                    : { rejectUnauthorized: false }
+              }
+            : {
+                user: process.env.DB_USER,
+                password: process.env.DB_PASSWORD,
+                host: process.env.DB_HOST,
+                port: process.env.DB_PORT,
+                database: process.env.DB_DATABASE,
+              }
+    );
 
     pool.connect((err) => {
         if (err) {
@@ -2107,7 +2116,7 @@
         const userId = req.user.id;
         
         try {
-            const result = await db.query(
+            const result = await pool.query(
                 `UPDATE annotations 
                 SET audio_path = $1 
                 WHERE id = $2 AND teacher_id = $3`,
