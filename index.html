@@ -46,6 +46,32 @@
             transition: all 0.3s ease;
             position: relative;
         }
+
+        .color-btn[data-color="#0055ff"] { --dot-color: #0055ff; }
+        .color-btn[data-color="#ff3b30"] { --dot-color: #ff3b30; }
+        .color-btn[data-color="#34c759"] { --dot-color: #34c759; }
+        .color-btn[data-color="#ff9500"] { --dot-color: #ff9500; }
+        .color-btn[data-color="#af52de"] { --dot-color: #af52de; }
+        .color-btn[data-color="#000000"] { --dot-color: #000000; }
+        .color-btn[data-color="#ff2d55"] { --dot-color: #ff2d55; }
+        .color-btn[data-color="#00c7be"] { --dot-color: #00c7be; }
+        #sheet-hidden-input {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
+            border: none;
+            outline: none;
+            padding: 0;
+            margin: 0;
+            resize: none;
+            z-index: 1;
+            pointer-events: none;
+            font-size: 16px;
+            font-family: inherit;
+        }
         /* ===== ГОЛОСОВЫЕ КОММЕНТАРИИ ===== */
         .voice-comment {
             display: flex;
@@ -1381,26 +1407,79 @@
             #color-picker {
                 position: fixed;
                 left: 6px;
-                right: 6px;
+                right: 200px;          /* ← оставляем место для зума */
                 bottom: 6px;
                 bottom: calc(6px + env(safe-area-inset-bottom));
                 transform: none;
                 flex-direction: row;
                 justify-content: flex-start;
                 align-items: center;
-                padding: 6px 8px;
-                gap: 5px;
+                padding: 2px 4px;
+                gap: 0;
                 border-radius: 12px;
                 overflow-x: auto;
                 overflow-y: hidden;
                 scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
                 z-index: 210;
                 max-height: none;
                 box-shadow: 0 2px 16px rgba(0,0,0,0.15);
             }
             #color-picker::-webkit-scrollbar { display: none; }
-            .color-btn { width: 26px; height: 26px; flex-shrink: 0; }
-            .color-picker-custom { width: 26px; height: 26px; flex-shrink: 0; }
+
+            .color-btn {
+                width: 36px;
+                height: 36px;
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                border: none;
+                background: transparent !important;
+                padding: 0;
+                position: relative;
+            }
+            .color-btn::after {
+                content: '';
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: var(--dot-color, #ccc);
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border: 2px solid transparent;
+                transition: border-color 0.15s, box-shadow 0.15s;
+                box-sizing: border-box;
+            }
+            .color-btn.active::after {
+                border-color: #007aff;
+                box-shadow: 0 0 0 2px rgba(0,122,255,0.3);
+            }
+
+            .color-picker-custom {
+                width: 36px;
+                height: 36px;
+                flex-shrink: 0;
+                position: relative;
+                background: transparent !important;
+                border: none;
+            }
+            .color-picker-custom::after {
+                content: '';
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: conic-gradient(red,yellow,lime,aqua,blue,magenta,red);
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border: 2px dashed #ccc;
+                box-sizing: border-box;
+            }
 
             /* Зум и кнопки — в тот же нижний бар, справа */
             #zoom-controls {
@@ -1419,7 +1498,7 @@
                 min-width: 32px;
                 min-height: 32px;
             }
-            #zoom-display { font-size: 10px; padding: 0 2px; min-width: 32px; }
+            #zoom-display { font-size: 10px; padding: 0 2px; min-width: 32px; align-content: center;}
             #zoom-controls .zoom-divider { display: none; }
 
             /* Кнопки "Сохранить" и "Доски" — убираем с глаз, они теперь в нижнем баре */
@@ -1601,8 +1680,9 @@
 
         @media (max-width: 400px) {
             .left-tool-btn { width: 34px; height: 34px; font-size: 15px; }
-            .color-btn { width: 24px; height: 24px; }
-            .color-picker-custom { width: 24px; height: 24px; }
+            #color-picker {
+                right: 170px;   /* ← на очень узких экранах зум чуть меньше */
+            }
             .header h1 { font-size: 12px; }
             .nav button { padding: 7px 10px; font-size: 11px; }
             #zoom-controls button { min-width: 30px; min-height: 30px; padding: 5px 7px; }
@@ -3487,23 +3567,51 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
         }
         case 'segment': case 'ray': case 'line':
             ctx.strokeStyle = color || '#000';
+            ctx.fillStyle = color || '#000';
             ctx.lineWidth = thickness || 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
             ctx.setLineDash(dashed ? [6, 6] : []);
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
+            
             if (type === 'ray') {
                 const angle = Math.atan2(y2 - y1, x2 - x1);
-                const len = 15;
-                ctx.fillStyle = color || '#000';
+                const lineW = thickness || 2;
+                
+                // Размеры стрелки зависят от толщины
+                const arrowLen = Math.max(15, lineW * 4);
+                const arrowWidth = Math.max(12, lineW * 3);
+                
+                // Конец линии — на arrowLen назад от кончика
+                const lineEndX = x2 - arrowLen * Math.cos(angle);
+                const lineEndY = y2 - arrowLen * Math.sin(angle);
+                
+                // Перпендикуляр для основания стрелки
+                const perpX = -Math.sin(angle) * arrowWidth / 2;
+                const perpY = Math.cos(angle) * arrowWidth / 2;
+                
+                // ===== 1. ЛИНИЯ (рисуем первой, чтобы стрелка была поверх) =====
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(lineEndX, lineEndY);
+                ctx.stroke();
+                
+                // ===== 2. СТРЕЛКА С ОБВОДКОЙ ТОЙ ЖЕ ТОЛЩИНЫ =====
                 ctx.beginPath();
                 ctx.moveTo(x2, y2);
-                ctx.lineTo(x2 - len * Math.cos(angle - 0.4), y2 - len * Math.sin(angle - 0.4));
-                ctx.lineTo(x2 - len * Math.cos(angle + 0.4), y2 - len * Math.sin(angle + 0.4));
+                ctx.lineTo(lineEndX + perpX, lineEndY + perpY);
+                ctx.lineTo(lineEndX - perpX, lineEndY - perpY);
                 ctx.closePath();
-                ctx.fill();
+                ctx.stroke();  // обводка
+                ctx.fill();    // заливка
+                
+            } else {
+                // Обычная линия / отрезок
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
             }
+            
             ctx.setLineDash([]);
             return;
         default:
@@ -3917,7 +4025,7 @@ function startSheetTextEditing() {
     
     editingSheet = sheetObj;
     isSheetTextMode = true;
-    focusTarget = 'sheet';  // ← фокус теперь на листе
+    focusTarget = 'sheet';
     
     btn.textContent = '✓ Готово';
     btn.classList.add('active');
@@ -3951,15 +4059,26 @@ function startSheetTextEditing() {
         sheetObj.textUnderline = false;
     }
     
+    // ===== ФОКУСИРУЕМ СКРЫТЫЙ TEXTAREA ДЛЯ ВЫЗОВА КЛАВИАТУРЫ =====
+    const hiddenInput = document.getElementById('sheet-hidden-input');
+    if (hiddenInput) {
+        hiddenInput.value = sheetObj.text || '';
+        hiddenInput.focus();
+        setTimeout(() => {
+            hiddenInput.focus();
+            // Ставим курсор в конец
+            const len = hiddenInput.value.length;
+            try { hiddenInput.setSelectionRange(len, len); } catch(e) {}
+        }, 50);
+    }
+    
     render();
-    showHint('✏️ Кликните на лист и печатайте текст');
-    // ❌ НЕ вызываем canvas.focus() — фокус остаётся на листе
+    showHint('✏️ Печатайте текст');
 }
 
 function stopSheetTextEditing() {
     if (!isSheetTextMode) return;
     
-    // Финальное растягивание листа
     if (editingSheet) {
         autoExpandSheet(editingSheet);
     }
@@ -3967,6 +4086,13 @@ function stopSheetTextEditing() {
     isSheetTextMode = false;
     editingSheet = null;
     focusTarget = 'canvas';
+    
+    // ===== СКРЫВАЕМ КЛАВИАТУРУ =====
+    const hiddenInput = document.getElementById('sheet-hidden-input');
+    if (hiddenInput) {
+        hiddenInput.blur();
+        hiddenInput.value = '';
+    }
     
     const toolbar = document.getElementById('sheet-text-toolbar');
     if (toolbar) toolbar.classList.remove('show');
@@ -5078,14 +5204,14 @@ function loadBoardPage() {
 
             <!-- ===== ЦВЕТА ===== -->
             <div id="color-picker">
-                <div class="color-btn active" data-color="#0055ff" style="background:#0055ff"></div>
-                <div class="color-btn" data-color="#ff3b30" style="background:#ff3b30"></div>
-                <div class="color-btn" data-color="#34c759" style="background:#34c759"></div>
-                <div class="color-btn" data-color="#ff9500" style="background:#ff9500"></div>
-                <div class="color-btn" data-color="#af52de" style="background:#af52de"></div>
-                <div class="color-btn" data-color="#000000" style="background:#000000"></div>
-                <div class="color-btn" data-color="#ff2d55" style="background:#ff2d55"></div>
-                <div class="color-btn" data-color="#00c7be" style="background:#00c7be"></div>
+                <div class="color-btn active" data-color="#0055ff"></div>
+                <div class="color-btn" data-color="#ff3b30"></div>
+                <div class="color-btn" data-color="#34c759"></div>
+                <div class="color-btn" data-color="#ff9500"></div>
+                <div class="color-btn" data-color="#af52de"></div>
+                <div class="color-btn" data-color="#000000"></div>
+                <div class="color-btn" data-color="#ff2d55"></div>
+                <div class="color-btn" data-color="#00c7be"></div>
                 <div class="color-picker-custom" id="custom-color-btn" title="Выбрать цвет">🎨</div>
             </div>
             <input type="color" id="custom-color-picker" style="display:none">
@@ -5158,6 +5284,10 @@ function loadBoardPage() {
                 <div class="resize-handle handle-l" id="handle-l"></div>
                 <div class="resize-handle handle-r" id="handle-r"></div>
             </div>
+
+            <!-- ===== СКРЫТЫЙ TEXTAREA ДЛЯ РЕДАКТИРОВАНИЯ ЛИСТА ===== -->
+            <textarea id="sheet-hidden-input"
+                      autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
 
             <!-- ===== КАНВАС ===== -->
             <canvas id="board"></canvas>
@@ -10798,9 +10928,6 @@ function addGlobalKeyListeners() {
     _globalListenersAdded = true;
 
     document.addEventListener('keydown', function(e) {
-        if (isSheetTextMode && editingSheet) {
-            if (handleSheetTextInput(e)) return;
-        }
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
         const ctrl = e.ctrlKey || e.metaKey;
         if (ctrl && (e.key === 'c' || e.key === 'с')) { e.preventDefault(); copySelected(); return; }
@@ -12212,20 +12339,56 @@ function initAllEventListeners() {
                     
                     // ===== ЛИНИИ (сегмент, луч, прямая) =====
                     if (state.type === 'segment' || state.type === 'ray' || state.type === 'line') {
-                        const oldX1 = state.x1, oldY1 = state.y1;
-                        const oldX2 = state.x2, oldY2 = state.y2;
+                        // Определяем, какая точка (x1,y1) или (x2,y2) ближе к маркеру
+                        // Маркер находится в bounds-координатах
                         
-                        let newX1 = oldX1, newY1 = oldY1, newX2 = oldX2, newY2 = oldY2;
+                        const bounds = {
+                            minX: Math.min(state.x1, state.x2),
+                            maxX: Math.max(state.x1, state.x2),
+                            minY: Math.min(state.y1, state.y2),
+                            maxY: Math.max(state.y1, state.y2)
+                        };
                         
-                        if (resizeHandle === 'tl' || resizeHandle === 'l' || resizeHandle === 'bl') newX1 += slowDx;
-                        if (resizeHandle === 'tr' || resizeHandle === 'r' || resizeHandle === 'br') newX2 += slowDx;
-                        if (resizeHandle === 'tl' || resizeHandle === 't' || resizeHandle === 'tr') newY1 += slowDy;
-                        if (resizeHandle === 'bl' || resizeHandle === 'b' || resizeHandle === 'br') newY2 += slowDy;
+                        // Позиция маркера в bounds
+                        let handleX, handleY;
+                        switch (resizeHandle) {
+                            case 'tl': handleX = bounds.minX; handleY = bounds.minY; break;
+                            case 'tr': handleX = bounds.maxX; handleY = bounds.minY; break;
+                            case 'bl': handleX = bounds.minX; handleY = bounds.maxY; break;
+                            case 'br': handleX = bounds.maxX; handleY = bounds.maxY; break;
+                            case 't':  handleX = (bounds.minX + bounds.maxX) / 2; handleY = bounds.minY; break;
+                            case 'b':  handleX = (bounds.minX + bounds.maxX) / 2; handleY = bounds.maxY; break;
+                            case 'l':  handleX = bounds.minX; handleY = (bounds.minY + bounds.maxY) / 2; break;
+                            case 'r':  handleX = bounds.maxX; handleY = (bounds.minY + bounds.maxY) / 2; break;
+                        }
                         
-                        obj.x1 = newX1;
-                        obj.y1 = newY1;
-                        obj.x2 = newX2;
-                        obj.y2 = newY2;
+                        // Расстояние от каждой точки линии до маркера
+                        const dist1 = Math.hypot(state.x1 - handleX, state.y1 - handleY);
+                        const dist2 = Math.hypot(state.x2 - handleX, state.y2 - handleY);
+                        
+                        // Двигаем ту точку, которая ближе к маркеру
+                        if (dist1 < dist2) {
+                            // Двигаем первую точку
+                            if (resizeHandle === 'l' || resizeHandle === 'tl' || resizeHandle === 'bl' ||
+                                resizeHandle === 'r' || resizeHandle === 'tr' || resizeHandle === 'br') {
+                                obj.x1 = state.x1 + slowDx;
+                            }
+                            if (resizeHandle === 't' || resizeHandle === 'tl' || resizeHandle === 'tr' ||
+                                resizeHandle === 'b' || resizeHandle === 'bl' || resizeHandle === 'br') {
+                                obj.y1 = state.y1 + slowDy;
+                            }
+                        } else {
+                            // Двигаем вторую точку
+                            if (resizeHandle === 'l' || resizeHandle === 'tl' || resizeHandle === 'bl' ||
+                                resizeHandle === 'r' || resizeHandle === 'tr' || resizeHandle === 'br') {
+                                obj.x2 = state.x2 + slowDx;
+                            }
+                            if (resizeHandle === 't' || resizeHandle === 'tl' || resizeHandle === 'tr' ||
+                                resizeHandle === 'b' || resizeHandle === 'bl' || resizeHandle === 'br') {
+                                obj.y2 = state.y2 + slowDy;
+                            }
+                        }
+                        
                         return;
                     }
                     
@@ -12477,6 +12640,36 @@ function initAllEventListeners() {
             e.preventDefault();
         }
     });
+
+        // ============================================================
+    // СКРЫТЫЙ TEXTAREA ДЛЯ РЕДАКТИРОВАНИЯ ЛИСТА
+    // ============================================================
+    const sheetHiddenInput = document.getElementById('sheet-hidden-input');
+    if (sheetHiddenInput) {
+        // Синхронизация при вводе
+        sheetHiddenInput.addEventListener('input', function() {
+            if (!isSheetTextMode || !editingSheet) return;
+            editingSheet.text = this.value;
+            autoExpandSheet(editingSheet);
+            render();
+            
+            // Сохраняем с задержкой
+            clearTimeout(this._saveTimeout);
+            this._saveTimeout = setTimeout(() => {
+                saveBoardHistory();
+                saveBoardToServer();
+            }, 500);
+        });
+        
+        // Escape — выход из режима
+        sheetHiddenInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                stopSheetTextEditing();
+            }
+        });
+    }
+
 
         // ============================================================
     // КНОПКА РЕДАКТИРОВАНИЯ ЛИСТА
