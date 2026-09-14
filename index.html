@@ -517,6 +517,7 @@
             cursor: pointer;
             border: 2px solid transparent;
             transition: all 0.15s;
+            background: var(--dot-color, #ccc);
         }
         .color-btn:hover { transform: scale(1.1); }
         .color-btn.active { border-color: #007aff; box-shadow: 0 0 0 2px rgba(0,122,255,0.3); }
@@ -2213,6 +2214,11 @@ function highlightText(element, textToHighlight) {
         after;
 }
 
+function getDashPattern(thickness, zoom) {
+    const base = Math.max(thickness, 2);
+    return [base * 2.5 * zoom, base * 1.5 * zoom];
+}
+
 // Вспомогательная функция для экранирования HTML
 function escapeHtml(text) {
     if (!text) return '';
@@ -3270,14 +3276,14 @@ function drawGrid() {
 }
 
 function drawObjects() {
-    // ===== СЛОЙ 1: ВСЕ ИЗОБРАЖЕНИЯ (всегда в самом низу, под всем) =====
+    // ===== СЛОЙ 1: ВСЕ ИЗОБРАЖЕНИЯ =====
     objects.forEach(obj => {
         if (obj.type === 'image') {
             drawImageObject(ctx, obj);
         }
     });
     
-    // ===== СЛОЙ 2: ВСЁ ОСТАЛЬНОЕ (поверх изображений) =====
+    // ===== СЛОЙ 2: ВСЁ ОСТАЛЬНОЕ =====
     objects.forEach(obj => {
         if (obj.type === 'image') return;
         
@@ -3289,21 +3295,24 @@ function drawObjects() {
         const screenP1 = worldToScreen(p1.x, p1.y);
         const screenP2 = worldToScreen(p2.x, p2.y);
         
+        // ===== ЕДИНОЕ ПРАВИЛО: размеры * zoom, координаты через worldToScreen =====
+        const worldThickness = (obj.thickness || currentThickness) * zoom;
+        
         if (obj.type === 'segment' || obj.type === 'ray' || obj.type === 'line') {
-            drawShape(ctx, obj.type, screenP1, screenP2, obj.color || currentColor, obj.thickness || currentThickness, obj.dashed || false);
+            drawShape(ctx, obj.type, screenP1, screenP2, obj.color || currentColor, worldThickness, obj.dashed || false);
             return;
         }
         
         if (obj.type !== 'free-line') {
-            drawShape(ctx, obj.type, screenP1, screenP2, obj.color || currentColor, obj.thickness || currentThickness, obj.dashed || false);
+            drawShape(ctx, obj.type, screenP1, screenP2, obj.color || currentColor, worldThickness, obj.dashed || false);
             return;
         }
         
-        // free-line (рисованные линии)
+        // free-line
         ctx.strokeStyle = obj.color || '#000';
         ctx.fillStyle = obj.color || '#000';
-        ctx.lineWidth = Math.max(1, obj.thickness || currentThickness);
-        ctx.setLineDash(obj.dash || []);
+        ctx.lineWidth = Math.max(1, worldThickness);
+        ctx.setLineDash(obj.dash ? obj.dash.map(d => d * zoom) : []);
         if (obj.type === 'free-line' && obj.points && obj.points.length > 1) {
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -3330,14 +3339,14 @@ function drawTempShape() {
         const w = Math.abs(p2.x - p1.x);
         const h = Math.abs(p2.y - p1.y);
         ctx.strokeStyle = '#007aff';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 2 * zoom;
+        ctx.setLineDash(getDashPattern(currentThickness, zoom));
         ctx.strokeRect(x, y, w, h);
         ctx.setLineDash([]);
         ctx.fillStyle = 'rgba(0,122,255,0.05)';
         ctx.fillRect(x, y, w, h);
         ctx.fillStyle = '#007aff';
-        ctx.font = '14px Arial';
+        ctx.font = (14 * zoom) + 'px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('📝 Текст', x + w / 2, y + h / 2);
@@ -3349,14 +3358,14 @@ function drawTempShape() {
         const w = Math.abs(p2.x - p1.x);
         const h = Math.abs(p2.y - p1.y);
         ctx.strokeStyle = '#3498db';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 2 * zoom;
+        ctx.setLineDash(getDashPattern(currentThickness, zoom));
         ctx.strokeRect(x, y, w, h);
         ctx.setLineDash([]);
         ctx.fillStyle = 'rgba(52,152,219,0.05)';
         ctx.fillRect(x, y, w, h);
         ctx.fillStyle = '#3498db';
-        ctx.font = '14px Arial';
+        ctx.font = (14 * zoom) + 'px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🖼️ Изображение', x + w / 2, y + h / 2);
@@ -3368,9 +3377,9 @@ function drawTempShape() {
         const w = Math.abs(p2.x - p1.x);
         const h = Math.abs(p2.y - p1.y);
         ctx.shadowColor = 'rgba(0,0,0,0.1)';
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
+        ctx.shadowBlur = 15 * zoom;
+        ctx.shadowOffsetX = 3 * zoom;
+        ctx.shadowOffsetY = 3 * zoom;
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
         ctx.fillRect(x, y, w, h);
         ctx.shadowColor = 'transparent';
@@ -3378,13 +3387,13 @@ function drawTempShape() {
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
         ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 1.5 * zoom;
+        ctx.setLineDash(getDashPattern(currentThickness, zoom));
         ctx.strokeRect(x, y, w, h);
         ctx.setLineDash([]);
         const cornerSize = Math.min(w, h) * 0.06;
         ctx.strokeStyle = '#333';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 * zoom;
         ctx.beginPath();
         ctx.moveTo(x, y + cornerSize);
         ctx.lineTo(x, y);
@@ -3409,26 +3418,51 @@ function drawTempShape() {
     }
     if (mode === 'segment' || mode === 'ray' || mode === 'line') {
         ctx.strokeStyle = currentColor + '80';
-        ctx.lineWidth = currentThickness;
-        ctx.setLineDash(isDashed ? [6, 6] : []);
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.stroke();
+        ctx.fillStyle = currentColor + '80';
+        ctx.lineWidth = Math.max(1, currentThickness * zoom);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.setLineDash(isDashed ? getDashPattern(currentThickness, zoom) : []);
+        
         if (mode === 'ray') {
             const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-            const len = 15;
-            ctx.fillStyle = currentColor + '80';
+            const lineW = Math.max(1, currentThickness * zoom);
+            
+            const arrowLen = Math.max(15 * zoom, lineW * 4);
+            const arrowWidth = Math.max(12 * zoom, lineW * 3);
+            
+            const lineEndX = p2.x - arrowLen * Math.cos(angle);
+            const lineEndY = p2.y - arrowLen * Math.sin(angle);
+            
+            const perpX = -Math.sin(angle) * arrowWidth / 2;
+            const perpY = Math.cos(angle) * arrowWidth / 2;
+            
+            // 1. Сначала линия (с пунктиром)
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(lineEndX, lineEndY);
+            ctx.stroke();
+            
+            // 2. ВЫКЛЮЧАЕМ ПУНКТИР для стрелки
+            ctx.setLineDash([]);
+            
+            // 3. Рисуем стрелку (сплошную)
             ctx.beginPath();
             ctx.moveTo(p2.x, p2.y);
-            ctx.lineTo(p2.x - len * Math.cos(angle - 0.4), p2.y - len * Math.sin(angle - 0.4));
-            ctx.lineTo(p2.x - len * Math.cos(angle + 0.4), p2.y - len * Math.sin(angle + 0.4));
+            ctx.lineTo(lineEndX + perpX, lineEndY + perpY);
+            ctx.lineTo(lineEndX - perpX, lineEndY - perpY);
             ctx.closePath();
+            ctx.stroke();
             ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
         }
         ctx.setLineDash([]);
     } else if (SHAPE_LIST.find(s => s.id === mode)) {
-        drawShape(ctx, mode, p1, p2, currentColor, currentThickness, isDashed);
+        drawShape(ctx, mode, p1, p2, currentColor, currentThickness * zoom, isDashed);
     }
 }
 
@@ -3440,7 +3474,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
     ctx.strokeStyle = color || '#000';
     ctx.fillStyle = color + '20' || 'rgba(0,0,0,0.05)';
     ctx.lineWidth = thickness || 2;
-    ctx.setLineDash(dashed ? [6, 6] : []);
+    ctx.setLineDash(dashed ? getDashPattern(currentThickness, zoom) : []);
     ctx.beginPath();
     switch (type) {
         case 'coords': drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness); return;
@@ -3509,7 +3543,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.lineTo(cx + s2 / 2 + off, cy + s2 / 2 - off);
             ctx.lineTo(cx + s2 / 2, cy + s2 / 2);
             ctx.stroke();
-            ctx.setLineDash([4, 5]);
+            ctx.setLineDash([4 * zoom, 5 * zoom]);
             ctx.beginPath();
             ctx.moveTo(cx - s2 / 2, cy - s2 / 2);
             ctx.lineTo(cx - s2 / 2 + off, cy - s2 / 2 - off);
@@ -3524,7 +3558,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.moveTo(cx - s2 / 2 + off, cy + s2 / 2 - off);
             ctx.lineTo(cx + s2 / 2 + off, cy + s2 / 2 - off);
             ctx.stroke();
-            ctx.setLineDash(dashed ? [6, 6] : []);
+            ctx.setLineDash(dashed ? getDashPattern(currentThickness, zoom) : []);
             return;
         }
         case 'cylinder': {
@@ -3540,12 +3574,12 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.moveTo(cx + cylR, cy - cylH / 2);
             ctx.lineTo(cx + cylR, cy + cylH / 2);
             ctx.stroke();
-            ctx.setLineDash([4, 5]);
+            ctx.setLineDash([4 * zoom, 5 * zoom]);
             ctx.beginPath();
             ctx.moveTo(cx - cylR, cy - cylH / 2);
             ctx.lineTo(cx - cylR, cy + cylH / 2);
             ctx.stroke();
-            ctx.setLineDash(dashed ? [6, 6] : []);
+            ctx.setLineDash(dashed ? getDashPattern(thickness / zoom, zoom) : []);
             return;
         }
         case 'sphere': {
@@ -3558,54 +3592,51 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.beginPath();
             ctx.ellipse(cx, cy, sphereR * 0.25, sphereR, 0, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.setLineDash([4, 5]);
+            ctx.setLineDash([4 * zoom, 5 * zoom]);
             ctx.beginPath();
             ctx.ellipse(cx, cy, sphereR, sphereR * 0.25, 0, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.setLineDash(dashed ? [6, 6] : []);
+            ctx.setLineDash(dashed ? getDashPattern(thickness / zoom, zoom) : []);
             return;
         }
         case 'segment': case 'ray': case 'line':
             ctx.strokeStyle = color || '#000';
             ctx.fillStyle = color || '#000';
-            ctx.lineWidth = thickness || 2;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.setLineDash(dashed ? [6, 6] : []);
+            ctx.setLineDash(dashed ? getDashPattern(thickness / zoom, zoom) : []);
             
             if (type === 'ray') {
                 const angle = Math.atan2(y2 - y1, x2 - x1);
-                const lineW = thickness || 2;
+                const lineW = thickness || 2;   // уже * zoom приходит из drawObjects
                 
-                // Размеры стрелки зависят от толщины
-                const arrowLen = Math.max(15, lineW * 4);
-                const arrowWidth = Math.max(12, lineW * 3);
+                const arrowLen = Math.max(15 * zoom, lineW * 4);
+                const arrowWidth = Math.max(12 * zoom, lineW * 3);
                 
-                // Конец линии — на arrowLen назад от кончика
                 const lineEndX = x2 - arrowLen * Math.cos(angle);
                 const lineEndY = y2 - arrowLen * Math.sin(angle);
                 
-                // Перпендикуляр для основания стрелки
                 const perpX = -Math.sin(angle) * arrowWidth / 2;
                 const perpY = Math.cos(angle) * arrowWidth / 2;
                 
-                // ===== 1. ЛИНИЯ (рисуем первой, чтобы стрелка была поверх) =====
+                ctx.lineWidth = lineW;
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(lineEndX, lineEndY);
                 ctx.stroke();
-                
-                // ===== 2. СТРЕЛКА С ОБВОДКОЙ ТОЙ ЖЕ ТОЛЩИНЫ =====
+
+                // ← ВЫКЛЮЧАЕМ ПУНКТИР ДЛЯ СТРЕЛКИ
+                ctx.setLineDash([]);
+
                 ctx.beginPath();
                 ctx.moveTo(x2, y2);
                 ctx.lineTo(lineEndX + perpX, lineEndY + perpY);
                 ctx.lineTo(lineEndX - perpX, lineEndY - perpY);
                 ctx.closePath();
-                ctx.stroke();  // обводка
-                ctx.fill();    // заливка
-                
+                ctx.stroke();
+                ctx.fill();
             } else {
-                // Обычная линия / отрезок
+                ctx.lineWidth = thickness || 2;
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
@@ -3630,7 +3661,7 @@ function drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness) {
     const top = worldToScreen(cx, cy - size);
     const bottom = worldToScreen(cx, cy + size);
     ctx.strokeStyle = '#e74c3c';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * zoom;
     ctx.beginPath();
     ctx.moveTo(left.x, left.y);
     ctx.lineTo(right.x, right.y);
@@ -3638,15 +3669,15 @@ function drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness) {
     ctx.fillStyle = '#e74c3c';
     ctx.beginPath();
     ctx.moveTo(right.x, right.y);
-    ctx.lineTo(right.x - 12, right.y - 6);
-    ctx.lineTo(right.x - 12, right.y + 6);
+    ctx.lineTo(right.x - 12 * zoom, right.y - 6 * zoom);
+    ctx.lineTo(right.x - 12 * zoom, right.y + 6 * zoom);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#e74c3c';
-    ctx.font = '16px Arial';
-    ctx.fillText('X', right.x - 25, right.y - 12);
+    ctx.font = (16 * zoom) + 'px Arial';
+    ctx.fillText('X', right.x - 25 * zoom, right.y - 12 * zoom);
     ctx.strokeStyle = '#2ecc71';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * zoom;
     ctx.beginPath();
     ctx.moveTo(top.x, top.y);
     ctx.lineTo(bottom.x, bottom.y);
@@ -3654,17 +3685,17 @@ function drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness) {
     ctx.fillStyle = '#2ecc71';
     ctx.beginPath();
     ctx.moveTo(top.x, top.y);
-    ctx.lineTo(top.x - 6, top.y + 12);
-    ctx.lineTo(top.x + 6, top.y + 12);
+    ctx.lineTo(top.x - 6 * zoom, top.y + 12 * zoom);
+    ctx.lineTo(top.x + 6 * zoom, top.y + 12 * zoom);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#2ecc71';
-    ctx.font = '16px Arial';
-    ctx.fillText('Y', top.x + 12, top.y + 4);
+    ctx.font = (16 * zoom) + 'px Arial';
+    ctx.fillText('Y', top.x + 12 * zoom, top.y + 4 * zoom);
     const oPos = worldToScreen(cx, cy);
     ctx.fillStyle = '#333';
-    ctx.font = '16px Arial';
-    ctx.fillText('O', oPos.x + 8, oPos.y + 22);
+    ctx.font = (16 * zoom) + 'px Arial';
+    ctx.fillText('O', oPos.x + 8 * zoom, oPos.y + 22 * zoom);
     let step = 50;
     if (zoom < 0.3) step = 200;
     else if (zoom < 0.7) step = 100;
@@ -3674,7 +3705,7 @@ function drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness) {
     const startX = Math.floor((-size / step) * step);
     const endX = Math.floor((size / step) * step);
     ctx.fillStyle = '#666';
-    ctx.font = '10px Arial';
+    ctx.font = (10 * zoom) + 'px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     for (let x = startX; x <= endX; x += step) {
@@ -3682,11 +3713,11 @@ function drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness) {
         const pos = worldToScreen(cx + x, cy);
         ctx.fillStyle = '#ccc';
         ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y - 4);
-        ctx.lineTo(pos.x, pos.y + 4);
+        ctx.moveTo(pos.x, pos.y - 4 * zoom);
+        ctx.lineTo(pos.x, pos.y + 4 * zoom);
         ctx.stroke();
         ctx.fillStyle = '#666';
-        ctx.fillText(Math.round(x), pos.x, pos.y + 6);
+        ctx.fillText(Math.round(x), pos.x, pos.y + 6 * zoom);
     }
     const startY = Math.floor((-size / step) * step);
     const endY = Math.floor((size / step) * step);
@@ -3697,11 +3728,11 @@ function drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness) {
         const pos = worldToScreen(cx, cy + y);
         ctx.fillStyle = '#ccc';
         ctx.beginPath();
-        ctx.moveTo(pos.x - 4, pos.y);
-        ctx.lineTo(pos.x + 4, pos.y);
+        ctx.moveTo(pos.x - 4 * zoom, pos.y);
+        ctx.lineTo(pos.x + 4 * zoom, pos.y);
         ctx.stroke();
         ctx.fillStyle = '#666';
-        ctx.fillText(Math.round(-y), pos.x - 8, pos.y);
+        ctx.fillText(Math.round(-y), pos.x - 8 * zoom, pos.y);
     }
     ctx.restore();
 }
@@ -3710,7 +3741,6 @@ function drawTextObject(ctx, obj) {
     if (!obj || obj.type !== 'text') return;
     const p = worldToScreen(obj.x || 0, obj.y || 0);
 
-    // ===== ВСЁ УМНОЖАЕТСЯ НА ZOOM — как у фигур =====
     const fontSize = (obj.size || 24) * zoom;
     const font = obj.font || 'Arial';
     const style = (obj.bold ? 'bold ' : '') + (obj.italic ? 'italic ' : '') + fontSize + 'px ' + font;
@@ -3732,7 +3762,6 @@ function drawTextObject(ctx, obj) {
         return;
     }
 
-    // Фон
     if (obj.hasBg && obj.bgColor) {
         ctx.fillStyle = obj.bgColor;
         const lines = obj.text.split('\n');
@@ -3744,10 +3773,6 @@ function drawTextObject(ctx, obj) {
         const lineHeight = fontSize * 1.4;
         const totalHeight = lines.length * lineHeight;
 
-        let xOffset = 0;
-        if (obj.align === 'center') xOffset = maxWidth / 2;
-        else if (obj.align === 'right') xOffset = maxWidth;
-
         ctx.fillRect(
             p.x - pad - (obj.align === 'right' ? maxWidth : 0) + (obj.align === 'center' ? maxWidth / 2 : 0),
             p.y - pad,
@@ -3756,7 +3781,6 @@ function drawTextObject(ctx, obj) {
         );
     }
 
-    // Текст
     ctx.fillStyle = obj.color || '#000000';
     ctx.textAlign = obj.align || 'left';
     const lines = obj.text.split('\n');
@@ -3806,7 +3830,6 @@ function drawImageObject(ctx, obj) {
     const w = obj.width * zoom;
     const h = obj.height * zoom;
     
-    // ===== БЕРЁМ ИЗ КЭША =====
     let img = imageCache[obj.id];
     
     if (!img) {
@@ -3836,9 +3859,9 @@ function drawSheet(ctx, obj) {
     const w = Math.abs(p2.x - p1.x);
     const h = Math.abs(p2.y - p1.y);
     ctx.shadowColor = 'rgba(0,0,0,0.15)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetX = 4;
-    ctx.shadowOffsetY = 4;
+    ctx.shadowBlur = 20 * zoom;
+    ctx.shadowOffsetX = 4 * zoom;
+    ctx.shadowOffsetY = 4 * zoom;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(x, y, w, h);
     ctx.shadowColor = 'transparent';
@@ -3846,11 +3869,11 @@ function drawSheet(ctx, obj) {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     ctx.strokeStyle = obj.color || '#333';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * zoom;
     ctx.strokeRect(x, y, w, h);
     const cornerSize = Math.min(w, h) * 0.06;
     ctx.strokeStyle = obj.color || '#333';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * zoom;
     ctx.beginPath();
     ctx.moveTo(x, y + cornerSize);
     ctx.lineTo(x, y);
@@ -3872,7 +3895,6 @@ function drawSheet(ctx, obj) {
     ctx.lineTo(x + w, y + h - cornerSize);
     ctx.stroke();
     
-    // ===== РИСУЕМ ТЕКСТ НА ЛИСТЕ =====
     drawSheetText(ctx, obj);
 }
 
@@ -4246,7 +4268,6 @@ function autoExpandSheet(sheetObj) {
     // Но обычно текст переносится, так что это не обязательно
 }
 
-// Отрисовка текста на листе — всё в МИРОВЫХ координатах
 function drawSheetText(ctx, sheetObj) {
     if (!sheetObj.text || sheetObj.text.trim() === '') {
         if (isSheetTextMode && editingSheet === sheetObj) {
@@ -4268,7 +4289,6 @@ function drawSheetText(ctx, sheetObj) {
     const fontSizeWorld = sheetObj.textSize || 18;
     const font = sheetObj.textFont || 'Arial';
 
-    // ===== ИЗМЕРЯЕМ В МИРОВЫХ ЕДИНИЦАХ (через отдельный canvas) =====
     const measureCanvas = document.createElement('canvas');
     const measureCtx = measureCanvas.getContext('2d');
     const measureStyle = (sheetObj.textBold ? 'bold ' : '') +
@@ -4276,14 +4296,12 @@ function drawSheetText(ctx, sheetObj) {
                          fontSizeWorld + 'px ' + font;
     measureCtx.font = measureStyle;
 
-    // Перенос строк в МИРОВЫХ единицах
     const lines = [];
     sheetObj.text.split('\n').forEach(paragraph => {
         if (paragraph === '') { lines.push(''); return; }
         const words = paragraph.split(' ');
         let currentLine = '';
         words.forEach(word => {
-            // Слово длиннее строки — режем
             if (measureCtx.measureText(word).width > maxWidthWorld) {
                 if (currentLine) {
                     lines.push(currentLine);
@@ -4302,7 +4320,6 @@ function drawSheetText(ctx, sheetObj) {
                 currentLine = chunk;
                 return;
             }
-            // Обычное слово
             const testLine = currentLine ? currentLine + ' ' + word : word;
             if (measureCtx.measureText(testLine).width > maxWidthWorld && currentLine) {
                 lines.push(currentLine);
@@ -4314,9 +4331,6 @@ function drawSheetText(ctx, sheetObj) {
         if (currentLine) lines.push(currentLine);
     });
 
-    console.log('🔤 Строк:', lines.length, 'maxWidthWorld:', maxWidthWorld, 'lines:', lines);
-
-    // ===== РИСУЕМ В ЭКРАННЫХ КООРДИНАТАХ, НО СТРОКИ УЖЕ ГОТОВЫ =====
     const screenFontSize = fontSizeWorld * zoom;
     const style = (sheetObj.textBold ? 'bold ' : '') +
                   (sheetObj.textItalic ? 'italic ' : '') +
