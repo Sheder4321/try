@@ -6,8 +6,10 @@
     <title>Образовательная платформа</title>
     <style>
         /* ===== ОБЩИЕ СТИЛИ ===== */
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body { overflow: hidden; background: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; height: 100dvh; touch-action: none; overscroll-behavior: none; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
+        canvas { user-select: none; -webkit-user-select: none; }
+        body { overflow: hidden; background: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; height: 100dvh; overscroll-behavior: none; }
         canvas { display: block; width: 100vw; height: 100vh; cursor: grab; background: #ffffff; position: relative; z-index: 1; touch-action: none; }
 
         /* ===== ПАНЕЛЬ ИНСТРУМЕНТОВ ===== */
@@ -1289,16 +1291,16 @@
         }
 
         /* ============================================================ */
-        /* МОБИЛЬНАЯ АДАПТАЦИЯ (до 900px)                                */
+        /* МОБИЛЬНАЯ АДАПТАЦИЯ — ПАНЕЛИ СПРАВА, КАК НА ПК                */
         /* ============================================================ */
         @media (max-width: 900px) {
 
-            /* --- Общие --- */
             html, body {
                 height: 100%;
                 overflow: hidden;
                 -webkit-text-size-adjust: 100%;
                 -webkit-tap-highlight-color: transparent;
+                overscroll-behavior: none;
             }
 
             /* --- Авторизация --- */
@@ -1331,141 +1333,161 @@
             .nav::-webkit-scrollbar { display: none; }
             .nav button { padding: 10px 12px; font-size: 13px; white-space: nowrap; }
 
-            /* --- Канвас --- */
-            canvas {
-                touch-action: none;
-                -webkit-user-select: none;
-                user-select: none;
-            }
+            canvas { touch-action: none; }
 
             /* ============================================================
-            ЛЕВАЯ ПАНЕЛЬ ИНСТРУМЕНТОВ — теперь ГОРИЗОНТАЛЬНАЯ СНИЗУ
+            ЛЕВАЯ ПАНЕЛЬ ИНСТРУМЕНТОВ — ПЕРЕНОСИМ ВПРАВО
             ============================================================ */
             #left-toolbar {
                 position: fixed;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                top: auto;
-                transform: none;
-                flex-direction: row;
+                left: auto;
+                right: 8px;
+                top: 50%;
+                bottom: auto;
+                transform: translateY(-50%);
+                flex-direction: column;
                 justify-content: flex-start;
                 align-items: center;
                 gap: 2px;
-                padding: 6px 8px;
-                padding-bottom: max(6px, env(safe-area-inset-bottom));
-                border-radius: 16px 16px 0 0;
-                max-height: none;
-                overflow-x: auto;
-                overflow-y: hidden;
+                padding: 6px 4px;
+                border-radius: 14px;
+                max-height: 80vh;
+                overflow-x: hidden;
+                overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
                 z-index: 200;
-                box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+                box-shadow: 0 4px 24px rgba(0,0,0,0.12);
             }
             #left-toolbar::-webkit-scrollbar { display: none; }
 
             .left-tool-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 20px;
+                width: 42px;
+                height: 42px;
+                font-size: 19px;
                 flex-shrink: 0;
-                border-radius: 12px;
+                border-radius: 10px;
             }
             .left-tool-btn .tooltip { display: none; }
             .left-tool-divider {
-                width: 1px;
-                height: 28px;
-                margin: 0 4px;
+                width: 28px;
+                height: 1px;
+                margin: 4px 0;
                 flex-shrink: 0;
             }
 
             /* ============================================================
-            ПАЛИТРА И ТОЛЩИНА — НАД НИЖНЕЙ ПАНЕЛЬЮ
+            ПАЛИТРА — ПРАВЫЙ НИЖНИЙ УГОЛ (ПОД ПАНЕЛЬЮ)
             ============================================================ */
             #color-picker {
                 position: fixed;
-                left: 8px;
+                left: auto;
                 right: 8px;
-                bottom: calc(60px + env(safe-area-inset-bottom));
+                bottom: calc(120px + env(safe-area-inset-bottom));
                 transform: none;
-                justify-content: center;
-                padding: 6px 10px;
-                gap: 6px;
+                flex-direction: column;
+                padding: 6px;
+                gap: 4px;
                 border-radius: 12px;
-                overflow-x: auto;
+                max-height: 40vh;
+                overflow-y: auto;
                 scrollbar-width: none;
             }
             #color-picker::-webkit-scrollbar { display: none; }
-            .color-btn { width: 32px; height: 32px; flex-shrink: 0; }
-            .color-picker-custom { width: 32px; height: 32px; flex-shrink: 0; }
+            .color-btn { width: 28px; height: 28px; flex-shrink: 0; }
+            .color-picker-custom { width: 28px; height: 28px; flex-shrink: 0; }
 
             #thickness-control {
                 position: fixed;
                 left: 8px;
-                right: 8px;
-                bottom: calc(108px + env(safe-area-inset-bottom));
+                right: auto;
+                bottom: calc(120px + env(safe-area-inset-bottom));
                 transform: none;
-                justify-content: center;
             }
 
             /* ============================================================
-            ZOOM-КОНТРОЛЫ — ПРАВЫЙ НИЖНИЙ УГОЛ, НАД ПАНЕЛЬЮ
+            ZOOM-КОНТРОЛЫ — ПРАВЫЙ НИЖНИЙ УГОЛ, НАД ПАЛИТРОЙ
             ============================================================ */
             #zoom-controls {
                 position: fixed;
-                right: 8px;
-                bottom: calc(60px + env(safe-area-inset-bottom));
-                flex-direction: column;
+                left: 8px;
+                right: auto;
+                bottom: 8px;
+                flex-direction: row;
                 padding: 4px;
                 border-radius: 12px;
+                z-index: 210;
             }
             #zoom-controls button {
-                padding: 10px 14px;
-                font-size: 18px;
-                min-width: 44px;
-                min-height: 44px;
+                padding: 8px 10px;
+                font-size: 16px;
+                min-width: 40px;
+                min-height: 40px;
             }
-            #zoom-display { font-size: 11px; padding: 4px 0; min-width: 40px; }
+            #zoom-display { font-size: 11px; padding: 0 4px; min-width: 40px; }
 
             /* ============================================================
-            ПРАВАЯ ПАНЕЛЬ «ДОСКИ» — НА ВЕСЬ ЭКРАН СНИЗУ
+            КНОПКИ «СОХРАНИТЬ» И «ДОСКИ» — ЛЕВЫЙ НИЖНИЙ УГОЛ
+            ============================================================ */
+            #save-board-btn {
+                bottom: 8px !important;
+                left: 8px !important;
+                right: auto !important;
+                padding: 10px 14px !important;
+                font-size: 13px !important;
+                z-index: 220 !important;
+            }
+            #boards-menu-btn {
+                bottom: 56px !important;
+                left: 8px !important;
+                right: auto !important;
+                padding: 10px 14px !important;
+                font-size: 13px !important;
+                z-index: 220 !important;
+            }
+
+            /* ============================================================
+            ПАНЕЛЬ «ДОСКИ» — ВЫЕЗЖАЕТ СПРАВА
             ============================================================ */
             .app-sidebar {
                 position: fixed;
-                left: 0;
                 right: 0;
-                top: auto;
+                left: auto;
+                top: 0;
                 bottom: 0;
-                width: 100%;
-                height: 80vh;
-                max-height: 80vh;
-                border-radius: 20px 20px 0 0;
-                border-left: none;
-                border-top: 1px solid #e0e0e0;
+                width: 80vw;
+                max-width: 320px;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+                border-left: 1px solid #e0e0e0;
                 z-index: 300;
+                padding-top: max(12px, env(safe-area-inset-top));
                 padding-bottom: env(safe-area-inset-bottom);
                 transition: transform 0.3s ease;
             }
             .app-sidebar.hidden {
-                transform: translateY(100%);
+                transform: translateX(100%);
                 display: block !important;
             }
 
             /* ============================================================
-            ПАНЕЛЬ ИНСТРУМЕНТОВ (sidebar с линиями/фигурами) — СНИЗУ
+            ПАНЕЛЬ ВЫБОРА ЛИНИЙ/ФИГУР — СЛЕВА ОТ ИНСТРУМЕНТОВ
             ============================================================ */
             #tool-sidebar {
                 position: fixed;
-                left: 8px;
-                right: 8px;
-                bottom: calc(60px + env(safe-area-inset-bottom));
-                top: auto;
-                transform: none;
-                max-height: 50vh;
+                right: 62px;
+                left: auto;
+                top: 50%;
+                bottom: auto;
+                transform: translateY(-50%);
+                max-height: 70vh;
                 overflow-y: auto;
-                border-radius: 16px;
+                border-radius: 14px;
                 z-index: 250;
+                min-width: 180px;
+                max-width: calc(100vw - 80px);
+                width: auto;
             }
             #tool-sidebar .sidebar-item {
                 padding: 10px 12px;
@@ -1474,7 +1496,7 @@
             }
 
             /* ============================================================
-            ПАНЕЛИ ФОРМАТИРОВАНИЯ ТЕКСТА — ПРИЛИПАЮТ К НИЗУ
+            ПАНЕЛИ ФОРМАТИРОВАНИЯ ТЕКСТА — СНИЗУ
             ============================================================ */
             #text-toolbar,
             #sheet-text-toolbar {
@@ -1520,7 +1542,7 @@
             }
 
             /* ============================================================
-            РЕДАКТОР ТЕКСТА — НА ВЕСЬ ЭКРАН
+            РЕДАКТОР ТЕКСТА — СНИЗУ
             ============================================================ */
             #text-editor {
                 position: fixed !important;
@@ -1543,53 +1565,26 @@
                 min-height: 44px;
             }
 
-            /* ============================================================
-            РУЧКИ РЕСАЙЗА — БОЛЬШЕ
-            ============================================================ */
-            .resize-handle {
-                width: 24px;
-                height: 24px;
-            }
+            .resize-handle { width: 22px; height: 22px; }
 
-            /* ============================================================
-            КНОПКА РЕДАКТИРОВАНИЯ ЛИСТА — БОЛЬШЕ
-            ============================================================ */
             #sheet-edit-btn {
-                padding: 10px 18px;
-                font-size: 15px;
+                padding: 10px 16px;
+                font-size: 14px;
                 min-height: 44px;
             }
 
             /* ============================================================
-            КНОПКА СОХРАНИТЬ — НАД ПАНЕЛЬЮ
+            МОДАЛЬНЫЕ ОКНА — СНИЗУ
             ============================================================ */
-            #save-board-btn {
-                bottom: calc(120px + env(safe-area-inset-bottom)) !important;
-                right: 8px !important;
-                padding: 10px 16px !important;
-                font-size: 14px !important;
-            }
-            #boards-menu-btn {
-                bottom: calc(60px + env(safe-area-inset-bottom)) !important;
-                right: 70px !important;
-                padding: 10px 18px !important;
-                font-size: 14px !important;
-            }
-
-            /* ============================================================
-            МОДАЛЬНЫЕ ОКНА — ПОЧТИ НА ВЕСЬ ЭКРАН
-            ============================================================ */
+            .modal.active { align-items: flex-end; }
             .modal-content {
                 max-width: 100%;
                 width: 100%;
-                max-height: 95vh;
-                height: auto;
+                max-height: 90vh;
                 border-radius: 16px 16px 0 0;
-                align-self: flex-end;
                 padding: 16px;
                 padding-bottom: max(16px, env(safe-area-inset-bottom));
             }
-            .modal.active { align-items: flex-end; }
             .modal-content h2 { font-size: 18px; }
             .modal-content input,
             .modal-content textarea,
@@ -1606,7 +1601,7 @@
             }
 
             /* ============================================================
-            СТРАНИЦЫ КЛАССОВ И ЗАДАНИЙ
+            СТРАНИЦЫ
             ============================================================ */
             .content-page { padding: 12px; }
             .flex-between { gap: 8px; }
@@ -1616,69 +1611,50 @@
             .assignment { padding: 12px; }
             .assignment .title { font-size: 15px; }
             .assignment .desc { font-size: 13px; }
-
-            /* Пагинация */
             .pagination button {
                 padding: 10px 14px;
                 font-size: 14px;
                 min-height: 44px;
             }
-            .pagination .page-info { font-size: 13px; }
 
-            /* ============================================================
-            АННОТАЦИИ НА ФОТО
-            ============================================================ */
-            .image-annotation-wrapper .ann-image { max-width: 100%; max-height: 60vh; }
-            .ann-toolbar { padding: 6px 8px; gap: 4px; }
             .ann-toolbar button { min-height: 40px; padding: 8px 14px; font-size: 13px; }
 
-            /* ============================================================
-            ПРОЧЕЕ
-            ============================================================ */
-            .class-card { padding: 16px; }
             .file-preview-item { width: 90px; height: 90px; }
 
             #status {
-                bottom: calc(60px + env(safe-area-inset-bottom));
+                bottom: 60px;
                 font-size: 13px;
                 padding: 8px 14px;
             }
             #copy-hint {
-                bottom: calc(120px + env(safe-area-inset-bottom));
+                bottom: 120px;
                 font-size: 14px;
                 padding: 10px 16px;
             }
         }
 
         /* ============================================================ */
-        /* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ (до 400px)                            */
+        /* МАЛЕНЬКИЕ ЭКРАНЫ (до 400px)                                   */
         /* ============================================================ */
         @media (max-width: 400px) {
-            .left-tool-btn { width: 40px; height: 40px; font-size: 18px; }
-            .color-btn { width: 28px; height: 28px; }
+            .left-tool-btn { width: 38px; height: 38px; font-size: 17px; }
+            .color-btn { width: 24px; height: 24px; }
             .header h1 { font-size: 13px; }
             .nav button { padding: 8px 10px; font-size: 12px; }
         }
 
         /* ============================================================ */
-        /* ЛАНДШАФТНАЯ ОРИЕНТАЦИЯ НА ТЕЛЕФОНЕ                            */
+        /* ЛАНДШАФТ                                                      */
         /* ============================================================ */
         @media (max-width: 900px) and (orientation: landscape) {
-            #left-toolbar {
-                bottom: 0;
-                padding: 4px 8px;
-            }
-            .left-tool-btn { width: 40px; height: 40px; font-size: 18px; }
-            #color-picker,
-            #thickness-control,
-            #zoom-controls {
-                bottom: calc(52px + env(safe-area-inset-bottom));
-            }
-            .app-sidebar { height: 95vh; }
+            .left-tool-btn { width: 36px; height: 36px; font-size: 16px; }
+            #color-picker { bottom: 80px; }
+            #thickness-control { bottom: 80px; }
+            .app-sidebar { width: 50vw; }
         }
 
         /* ============================================================ */
-        /* УБИРАЕМ HOVER-ЭФФЕКТЫ НА ТАЧ-УСТРОЙСТВАХ                     */
+        /* ОТКЛЮЧАЕМ HOVER НА ТАЧ-УСТРОЙСТВАХ                            */
         /* ============================================================ */
         @media (hover: none) {
             .left-tool-btn:hover,
@@ -1687,10 +1663,10 @@
             .assignment:hover,
             .class-card:hover {
                 transform: none !important;
-                box-shadow: inherit !important;
             }
             .left-tool-btn .tooltip { display: none !important; }
         }
+
                 /* Добавь в CSS */
         #board-sidebar .sidebar-code-row {
             display: flex;
@@ -11267,6 +11243,102 @@ addGlobalKeyListeners();
 
 function initAllEventListeners() {
     if (!canvas) return;
+        // ============================================================
+    // УНИВЕРСАЛЬНЫЙ СЛОЙ: TOUCH → MOUSE (чтобы вся логика работала)
+    // ============================================================
+    (function enableTouchAsMouse() {
+        if (!canvas) return;
+
+        let lastTapTime = 0;
+        let lastTapX = 0;
+        let lastTapY = 0;
+        let touchMoved = false;
+        let activeTouchId = null;
+
+        function makeMouseEvent(type, touch, extra = {}) {
+            return new MouseEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                screenX: touch.screenX,
+                screenY: touch.screenY,
+                button: 0,
+                buttons: 1,
+                ...extra
+            });
+        }
+
+        canvas.addEventListener('touchstart', function(e) {
+            // Мульти-тач оставляем для pinch-to-zoom
+            if (e.touches.length > 1) return;
+
+            const touch = e.touches[0];
+            activeTouchId = touch.identifier;
+            touchMoved = false;
+
+            // Превращаем в mousedown
+            canvas.dispatchEvent(makeMouseEvent('mousedown', touch));
+
+            // Двойной тап → dblclick
+            const now = Date.now();
+            const dx = touch.clientX - lastTapX;
+            const dy = touch.clientY - lastTapY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (now - lastTapTime < 300 && dist < 30) {
+                canvas.dispatchEvent(makeMouseEvent('dblclick', touch));
+            }
+
+            lastTapTime = now;
+            lastTapX = touch.clientX;
+            lastTapY = touch.clientY;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) return;
+            const touch = e.touches[0];
+            if (touch.identifier !== activeTouchId) return;
+
+            touchMoved = true;
+            canvas.dispatchEvent(makeMouseEvent('mousemove', touch));
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', function(e) {
+            if (!activeTouchId) return;
+
+            // Ищем завершённый палец
+            let ended = null;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === activeTouchId) {
+                    ended = e.changedTouches[i];
+                    break;
+                }
+            }
+            if (!ended) return;
+
+            canvas.dispatchEvent(makeMouseEvent('mouseup', ended));
+
+            // Если это был «тап» (не свайп) — генерируем click
+            if (!touchMoved) {
+                canvas.dispatchEvent(makeMouseEvent('click', ended));
+            }
+
+            activeTouchId = null;
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', function(e) {
+            activeTouchId = null;
+        }, { passive: false });
+        canvas.addEventListener('touchend', function(e) {
+            if (e.touches.length === 1 && !activeTouchId) {
+                const remaining = e.touches[0];
+                activeTouchId = remaining.identifier;
+                touchMoved = false;
+            }
+        }, { passive: false });
+    })();
 
     // ============================================================
     // КНОПКА "ДОСКИ" - ОТКРЫВАЕТ СПИСОК ДОСОК
@@ -11724,58 +11796,7 @@ function initAllEventListeners() {
             }
         }
     });
-
-    // ============================================================
-    // ПОДДЕРЖКА TOUCH ДЛЯ МОБИЛЬНЫХ
-    // ============================================================
-    canvas.addEventListener('touchstart', function(e) {
-        if (mode === 'pan' && e.touches.length === 1) {
-            e.preventDefault();
-            e.stopPropagation();
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const touch = e.touches[0];
-            
-            isPanning = true;
-            panStartX = (touch.clientX - rect.left) * scaleX;
-            panStartY = (touch.clientY - rect.top) * scaleY;
-            panStartCamX = camera.x;
-            panStartCamY = camera.y;
-        }
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', function(e) {
-        if (isPanning && mode === 'pan' && e.touches.length === 1) {
-            e.preventDefault();
-            e.stopPropagation();
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const touch = e.touches[0];
-            
-            const currentX = (touch.clientX - rect.left) * scaleX;
-            const currentY = (touch.clientY - rect.top) * scaleY;
-            
-            let dx = currentX - panStartX;
-            let dy = currentY - panStartY;
-            
-            const worldDx = dx / zoom;
-            const worldDy = dy / zoom;
-            
-            camera.x = panStartCamX - worldDx;
-            camera.y = panStartCamY - worldDy;
-            
-            render();
-        }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', function(e) {
-        if (isPanning) {
-            isPanning = false;
-            render();
-        }
-    });
+    
         // ============================================================
     // PINCH-TO-ZOOM (два пальца) + ПАНОРАМИРОВАНИЕ ДВУМЯ ПАЛЬЦАМИ
     // ============================================================
