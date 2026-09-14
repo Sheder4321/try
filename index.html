@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Образовательная платформа</title>
     <style>
         /* ===== ОБЩИЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body { overflow: hidden; background: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; touch-action: none; }
+        body { overflow: hidden; background: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; height: 100dvh; touch-action: none; overscroll-behavior: none; }
         canvas { display: block; width: 100vw; height: 100vh; cursor: grab; background: #ffffff; position: relative; z-index: 1; touch-action: none; }
 
         /* ===== ПАНЕЛЬ ИНСТРУМЕНТОВ ===== */
@@ -857,7 +857,7 @@
         .auth-tabs button.active { background: #667eea; color: white; }
 
         /* ===== ПРИЛОЖЕНИЕ ===== */
-        .app { display: none; height: 100vh; flex-direction: column; }
+        .app { display: none; height: 100vh; height: 100dvh; flex-direction: column; }
         .header {
             background: white;
             padding: 8px 16px;
@@ -1288,17 +1288,408 @@
             text-overflow: ellipsis;
         }
 
-        @media (max-width: 768px) {
-            .auth-box { padding: 24px; margin: 16px; }
-            .header { flex-wrap: wrap; gap: 6px; height: auto; padding: 6px 12px; }
-            .header h1 { font-size: 14px; }
-            .nav button { padding: 0 10px; font-size: 11px; }
-            #left-toolbar { left: 6px; padding: 4px; gap: 2px; }
-            .left-tool-btn { width: 28px; height: 28px; font-size: 14px; }
-            .color-btn { width: 18px; height: 18px; }
+        /* ============================================================ */
+        /* МОБИЛЬНАЯ АДАПТАЦИЯ (до 900px)                                */
+        /* ============================================================ */
+        @media (max-width: 900px) {
+
+            /* --- Общие --- */
+            html, body {
+                height: 100%;
+                overflow: hidden;
+                -webkit-text-size-adjust: 100%;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            /* --- Авторизация --- */
+            .auth-container { padding: 12px; align-items: flex-start; padding-top: 40px; }
+            .auth-box { padding: 24px 20px; max-width: 100%; margin: 0; }
+            .auth-box h2 { font-size: 18px; }
+            .auth-box input, .auth-box select { font-size: 16px; padding: 12px; }
+            .auth-btn { padding: 14px; font-size: 16px; }
+
+            /* --- Шапка --- */
+            .header {
+                height: auto;
+                padding: 8px 12px;
+                padding-top: max(8px, env(safe-area-inset-top));
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .header h1 { font-size: 14px; flex: 1; min-width: 0; }
+            .header .user { gap: 6px; font-size: 12px; }
+            .header .user button { padding: 6px 10px; font-size: 12px; }
+
+            /* --- Навигация --- */
+            .nav {
+                height: auto;
+                padding: 0 8px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .nav::-webkit-scrollbar { display: none; }
+            .nav button { padding: 10px 12px; font-size: 13px; white-space: nowrap; }
+
+            /* --- Канвас --- */
+            canvas {
+                touch-action: none;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+
+            /* ============================================================
+            ЛЕВАЯ ПАНЕЛЬ ИНСТРУМЕНТОВ — теперь ГОРИЗОНТАЛЬНАЯ СНИЗУ
+            ============================================================ */
+            #left-toolbar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: auto;
+                transform: none;
+                flex-direction: row;
+                justify-content: flex-start;
+                align-items: center;
+                gap: 2px;
+                padding: 6px 8px;
+                padding-bottom: max(6px, env(safe-area-inset-bottom));
+                border-radius: 16px 16px 0 0;
+                max-height: none;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                z-index: 200;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+            }
+            #left-toolbar::-webkit-scrollbar { display: none; }
+
+            .left-tool-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+                flex-shrink: 0;
+                border-radius: 12px;
+            }
             .left-tool-btn .tooltip { display: none; }
-            .file-preview-item { width: 80px; height: 80px; }
-            .app-sidebar { width: 200px; }
+            .left-tool-divider {
+                width: 1px;
+                height: 28px;
+                margin: 0 4px;
+                flex-shrink: 0;
+            }
+
+            /* ============================================================
+            ПАЛИТРА И ТОЛЩИНА — НАД НИЖНЕЙ ПАНЕЛЬЮ
+            ============================================================ */
+            #color-picker {
+                position: fixed;
+                left: 8px;
+                right: 8px;
+                bottom: calc(60px + env(safe-area-inset-bottom));
+                transform: none;
+                justify-content: center;
+                padding: 6px 10px;
+                gap: 6px;
+                border-radius: 12px;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+            #color-picker::-webkit-scrollbar { display: none; }
+            .color-btn { width: 32px; height: 32px; flex-shrink: 0; }
+            .color-picker-custom { width: 32px; height: 32px; flex-shrink: 0; }
+
+            #thickness-control {
+                position: fixed;
+                left: 8px;
+                right: 8px;
+                bottom: calc(108px + env(safe-area-inset-bottom));
+                transform: none;
+                justify-content: center;
+            }
+
+            /* ============================================================
+            ZOOM-КОНТРОЛЫ — ПРАВЫЙ НИЖНИЙ УГОЛ, НАД ПАНЕЛЬЮ
+            ============================================================ */
+            #zoom-controls {
+                position: fixed;
+                right: 8px;
+                bottom: calc(60px + env(safe-area-inset-bottom));
+                flex-direction: column;
+                padding: 4px;
+                border-radius: 12px;
+            }
+            #zoom-controls button {
+                padding: 10px 14px;
+                font-size: 18px;
+                min-width: 44px;
+                min-height: 44px;
+            }
+            #zoom-display { font-size: 11px; padding: 4px 0; min-width: 40px; }
+
+            /* ============================================================
+            ПРАВАЯ ПАНЕЛЬ «ДОСКИ» — НА ВЕСЬ ЭКРАН СНИЗУ
+            ============================================================ */
+            .app-sidebar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                top: auto;
+                bottom: 0;
+                width: 100%;
+                height: 80vh;
+                max-height: 80vh;
+                border-radius: 20px 20px 0 0;
+                border-left: none;
+                border-top: 1px solid #e0e0e0;
+                z-index: 300;
+                padding-bottom: env(safe-area-inset-bottom);
+                transition: transform 0.3s ease;
+            }
+            .app-sidebar.hidden {
+                transform: translateY(100%);
+                display: block !important;
+            }
+
+            /* ============================================================
+            ПАНЕЛЬ ИНСТРУМЕНТОВ (sidebar с линиями/фигурами) — СНИЗУ
+            ============================================================ */
+            #tool-sidebar {
+                position: fixed;
+                left: 8px;
+                right: 8px;
+                bottom: calc(60px + env(safe-area-inset-bottom));
+                top: auto;
+                transform: none;
+                max-height: 50vh;
+                overflow-y: auto;
+                border-radius: 16px;
+                z-index: 250;
+            }
+            #tool-sidebar .sidebar-item {
+                padding: 10px 12px;
+                font-size: 14px;
+                min-height: 44px;
+            }
+
+            /* ============================================================
+            ПАНЕЛИ ФОРМАТИРОВАНИЯ ТЕКСТА — ПРИЛИПАЮТ К НИЗУ
+            ============================================================ */
+            #text-toolbar,
+            #sheet-text-toolbar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: auto;
+                transform: none;
+                border-radius: 16px 16px 0 0;
+                padding: 8px 12px;
+                padding-bottom: max(8px, env(safe-area-inset-bottom));
+                gap: 4px;
+                justify-content: flex-start;
+                overflow-x: auto;
+                scrollbar-width: none;
+                max-width: 100vw;
+                z-index: 400;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+            }
+            #text-toolbar::-webkit-scrollbar,
+            #sheet-text-toolbar::-webkit-scrollbar { display: none; }
+
+            #text-toolbar select,
+            #sheet-text-toolbar select {
+                font-size: 14px;
+                padding: 6px 8px;
+                min-height: 40px;
+            }
+            #text-toolbar input[type="number"],
+            #sheet-text-toolbar input[type="number"] {
+                font-size: 14px;
+                padding: 6px;
+                min-height: 40px;
+                width: 55px;
+            }
+            #text-toolbar button,
+            #sheet-text-toolbar button {
+                min-width: 40px;
+                min-height: 40px;
+                padding: 6px 10px;
+                font-size: 16px;
+            }
+
+            /* ============================================================
+            РЕДАКТОР ТЕКСТА — НА ВЕСЬ ЭКРАН
+            ============================================================ */
+            #text-editor {
+                position: fixed !important;
+                left: 0 !important;
+                right: 0 !important;
+                top: auto !important;
+                bottom: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                border-radius: 16px 16px 0 0;
+                max-height: 60vh;
+                padding: 8px;
+                padding-bottom: max(8px, env(safe-area-inset-bottom));
+                z-index: 500;
+            }
+            #text-editor textarea { font-size: 16px; min-height: 100px; }
+            #text-editor .text-editor-actions button {
+                padding: 10px 20px;
+                font-size: 15px;
+                min-height: 44px;
+            }
+
+            /* ============================================================
+            РУЧКИ РЕСАЙЗА — БОЛЬШЕ
+            ============================================================ */
+            .resize-handle {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* ============================================================
+            КНОПКА РЕДАКТИРОВАНИЯ ЛИСТА — БОЛЬШЕ
+            ============================================================ */
+            #sheet-edit-btn {
+                padding: 10px 18px;
+                font-size: 15px;
+                min-height: 44px;
+            }
+
+            /* ============================================================
+            КНОПКА СОХРАНИТЬ — НАД ПАНЕЛЬЮ
+            ============================================================ */
+            #save-board-btn {
+                bottom: calc(120px + env(safe-area-inset-bottom)) !important;
+                right: 8px !important;
+                padding: 10px 16px !important;
+                font-size: 14px !important;
+            }
+            #boards-menu-btn {
+                bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+                right: 70px !important;
+                padding: 10px 18px !important;
+                font-size: 14px !important;
+            }
+
+            /* ============================================================
+            МОДАЛЬНЫЕ ОКНА — ПОЧТИ НА ВЕСЬ ЭКРАН
+            ============================================================ */
+            .modal-content {
+                max-width: 100%;
+                width: 100%;
+                max-height: 95vh;
+                height: auto;
+                border-radius: 16px 16px 0 0;
+                align-self: flex-end;
+                padding: 16px;
+                padding-bottom: max(16px, env(safe-area-inset-bottom));
+            }
+            .modal.active { align-items: flex-end; }
+            .modal-content h2 { font-size: 18px; }
+            .modal-content input,
+            .modal-content textarea,
+            .modal-content select {
+                font-size: 16px;
+                padding: 12px;
+                min-height: 44px;
+            }
+            .modal-actions button {
+                padding: 12px 20px;
+                font-size: 15px;
+                min-height: 44px;
+                flex: 1;
+            }
+
+            /* ============================================================
+            СТРАНИЦЫ КЛАССОВ И ЗАДАНИЙ
+            ============================================================ */
+            .content-page { padding: 12px; }
+            .flex-between { gap: 8px; }
+            .flex-between h2 { font-size: 18px; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+            .grid-item { padding: 12px; }
+            .assignment { padding: 12px; }
+            .assignment .title { font-size: 15px; }
+            .assignment .desc { font-size: 13px; }
+
+            /* Пагинация */
+            .pagination button {
+                padding: 10px 14px;
+                font-size: 14px;
+                min-height: 44px;
+            }
+            .pagination .page-info { font-size: 13px; }
+
+            /* ============================================================
+            АННОТАЦИИ НА ФОТО
+            ============================================================ */
+            .image-annotation-wrapper .ann-image { max-width: 100%; max-height: 60vh; }
+            .ann-toolbar { padding: 6px 8px; gap: 4px; }
+            .ann-toolbar button { min-height: 40px; padding: 8px 14px; font-size: 13px; }
+
+            /* ============================================================
+            ПРОЧЕЕ
+            ============================================================ */
+            .class-card { padding: 16px; }
+            .file-preview-item { width: 90px; height: 90px; }
+
+            #status {
+                bottom: calc(60px + env(safe-area-inset-bottom));
+                font-size: 13px;
+                padding: 8px 14px;
+            }
+            #copy-hint {
+                bottom: calc(120px + env(safe-area-inset-bottom));
+                font-size: 14px;
+                padding: 10px 16px;
+            }
+        }
+
+        /* ============================================================ */
+        /* ОЧЕНЬ МАЛЕНЬКИЕ ЭКРАНЫ (до 400px)                            */
+        /* ============================================================ */
+        @media (max-width: 400px) {
+            .left-tool-btn { width: 40px; height: 40px; font-size: 18px; }
+            .color-btn { width: 28px; height: 28px; }
+            .header h1 { font-size: 13px; }
+            .nav button { padding: 8px 10px; font-size: 12px; }
+        }
+
+        /* ============================================================ */
+        /* ЛАНДШАФТНАЯ ОРИЕНТАЦИЯ НА ТЕЛЕФОНЕ                            */
+        /* ============================================================ */
+        @media (max-width: 900px) and (orientation: landscape) {
+            #left-toolbar {
+                bottom: 0;
+                padding: 4px 8px;
+            }
+            .left-tool-btn { width: 40px; height: 40px; font-size: 18px; }
+            #color-picker,
+            #thickness-control,
+            #zoom-controls {
+                bottom: calc(52px + env(safe-area-inset-bottom));
+            }
+            .app-sidebar { height: 95vh; }
+        }
+
+        /* ============================================================ */
+        /* УБИРАЕМ HOVER-ЭФФЕКТЫ НА ТАЧ-УСТРОЙСТВАХ                     */
+        /* ============================================================ */
+        @media (hover: none) {
+            .left-tool-btn:hover,
+            .color-btn:hover,
+            .grid-item:hover,
+            .assignment:hover,
+            .class-card:hover {
+                transform: none !important;
+                box-shadow: inherit !important;
+            }
+            .left-tool-btn .tooltip { display: none !important; }
         }
                 /* Добавь в CSS */
         #board-sidebar .sidebar-code-row {
@@ -11384,6 +11775,88 @@ function initAllEventListeners() {
             isPanning = false;
             render();
         }
+    });
+        // ============================================================
+    // PINCH-TO-ZOOM (два пальца) + ПАНОРАМИРОВАНИЕ ДВУМЯ ПАЛЬЦАМИ
+    // ============================================================
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+    let pinchCenter = { x: 0, y: 0 };
+    let pinchStartCamera = { x: 0, y: 0 };
+    let twoFingerStart = null;
+
+    canvas.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            pinchStartDist = Math.sqrt(dx * dx + dy * dy);
+            pinchStartZoom = zoom;
+            pinchStartCamera = { x: camera.x, y: camera.y };
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            pinchCenter = {
+                x: ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) * scaleX,
+                y: ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top) * scaleY
+            };
+
+            twoFingerStart = {
+                x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+                camX: camera.x,
+                camY: camera.y
+            };
+
+            // Отменяем активные режимы
+            isDrawing = false;
+            isSelecting = false;
+            isDraggingGroup = false;
+            isPanning = false;
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2 && pinchStartDist > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // === ЗУМ ===
+            const factor = dist / pinchStartDist;
+            const newZoom = Math.max(
+                CONFIG.MIN_SCALE,
+                Math.min(CONFIG.MAX_SCALE, pinchStartZoom * factor)
+            );
+
+            const worldX = pinchCenter.x / pinchStartZoom + pinchStartCamera.x;
+            const worldY = pinchCenter.y / pinchStartZoom + pinchStartCamera.y;
+
+            zoom = newZoom;
+            camera.x = worldX - pinchCenter.x / zoom;
+            camera.y = worldY - pinchCenter.y / zoom;
+
+            document.getElementById('zoom-display').textContent = Math.round(zoom * 100) + '%';
+            requestRender();
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', function(e) {
+        if (e.touches.length < 2) {
+            pinchStartDist = 0;
+            twoFingerStart = null;
+        }
+    });
+
+    // Запрет контекстного меню (долгое нажатие)
+    canvas.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
     });
 
     // ============================================================
