@@ -1815,6 +1815,46 @@
             border-bottom: 1px solid #eee;
             margin-bottom: 4px;
         }
+        .password-wrap {
+            position: relative;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        .password-wrap input {
+            width: 100%;
+            padding: 12px 44px 12px 12px;
+            margin-bottom: 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .password-wrap input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            line-height: 1;
+            color: #888;
+            transition: background 0.15s, color 0.15s;
+        }
+        .toggle-password:hover {
+            background: rgba(0,0,0,0.06);
+            color: #333;
+        }
+        .toggle-password.active {
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -1830,20 +1870,27 @@
         <div id="auth-error" class="auth-error"></div>
         <form id="login-form">
             <input type="text" id="login-username" placeholder="Имя пользователя" required>
-            <input type="password" id="login-password" placeholder="Пароль" required>
+            <div class="password-wrap">
+                <input type="password" id="login-password" placeholder="Пароль" required>
+                <button type="button" class="toggle-password" data-target="login-password">👁️</button>
+            </div>
             <button type="submit" class="auth-btn">Войти</button>
+            <div style="text-align:center;margin-top:12px;">
+                <a href="#" onclick="event.preventDefault();showForgotPassword()" 
+                style="color:#667eea;font-size:13px;text-decoration:none;">
+                    Забыли пароль?
+                </a>
+            </div>
         </form>
-        <div style="text-align:center;margin-top:12px;">
-            <a href="#" onclick="event.preventDefault();showForgotPassword()" 
-               style="color:#667eea;font-size:13px;text-decoration:none;">
-                Забыли пароль?
-            </a>
-        </div>
         <form id="register-form" style="display:none;">
             <input type="text" id="register-username" placeholder="Имя пользователя" required>
             <input type="email" id="register-email" placeholder="Email" required>
+            <div class="password-wrap">
             <input type="password" id="register-password" placeholder="Пароль (мин. 6 символов)" required>
-            <input type="text" id="register-fullname" placeholder="Полное имя">
+                <button type="button" class="toggle-password" data-target="register-password">👁️</button>
+            </div>
+            <input type="text" id="register-name" placeholder="Имя" required>
+            <input type="text" id="register-surname" placeholder="Фамилия" required>
             <select id="register-role">
                 <option value="student">👨‍🎓 Ученик</option>
                 <option value="teacher">👨‍🏫 Учитель</option>
@@ -9278,6 +9325,18 @@ function openImageViewer(imagePath) {
     }, 100);
 }
 
+document.querySelectorAll('.toggle-password').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const input = document.getElementById(this.dataset.target);
+        if (!input) return;
+        const hidden = input.type === 'password';
+        input.type = hidden ? 'text' : 'password';
+        this.classList.toggle('active', hidden);
+        this.textContent = hidden ? '🙈' : '👁️';
+    });
+});
+
 function scrollToAnnotation(subtaskIndex, x, y) {
     // Находим изображение ученика
     const img = document.getElementById(`student-image-${subtaskIndex}`);
@@ -11176,47 +11235,70 @@ function goToLogin() {
     document.getElementById('app').style.display = 'none';
 }
 
-window.addEventListener('DOMContentLoaded', checkResetToken);
-if (document.readyState !== 'loading') checkResetToken();
-
-document.getElementById('register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('register-username').value.trim();
-    const email = document.getElementById('register-email').value.trim();
-    const password = document.getElementById('register-password').value;
-    const fullName = document.getElementById('register-fullname').value.trim();
-    const role = document.getElementById('register-role').value;
-    try {
-        const response = await fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password, role, fullName })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        loginSuccess(data);
-    } catch (error) {
-        document.getElementById('auth-error').textContent = error.message;
-    }
+window.addEventListener('DOMContentLoaded', function() {
+    try { checkResetToken(); } catch(e) { console.error('❌ checkResetToken:', e); }
 });
+if (document.readyState !== 'loading') {
+    try { checkResetToken(); } catch(e) { console.error('❌ checkResetToken:', e); }
+}
 
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        loginSuccess(data);
-    } catch (error) {
-        document.getElementById('auth-error').textContent = error.message;
-    }
-});
+const registerForm = document.getElementById('register-form');
+if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('register-username').value.trim();
+        const email = document.getElementById('register-email').value.trim();
+        const password = document.getElementById('register-password').value;
+        const name = document.getElementById('register-name').value.trim();
+        const surname = document.getElementById('register-surname').value.trim();
+        const role = document.getElementById('register-role').value;
+
+        if (!name || !surname) {
+            document.getElementById('auth-error').textContent = 'Введите имя и фамилию';
+            return;
+        }
+
+        const fullName = `${name} ${surname}`.trim();
+
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password, role, fullName, name, surname })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            loginSuccess(data);
+        } catch (error) {
+            document.getElementById('auth-error').textContent = error.message;
+        }
+    });
+} else {
+    console.error('❌ register-form не найден!');
+}
+
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            loginSuccess(data);
+        } catch (error) {
+            document.getElementById('auth-error').textContent = error.message;
+        }
+    });
+} else {
+    console.error('❌ login-form не найден!');
+}
 
 function loginSuccess(data) {
     localStorage.setItem('token', data.token);
