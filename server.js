@@ -193,41 +193,96 @@
     // ============================================================
     // ПОДКЛЮЧЕНИЕ К БД
     // ============================================================
-    const pool = new Pool(
-        process.env.DATABASE_URL
-            ? {
-                connectionString: process.env.DATABASE_URL,
-                ssl: process.env.DATABASE_URL.includes('localhost') 
-                    ? false 
-                    : { rejectUnauthorized: false }
-              }
-            : {
-                user: process.env.DB_USER,
-                password: process.env.DB_PASSWORD,
-                host: process.env.DB_HOST,
-                port: process.env.DB_PORT,
-                database: process.env.DB_DATABASE,
-              }
-    );
+    const pool = new Pool({
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        database: process.env.DB_DATABASE,
+    });
 
-    pool.connect(async (err) => {
+    pool.connect((err) => {
         if (err) {
             console.error('❌ Ошибка подключения к БД:', err.message);
-            process.exit(1); // завершаем процесс, если не подключились
         } else {
             console.log('✅ Подключено к PostgreSQL');
-            await initDatabase(); // <-- ЖДЁМ создания таблиц!
-            console.log('✅ База готова к работе');
+            initDatabase();
         }
     });
 
     async function initDatabase() {
         try {
-            // ============================================================
-            // 1. БАЗОВЫЕ ТАБЛИЦЫ (без зависимостей)
-            // ============================================================
+            // Сначала проверяем, существует ли таблица class_invites
+            const tableCheck = await pool.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'class_invites'
+                );
+            `);
             
+            // Создаём таблицу annotation_comments
             await pool.query(`
+                CREATE TABLE IF NOT EXISTS annotation_comments (
+                    id SERIAL PRIMARY KEY,
+                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    x INTEGER NOT NULL,
+                    y INTEGER NOT NULL,
+                    width INTEGER,
+                    height INTEGER,
+                    comment TEXT NOT NULL,
+                    color VARCHAR(20) DEFAULT '#ff3b30',
+                    subtask_index INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS voice_comments (
+                    id SERIAL PRIMARY KEY,
+                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    subtask_index INTEGER DEFAULT 0,
+                    audio_path VARCHAR(500) NOT NULL,
+                    duration INTEGER DEFAULT 0,
+                    selected_text TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            
+            // ===== НОВАЯ ТАБЛИЦА ДЛЯ ТЕКСТОВЫХ КОММЕНТАРИЕВ =====
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS text_comments (
+                    id SERIAL PRIMARY KEY,
+                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    subtask_index INTEGER DEFAULT 0,
+                    selected_text TEXT NOT NULL,
+                    comment TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            console.log('✅ Таблица text_comments создана/обновлена');
+            
+            // Если таблица class_invites существует, проверяем наличие колонки token
+            if (tableCheck.rows[0].exists) {
+                const columnCheck = await pool.query(`
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name = 'class_invites' AND column_name = 'token'
+                    );
+                `);
+                
+                if (!columnCheck.rows[0].exists) {
+                    await pool.query(`
+                        ALTER TABLE class_invites 
+                        ADD COLUMN token VARCHAR(100) UNIQUE NOT NULL DEFAULT 'invite_' || gen_random_uuid()
+                    `);
+                    console.log('✅ Колонка token добавлена в class_invites');
+                }
+            }
+            
+            // Создаём все остальные таблицы
+                        await pool.query(`
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
                     username VARCHAR(50) UNIQUE NOT NULL,
@@ -238,11 +293,26 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            
-            // ============================================================
-            // 2. КЛАССЫ И СВЯЗИ
-            // ============================================================
-            
+
+            // Добавляем UNIQUE на email, если ещё нет
+            try {
+                await pool.query(`ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email)`);
+            } catch (e) {
+                // уже существует — игнорируем
+            }
+
+            // Таблица токенов сброса пароля
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    token_hash VARCHAR(128) NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    used_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            console.log('✅ Таблица password_reset_tokens создана');
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS classes (
                     id SERIAL PRIMARY KEY,
@@ -252,7 +322,6 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_students (
                     class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
@@ -261,11 +330,6 @@
                     PRIMARY KEY (class_id, student_id)
                 )
             `);
-            
-            // ============================================================
-            // 3. ДОСКИ
-            // ============================================================
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS boards (
                     id SERIAL PRIMARY KEY,
@@ -275,7 +339,6 @@
                     UNIQUE(user_id)
                 )
             `);
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS shared_boards (
                     id SERIAL PRIMARY KEY,
@@ -287,7 +350,6 @@
                     UNIQUE(teacher_id, student_id, class_id)
                 )
             `);
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_boards (
                     id SERIAL PRIMARY KEY,
@@ -297,11 +359,6 @@
                     UNIQUE(class_id)
                 )
             `);
-            
-            // ============================================================
-            // 4. ЗАДАНИЯ
-            // ============================================================
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS assignments (
                     id SERIAL PRIMARY KEY,
@@ -318,11 +375,6 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            
-            // ============================================================
-            // 5. РАБОТЫ УЧЕНИКОВ (submissions) — ДО всех, кто на неё ссылается!
-            // ============================================================
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS submissions (
                     id SERIAL PRIMARY KEY,
@@ -338,7 +390,6 @@
                     UNIQUE(assignment_id, student_id)
                 )
             `);
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS submission_files (
                     id SERIAL PRIMARY KEY,
@@ -350,57 +401,6 @@
                     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            
-            // ============================================================
-            // 6. КОММЕНТАРИИ (ссылаются на submissions)
-            // ============================================================
-            
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS annotation_comments (
-                    id SERIAL PRIMARY KEY,
-                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    x INTEGER NOT NULL,
-                    y INTEGER NOT NULL,
-                    width INTEGER,
-                    height INTEGER,
-                    comment TEXT NOT NULL,
-                    color VARCHAR(20) DEFAULT '#ff3b30',
-                    subtask_index INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-            
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS voice_comments (
-                    id SERIAL PRIMARY KEY,
-                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    subtask_index INTEGER DEFAULT 0,
-                    audio_path VARCHAR(500) NOT NULL,
-                    duration INTEGER DEFAULT 0,
-                    selected_text TEXT,
-                    transcript TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-            
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS text_comments (
-                    id SERIAL PRIMARY KEY,
-                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    subtask_index INTEGER DEFAULT 0,
-                    selected_text TEXT NOT NULL,
-                    comment TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-            
-            // ============================================================
-            // 7. ПРИГЛАШЕНИЯ И ТОКЕНЫ
-            // ============================================================
-            
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_invites (
                     id SERIAL PRIMARY KEY,
@@ -414,27 +414,6 @@
                     is_active BOOLEAN DEFAULT TRUE
                 )
             `);
-            
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    token_hash VARCHAR(128) NOT NULL,
-                    expires_at TIMESTAMP NOT NULL,
-                    used_at TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-            
-            // ============================================================
-            // 8. ДОБАВЛЯЕМ UNIQUE НА EMAIL (если ещё нет)
-            // ============================================================
-            
-            try {
-                await pool.query(`ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email)`);
-            } catch (e) {
-                // уже существует — игнорируем
-            }
             
             console.log('✅ Все таблицы созданы/обновлены');
         } catch (error) {
@@ -457,42 +436,66 @@
     // АВТОРИЗАЦИЯ
     // ============================================================
         app.post('/api/register', async (req, res) => {
-        const { username, password, role = 'student', fullName, email } = req.body;
+            const { username, password, role = 'student', fullName, name, surname, email } = req.body;
 
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Логин и пароль обязательны' });
-        }
-        if (!email || !email.includes('@')) {
-            return res.status(400).json({ error: 'Укажите корректный email' });
-        }
-        if (password.length < 6) {
-            return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
-        }
-
-        try {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const result = await pool.query(
-                'INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, role',
-                [username, hashedPassword, role, fullName || username, email.toLowerCase().trim()]
-            );
-            const user = result.rows[0];
-            await pool.query(
-                'INSERT INTO boards (user_id, board_data) VALUES ($1, $2)',
-                [user.id, JSON.stringify({ objects: [] })]
-            );
-            const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-            res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
-        } catch (error) {
-            if (error.code === '23505') {
-                if (error.constraint && error.constraint.includes('email')) {
-                    return res.status(400).json({ error: 'Этот email уже зарегистрирован' });
-                }
-                return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
+            if (!username || !password) {
+                return res.status(400).json({ error: 'Логин и пароль обязательны' });
             }
-            console.error(error);
-            res.status(500).json({ error: 'Ошибка сервера' });
-        }
-    });
+            if (!email || !email.includes('@')) {
+                return res.status(400).json({ error: 'Укажите корректный email' });
+            }
+            if (password.length < 6) {
+                return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+            }
+
+            // Собираем полное имя: сначала пробуем name + surname,
+            // потом fallback на fullName, потом на username
+            const cleanName = (name || '').trim();
+            const cleanSurname = (surname || '').trim();
+            const finalFullName =
+                (cleanName || cleanSurname)
+                    ? `${cleanName} ${cleanSurname}`.trim()
+                    : ((fullName && fullName.trim()) || username);
+
+            try {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                const result = await pool.query(
+                    'INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, role',
+                    [username, hashedPassword, role, finalFullName, email.toLowerCase().trim()]
+                );
+                const user = result.rows[0];
+
+                await pool.query(
+                    'INSERT INTO boards (user_id, board_data) VALUES ($1, $2)',
+                    [user.id, JSON.stringify({ objects: [] })]
+                );
+
+                const token = jwt.sign(
+                    { id: user.id, username: user.username, role: user.role },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '7d' }
+                );
+
+                res.json({
+                    token,
+                    user: {
+                        id: user.id,
+                        username: user.username,
+                        role: user.role,
+                        fullName: finalFullName
+                    }
+                });
+            } catch (error) {
+                if (error.code === '23505') {
+                    if (error.constraint && error.constraint.includes('email')) {
+                        return res.status(400).json({ error: 'Этот email уже зарегистрирован' });
+                    }
+                    return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
+                }
+                console.error(error);
+                res.status(500).json({ error: 'Ошибка сервера' });
+            }
+        });
 
     app.post('/api/login', async (req, res) => {
         const { username, password } = req.body;
@@ -816,6 +819,25 @@
         storage: audioStorage,
         limits: { fileSize: 10 * 1024 * 1024 } // 10MB
     });
+
+    // ============================================================
+    // НОВАЯ ТАБЛИЦА ДЛЯ ГОЛОСОВЫХ КОММЕНТАРИЕВ
+    // ============================================================
+    // Добавьте это в initDatabase():
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS voice_comments (
+            id SERIAL PRIMARY KEY,
+            submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+            teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            subtask_index INTEGER DEFAULT 0,
+            audio_path VARCHAR(500) NOT NULL,
+            duration INTEGER DEFAULT 0,
+            transcript TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    console.log('✅ Таблица voice_comments создана');
 
     // ============================================================
     // ЭНДПОИНТ ДЛЯ СОХРАНЕНИЯ ГОЛОСОВОГО КОММЕНТАРИЯ
@@ -2109,7 +2131,7 @@
         const userId = req.user.id;
         
         try {
-            const result = await pool.query(
+            const result = await db.query(
                 `UPDATE annotations 
                 SET audio_path = $1 
                 WHERE id = $2 AND teacher_id = $3`,
