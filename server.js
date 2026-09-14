@@ -818,25 +818,6 @@
     });
 
     // ============================================================
-    // НОВАЯ ТАБЛИЦА ДЛЯ ГОЛОСОВЫХ КОММЕНТАРИЕВ
-    // ============================================================
-    // Добавьте это в initDatabase():
-
-    await pool.query(`
-        CREATE TABLE IF NOT EXISTS voice_comments (
-            id SERIAL PRIMARY KEY,
-            submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-            teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            subtask_index INTEGER DEFAULT 0,
-            audio_path VARCHAR(500) NOT NULL,
-            duration INTEGER DEFAULT 0,
-            transcript TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-    console.log('✅ Таблица voice_comments создана');
-
-    // ============================================================
     // ЭНДПОИНТ ДЛЯ СОХРАНЕНИЯ ГОЛОСОВОГО КОММЕНТАРИЯ
     // ============================================================
     app.post('/api/voice-comments', authenticateToken, audioUpload.single('audio'), async (req, res) => {
