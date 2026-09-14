@@ -11331,13 +11331,6 @@ function initAllEventListeners() {
         canvas.addEventListener('touchcancel', function(e) {
             activeTouchId = null;
         }, { passive: false });
-        canvas.addEventListener('touchend', function(e) {
-            if (e.touches.length === 1 && !activeTouchId) {
-                const remaining = e.touches[0];
-                activeTouchId = remaining.identifier;
-                touchMoved = false;
-            }
-        }, { passive: false });
     })();
 
     // ============================================================
