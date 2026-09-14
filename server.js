@@ -10,7 +10,8 @@
     const WebSocket = require('ws');
     const http = require('http');
     require('dotenv').config();
-
+    const crypto = require('crypto');
+    const { sendPasswordResetEmail } = require('./mailer');
     const app = express();
     const port = process.env.PORT || 3000;
 
@@ -20,6 +21,9 @@
     app.get('/join-class/:token', (req, res) => {
         // Отдаём страницу join-class.html
         res.sendFile(path.join(__dirname, 'join-class.html'));
+    });
+    app.get('/reset-password', (req, res) => {
+        res.sendFile(path.join(__dirname, 'index.html'));
     });
 
     // Также обрабатываем корневой путь для статики
@@ -189,51 +193,126 @@
     // ============================================================
     // ПОДКЛЮЧЕНИЕ К БД
     // ============================================================
-    console.log('🔍 Проверка переменных окружения:');
-    console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('🔍 DATABASE_URL value:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 50) + '...' : 'NOT SET');
-    
     const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        database: process.env.DB_DATABASE,
     });
-    
-    pool.connect(async (err) => {
+
+    pool.connect((err) => {
         if (err) {
             console.error('❌ Ошибка подключения к БД:', err.message);
-            console.error('❌ Проверьте DATABASE_URL в настройках Render');
-            console.error('❌ Текущее значение DATABASE_URL:', process.env.DATABASE_URL || 'НЕ УСТАНОВЛЕНА');
-            // Продолжаем работу без БД для тестирования
-            return;
+        } else {
+            console.log('✅ Подключено к PostgreSQL');
+            initDatabase();
         }
-    console.log('✅ Подключено к PostgreSQL');
-    try {
-        await initDatabase();
-        console.log('✅ База данных инициализирована');
-    } catch (e) {
-        console.error('❌ Ошибка инициализации БД:', e.message);
-    }
-});
+    });
 
     async function initDatabase() {
         try {
-            console.log('📊 Создание таблиц...');
+            // Сначала проверяем, существует ли таблица class_invites
+            const tableCheck = await pool.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'class_invites'
+                );
+            `);
             
-            // 1. Создаём все таблицы по порядку
+            // Создаём таблицу annotation_comments
             await pool.query(`
+                CREATE TABLE IF NOT EXISTS annotation_comments (
+                    id SERIAL PRIMARY KEY,
+                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    x INTEGER NOT NULL,
+                    y INTEGER NOT NULL,
+                    width INTEGER,
+                    height INTEGER,
+                    comment TEXT NOT NULL,
+                    color VARCHAR(20) DEFAULT '#ff3b30',
+                    subtask_index INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS voice_comments (
+                    id SERIAL PRIMARY KEY,
+                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    subtask_index INTEGER DEFAULT 0,
+                    audio_path VARCHAR(500) NOT NULL,
+                    duration INTEGER DEFAULT 0,
+                    selected_text TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            
+            // ===== НОВАЯ ТАБЛИЦА ДЛЯ ТЕКСТОВЫХ КОММЕНТАРИЕВ =====
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS text_comments (
+                    id SERIAL PRIMARY KEY,
+                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    subtask_index INTEGER DEFAULT 0,
+                    selected_text TEXT NOT NULL,
+                    comment TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            console.log('✅ Таблица text_comments создана/обновлена');
+            
+            // Если таблица class_invites существует, проверяем наличие колонки token
+            if (tableCheck.rows[0].exists) {
+                const columnCheck = await pool.query(`
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name = 'class_invites' AND column_name = 'token'
+                    );
+                `);
+                
+                if (!columnCheck.rows[0].exists) {
+                    await pool.query(`
+                        ALTER TABLE class_invites 
+                        ADD COLUMN token VARCHAR(100) UNIQUE NOT NULL DEFAULT 'invite_' || gen_random_uuid()
+                    `);
+                    console.log('✅ Колонка token добавлена в class_invites');
+                }
+            }
+            
+            // Создаём все остальные таблицы
+                        await pool.query(`
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
                     username VARCHAR(50) UNIQUE NOT NULL,
                     password_hash VARCHAR(255) NOT NULL,
                     role VARCHAR(20) DEFAULT 'student',
                     full_name VARCHAR(100),
-                    email VARCHAR(100),
+                    email VARCHAR(100) UNIQUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-    
+
+            // Добавляем UNIQUE на email, если ещё нет
+            try {
+                await pool.query(`ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email)`);
+            } catch (e) {
+                // уже существует — игнорируем
+            }
+
+            // Таблица токенов сброса пароля
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    token_hash VARCHAR(128) NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    used_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            console.log('✅ Таблица password_reset_tokens создана');
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS classes (
                     id SERIAL PRIMARY KEY,
@@ -243,7 +322,6 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_students (
                     class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
@@ -252,7 +330,6 @@
                     PRIMARY KEY (class_id, student_id)
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS boards (
                     id SERIAL PRIMARY KEY,
@@ -262,7 +339,6 @@
                     UNIQUE(user_id)
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS shared_boards (
                     id SERIAL PRIMARY KEY,
@@ -274,7 +350,6 @@
                     UNIQUE(teacher_id, student_id, class_id)
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_boards (
                     id SERIAL PRIMARY KEY,
@@ -284,7 +359,6 @@
                     UNIQUE(class_id)
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS assignments (
                     id SERIAL PRIMARY KEY,
@@ -301,7 +375,6 @@
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS submissions (
                     id SERIAL PRIMARY KEY,
@@ -317,7 +390,6 @@
                     UNIQUE(assignment_id, student_id)
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS submission_files (
                     id SERIAL PRIMARY KEY,
@@ -329,12 +401,11 @@
                     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-    
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS class_invites (
                     id SERIAL PRIMARY KEY,
                     class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
-                    token VARCHAR(100) UNIQUE NOT NULL DEFAULT 'invite_' || gen_random_uuid(),
+                    token VARCHAR(100) UNIQUE NOT NULL,
                     created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
                     max_uses INTEGER DEFAULT 1,
                     used_count INTEGER DEFAULT 0,
@@ -343,53 +414,10 @@
                     is_active BOOLEAN DEFAULT TRUE
                 )
             `);
-    
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS annotation_comments (
-                    id SERIAL PRIMARY KEY,
-                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    x INTEGER NOT NULL,
-                    y INTEGER NOT NULL,
-                    width INTEGER,
-                    height INTEGER,
-                    comment TEXT NOT NULL,
-                    color VARCHAR(20) DEFAULT '#ff3b30',
-                    subtask_index INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-    
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS voice_comments (
-                    id SERIAL PRIMARY KEY,
-                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    subtask_index INTEGER DEFAULT 0,
-                    audio_path VARCHAR(500) NOT NULL,
-                    duration INTEGER DEFAULT 0,
-                    selected_text TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-    
-            await pool.query(`
-                CREATE TABLE IF NOT EXISTS text_comments (
-                    id SERIAL PRIMARY KEY,
-                    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
-                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                    subtask_index INTEGER DEFAULT 0,
-                    selected_text TEXT NOT NULL,
-                    comment TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `);
-    
-            console.log('✅ Все таблицы созданы!');
             
+            console.log('✅ Все таблицы созданы/обновлены');
         } catch (error) {
             console.error('❌ Ошибка создания таблиц:', error.message);
-            throw error;
         }
     }
 
@@ -407,15 +435,24 @@
     // ============================================================
     // АВТОРИЗАЦИЯ
     // ============================================================
-    app.post('/api/register', async (req, res) => {
+        app.post('/api/register', async (req, res) => {
         const { username, password, role = 'student', fullName, email } = req.body;
-        if (!username || !password) return res.status(400).json({ error: 'Все поля обязательны' });
-        if (password.length < 6) return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Логин и пароль обязательны' });
+        }
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ error: 'Укажите корректный email' });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+        }
+
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
             const result = await pool.query(
                 'INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, role',
-                [username, hashedPassword, role, fullName || username, email || null]
+                [username, hashedPassword, role, fullName || username, email.toLowerCase().trim()]
             );
             const user = result.rows[0];
             await pool.query(
@@ -426,11 +463,13 @@
             res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
         } catch (error) {
             if (error.code === '23505') {
-                res.status(400).json({ error: 'Пользователь уже существует' });
-            } else {
-                console.error(error);
-                res.status(500).json({ error: 'Ошибка сервера' });
+                if (error.constraint && error.constraint.includes('email')) {
+                    return res.status(400).json({ error: 'Этот email уже зарегистрирован' });
+                }
+                return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
             }
+            console.error(error);
+            res.status(500).json({ error: 'Ошибка сервера' });
         }
     });
 
@@ -448,6 +487,112 @@
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+        // ============================================================
+    // СБРОС ПАРОЛЯ
+    // ============================================================
+
+    app.post('/api/forgot-password', async (req, res) => {
+        const { email } = req.body;
+        const genericResponse = { message: 'Если такой email зарегистрирован, письмо отправлено' };
+
+        if (!email || !email.includes('@')) {
+            return res.json(genericResponse);
+        }
+
+        try {
+            const userResult = await pool.query(
+                'SELECT id, username FROM users WHERE email = $1',
+                [email.toLowerCase().trim()]
+            );
+
+            if (userResult.rows.length === 0) {
+                return res.json(genericResponse);
+            }
+
+            const userId = userResult.rows[0].id;
+
+            await pool.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [userId]);
+
+            const rawToken = crypto.randomBytes(32).toString('hex');
+            const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+            await pool.query(
+                `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+                [userId, tokenHash, expiresAt]
+            );
+
+            await sendPasswordResetEmail(email, rawToken);
+
+            res.json(genericResponse);
+        } catch (error) {
+            console.error('❌ Ошибка forgot-password:', error);
+            res.json(genericResponse);
+        }
+    });
+
+    app.post('/api/reset-password', async (req, res) => {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({ error: 'Недостаточно данных' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+        }
+
+        try {
+            const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+            const result = await pool.query(
+                `SELECT id, user_id FROM password_reset_tokens 
+                 WHERE token_hash = $1 AND expires_at > NOW() AND used_at IS NULL`,
+                [tokenHash]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(400).json({ error: 'Ссылка недействительна или истекла' });
+            }
+
+            const tokenRecord = result.rows[0];
+            const passwordHash = await bcrypt.hash(newPassword, 10);
+
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, tokenRecord.user_id]);
+                await client.query('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1', [tokenRecord.id]);
+                await client.query('COMMIT');
+            } catch (e) {
+                await client.query('ROLLBACK');
+                throw e;
+            } finally {
+                client.release();
+            }
+
+            res.json({ message: 'Пароль успешно изменён' });
+        } catch (error) {
+            console.error('❌ Ошибка reset-password:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+
+    app.get('/api/reset-password/check', async (req, res) => {
+        const { token } = req.query;
+        if (!token) return res.json({ valid: false });
+
+        try {
+            const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+            const result = await pool.query(
+                `SELECT id FROM password_reset_tokens 
+                 WHERE token_hash = $1 AND expires_at > NOW() AND used_at IS NULL`,
+                [tokenHash]
+            );
+            res.json({ valid: result.rows.length > 0 });
+        } catch (error) {
+            res.json({ valid: false });
         }
     });
 
