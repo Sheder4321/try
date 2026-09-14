@@ -2061,16 +2061,33 @@ function getCoords(e) {
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
-    if (e.touches && e.touches.length > 0) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    } else if (e.changedTouches && e.changedTouches.length > 0) {
-        clientX = e.changedTouches[0].clientX;
-        clientY = e.changedTouches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
+
+    // Для touch: ищем нужный палец
+    if (activeTouchId !== null && (e.changedTouches || e.touches)) {
+        const list = e.changedTouches || e.touches || [];
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].identifier === activeTouchId) {
+                clientX = list[i].clientX;
+                clientY = list[i].clientY;
+                break;
+            }
+        }
     }
+
+    // Fallback
+    if (clientX === undefined) {
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+    }
+
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     return {
@@ -11241,6 +11258,12 @@ function redo() {
 
 addGlobalKeyListeners();
 
+let activeTouchId = null;
+let touchMoved = false;
+let lastTapTime = 0;
+let lastTapX = 0;
+let lastTapY = 0;
+
 function initAllEventListeners() {
     if (!canvas) return;
         // ============================================================
@@ -11248,12 +11271,6 @@ function initAllEventListeners() {
     // ============================================================
     (function enableTouchAsMouse() {
         if (!canvas) return;
-
-        let lastTapTime = 0;
-        let lastTapX = 0;
-        let lastTapY = 0;
-        let touchMoved = false;
-        let activeTouchId = null;
 
         function makeMouseEvent(type, touch, extra = {}) {
             return new MouseEvent(type, {
@@ -11273,6 +11290,7 @@ function initAllEventListeners() {
         canvas.addEventListener('touchstart', function(e) {
             // Мульти-тач оставляем для pinch-to-zoom
             if (e.touches.length > 1) return;
+            e.preventDefault();
 
             const touch = e.touches[0];
             activeTouchId = touch.identifier;
@@ -11301,6 +11319,8 @@ function initAllEventListeners() {
             const touch = e.touches[0];
             if (touch.identifier !== activeTouchId) return;
 
+            e.preventDefault();
+
             touchMoved = true;
             canvas.dispatchEvent(makeMouseEvent('mousemove', touch));
         }, { passive: false });
@@ -11317,6 +11337,8 @@ function initAllEventListeners() {
                 }
             }
             if (!ended) return;
+
+            e.preventDefault();
 
             canvas.dispatchEvent(makeMouseEvent('mouseup', ended));
 
