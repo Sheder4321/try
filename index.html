@@ -1290,9 +1290,6 @@
             text-overflow: ellipsis;
         }
 
-        /* ============================================================ */
-        /* МОБИЛЬНАЯ АДАПТАЦИЯ — ПАНЕЛИ СПРАВА, КАК НА ПК                */
-        /* ============================================================ */
         @media (max-width: 900px) {
 
             html, body {
@@ -1303,159 +1300,160 @@
                 overscroll-behavior: none;
             }
 
-            /* --- Авторизация --- */
             .auth-container { padding: 12px; align-items: flex-start; padding-top: 40px; }
             .auth-box { padding: 24px 20px; max-width: 100%; margin: 0; }
             .auth-box h2 { font-size: 18px; }
             .auth-box input, .auth-box select { font-size: 16px; padding: 12px; }
             .auth-btn { padding: 14px; font-size: 16px; }
 
-            /* --- Шапка --- */
             .header {
                 height: auto;
-                padding: 8px 12px;
-                padding-top: max(8px, env(safe-area-inset-top));
+                padding: 6px 10px;
+                padding-top: max(6px, env(safe-area-inset-top));
                 flex-wrap: wrap;
                 gap: 6px;
             }
-            .header h1 { font-size: 14px; flex: 1; min-width: 0; }
-            .header .user { gap: 6px; font-size: 12px; }
-            .header .user button { padding: 6px 10px; font-size: 12px; }
+            .header h1 { font-size: 13px; flex: 1; min-width: 0; }
+            .header .user { gap: 6px; font-size: 11px; }
+            .header .user button { padding: 6px 10px; font-size: 11px; }
 
-            /* --- Навигация --- */
             .nav {
                 height: auto;
-                padding: 0 8px;
+                padding: 0 6px;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
             }
             .nav::-webkit-scrollbar { display: none; }
-            .nav button { padding: 10px 12px; font-size: 13px; white-space: nowrap; }
+            .nav button { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
 
             canvas { touch-action: none; }
 
-            /* ============================================================
-            ЛЕВАЯ ПАНЕЛЬ ИНСТРУМЕНТОВ — ПЕРЕНОСИМ ВПРАВО
-            ============================================================ */
+            /* ============================================
+            ЛЕВАЯ ПАНЕЛЬ → ПРАВАЯ ВЕРТИКАЛЬНАЯ
+            ============================================ */
             #left-toolbar {
                 position: fixed;
                 left: auto;
-                right: 8px;
+                right: 6px;
                 top: 50%;
                 bottom: auto;
                 transform: translateY(-50%);
                 flex-direction: column;
-                justify-content: flex-start;
-                align-items: center;
                 gap: 2px;
-                padding: 6px 4px;
-                border-radius: 14px;
-                max-height: 80vh;
-                overflow-x: hidden;
+                padding: 5px 4px;
+                border-radius: 12px;
+                max-height: 72vh;
                 overflow-y: auto;
+                overflow-x: hidden;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
                 z-index: 200;
-                box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+                box-shadow: 0 2px 16px rgba(0,0,0,0.15);
             }
             #left-toolbar::-webkit-scrollbar { display: none; }
 
             .left-tool-btn {
-                width: 42px;
-                height: 42px;
-                font-size: 19px;
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
                 flex-shrink: 0;
-                border-radius: 10px;
+                border-radius: 8px;
             }
             .left-tool-btn .tooltip { display: none; }
+            .left-tool-btn .type-badge {
+                width: 12px;
+                height: 12px;
+                font-size: 6px;
+                bottom: 1px;
+                right: 1px;
+            }
             .left-tool-divider {
-                width: 28px;
+                width: 24px;
                 height: 1px;
-                margin: 4px 0;
+                margin: 3px 0;
                 flex-shrink: 0;
             }
 
-            /* ============================================================
-            ПАЛИТРА — ПРАВЫЙ НИЖНИЙ УГОЛ (ПОД ПАНЕЛЬЮ)
-            ============================================================ */
+            /* ============================================
+            НИЖНИЙ БАР: ЦВЕТА + ЗУМ + СОХРАНИТЬ + ДОСКИ
+            ============================================ */
             #color-picker {
+                position: fixed;
+                left: 6px;
+                right: 6px;
+                bottom: 6px;
+                bottom: calc(6px + env(safe-area-inset-bottom));
+                transform: none;
+                flex-direction: row;
+                justify-content: flex-start;
+                align-items: center;
+                padding: 6px 8px;
+                gap: 5px;
+                border-radius: 12px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scrollbar-width: none;
+                z-index: 210;
+                max-height: none;
+                box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+            }
+            #color-picker::-webkit-scrollbar { display: none; }
+            .color-btn { width: 26px; height: 26px; flex-shrink: 0; }
+            .color-picker-custom { width: 26px; height: 26px; flex-shrink: 0; }
+
+            /* Зум и кнопки — в тот же нижний бар, справа */
+            #zoom-controls {
                 position: fixed;
                 left: auto;
                 right: 8px;
-                bottom: calc(120px + env(safe-area-inset-bottom));
-                transform: none;
-                flex-direction: column;
-                padding: 6px;
-                gap: 4px;
-                border-radius: 12px;
-                max-height: 40vh;
-                overflow-y: auto;
-                scrollbar-width: none;
-            }
-            #color-picker::-webkit-scrollbar { display: none; }
-            .color-btn { width: 28px; height: 28px; flex-shrink: 0; }
-            .color-picker-custom { width: 28px; height: 28px; flex-shrink: 0; }
-
-            #thickness-control {
-                position: fixed;
-                left: 8px;
-                right: auto;
-                bottom: calc(120px + env(safe-area-inset-bottom));
-                transform: none;
-            }
-
-            /* ============================================================
-            ZOOM-КОНТРОЛЫ — ПРАВЫЙ НИЖНИЙ УГОЛ, НАД ПАЛИТРОЙ
-            ============================================================ */
-            #zoom-controls {
-                position: fixed;
-                left: 8px;
-                right: auto;
                 bottom: 8px;
                 flex-direction: row;
                 padding: 4px;
                 border-radius: 12px;
-                z-index: 210;
+                z-index: 211;
             }
             #zoom-controls button {
-                padding: 8px 10px;
-                font-size: 16px;
-                min-width: 40px;
-                min-height: 40px;
+                padding: 6px 8px;
+                font-size: 14px;
+                min-width: 32px;
+                min-height: 32px;
             }
-            #zoom-display { font-size: 11px; padding: 0 4px; min-width: 40px; }
+            #zoom-display { font-size: 10px; padding: 0 2px; min-width: 32px; }
+            #zoom-controls .zoom-divider { display: none; }
 
-            /* ============================================================
-            КНОПКИ «СОХРАНИТЬ» И «ДОСКИ» — ЛЕВЫЙ НИЖНИЙ УГОЛ
-            ============================================================ */
-            #save-board-btn {
-                bottom: 8px !important;
-                left: 8px !important;
-                right: auto !important;
-                padding: 10px 14px !important;
-                font-size: 13px !important;
-                z-index: 220 !important;
-            }
+            /* Кнопки "Сохранить" и "Доски" — убираем с глаз, они теперь в нижнем баре */
+            #save-board-btn,
             #boards-menu-btn {
-                bottom: 56px !important;
-                left: 8px !important;
-                right: auto !important;
-                padding: 10px 14px !important;
-                font-size: 13px !important;
-                z-index: 220 !important;
+                display: none !important;
             }
 
-            /* ============================================================
-            ПАНЕЛЬ «ДОСКИ» — ВЫЕЗЖАЕТ СПРАВА
-            ============================================================ */
+            /* ============================================
+            ТОЛЩИНА — всплывает над нижним баром
+            ============================================ */
+            #thickness-control {
+                position: fixed;
+                left: 6px;
+                right: 6px;
+                bottom: calc(56px + env(safe-area-inset-bottom));
+                transform: none;
+                justify-content: center;
+                padding: 6px 12px;
+                border-radius: 12px;
+                z-index: 209;
+            }
+            #thickness-control input { width: 60%; }
+
+            /* ============================================
+            САЙДБАР ДОСОК — выезжает справа
+            ============================================ */
             .app-sidebar {
                 position: fixed;
                 right: 0;
                 left: auto;
                 top: 0;
                 bottom: 0;
-                width: 80vw;
+                width: 82vw;
                 max-width: 320px;
                 height: 100%;
                 max-height: 100%;
@@ -1463,7 +1461,7 @@
                 border-left: 1px solid #e0e0e0;
                 z-index: 300;
                 padding-top: max(12px, env(safe-area-inset-top));
-                padding-bottom: env(safe-area-inset-bottom);
+                padding-bottom: calc(60px + env(safe-area-inset-bottom));
                 transition: transform 0.3s ease;
             }
             .app-sidebar.hidden {
@@ -1471,33 +1469,33 @@
                 display: block !important;
             }
 
-            /* ============================================================
-            ПАНЕЛЬ ВЫБОРА ЛИНИЙ/ФИГУР — СЛЕВА ОТ ИНСТРУМЕНТОВ
-            ============================================================ */
+            /* ============================================
+            ПАНЕЛЬ ВЫБОРА ЛИНИЙ/ФИГУР — слева от инструментов
+            ============================================ */
             #tool-sidebar {
                 position: fixed;
-                right: 62px;
+                right: 50px;
                 left: auto;
                 top: 50%;
                 bottom: auto;
                 transform: translateY(-50%);
                 max-height: 70vh;
                 overflow-y: auto;
-                border-radius: 14px;
+                border-radius: 12px;
                 z-index: 250;
-                min-width: 180px;
-                max-width: calc(100vw - 80px);
+                min-width: 170px;
+                max-width: calc(100vw - 70px);
                 width: auto;
             }
             #tool-sidebar .sidebar-item {
-                padding: 10px 12px;
-                font-size: 14px;
-                min-height: 44px;
+                padding: 9px 12px;
+                font-size: 13px;
+                min-height: 40px;
             }
 
-            /* ============================================================
-            ПАНЕЛИ ФОРМАТИРОВАНИЯ ТЕКСТА — СНИЗУ
-            ============================================================ */
+            /* ============================================
+            ПАНЕЛИ ФОРМАТИРОВАНИЯ — снизу
+            ============================================ */
             #text-toolbar,
             #sheet-text-toolbar {
                 position: fixed;
@@ -1520,38 +1518,24 @@
             #text-toolbar::-webkit-scrollbar,
             #sheet-text-toolbar::-webkit-scrollbar { display: none; }
 
-            #text-toolbar select,
-            #sheet-text-toolbar select {
-                font-size: 14px;
-                padding: 6px 8px;
-                min-height: 40px;
+            #text-toolbar select, #sheet-text-toolbar select {
+                font-size: 13px; padding: 6px 8px; min-height: 38px;
             }
-            #text-toolbar input[type="number"],
-            #sheet-text-toolbar input[type="number"] {
-                font-size: 14px;
-                padding: 6px;
-                min-height: 40px;
-                width: 55px;
+            #text-toolbar input[type="number"], #sheet-text-toolbar input[type="number"] {
+                font-size: 13px; padding: 6px; min-height: 38px; width: 50px;
             }
-            #text-toolbar button,
-            #sheet-text-toolbar button {
-                min-width: 40px;
-                min-height: 40px;
-                padding: 6px 10px;
-                font-size: 16px;
+            #text-toolbar button, #sheet-text-toolbar button {
+                min-width: 38px; min-height: 38px; padding: 4px 8px; font-size: 15px;
             }
 
-            /* ============================================================
-            РЕДАКТОР ТЕКСТА — СНИЗУ
-            ============================================================ */
+            /* ============================================
+            РЕДАКТОР ТЕКСТА
+            ============================================ */
             #text-editor {
                 position: fixed !important;
-                left: 0 !important;
-                right: 0 !important;
-                top: auto !important;
-                bottom: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
+                left: 0 !important; right: 0 !important;
+                top: auto !important; bottom: 0 !important;
+                width: 100% !important; max-width: 100% !important;
                 border-radius: 16px 16px 0 0;
                 max-height: 60vh;
                 padding: 8px;
@@ -1560,49 +1544,39 @@
             }
             #text-editor textarea { font-size: 16px; min-height: 100px; }
             #text-editor .text-editor-actions button {
-                padding: 10px 20px;
-                font-size: 15px;
-                min-height: 44px;
+                padding: 10px 20px; font-size: 15px; min-height: 44px;
             }
 
             .resize-handle { width: 22px; height: 22px; }
 
             #sheet-edit-btn {
-                padding: 10px 16px;
-                font-size: 14px;
-                min-height: 44px;
+                padding: 8px 14px;
+                font-size: 13px;
+                min-height: 40px;
             }
 
-            /* ============================================================
-            МОДАЛЬНЫЕ ОКНА — СНИЗУ
-            ============================================================ */
+            /* ============================================
+            МОДАЛКИ
+            ============================================ */
             .modal.active { align-items: flex-end; }
             .modal-content {
-                max-width: 100%;
-                width: 100%;
+                max-width: 100%; width: 100%;
                 max-height: 90vh;
                 border-radius: 16px 16px 0 0;
                 padding: 16px;
                 padding-bottom: max(16px, env(safe-area-inset-bottom));
             }
             .modal-content h2 { font-size: 18px; }
-            .modal-content input,
-            .modal-content textarea,
-            .modal-content select {
-                font-size: 16px;
-                padding: 12px;
-                min-height: 44px;
+            .modal-content input, .modal-content textarea, .modal-content select {
+                font-size: 16px; padding: 12px; min-height: 44px;
             }
             .modal-actions button {
-                padding: 12px 20px;
-                font-size: 15px;
-                min-height: 44px;
-                flex: 1;
+                padding: 12px 20px; font-size: 15px; min-height: 44px; flex: 1;
             }
 
-            /* ============================================================
+            /* ============================================
             СТРАНИЦЫ
-            ============================================================ */
+            ============================================ */
             .content-page { padding: 12px; }
             .flex-between { gap: 8px; }
             .flex-between h2 { font-size: 18px; }
@@ -1612,56 +1586,39 @@
             .assignment .title { font-size: 15px; }
             .assignment .desc { font-size: 13px; }
             .pagination button {
-                padding: 10px 14px;
-                font-size: 14px;
-                min-height: 44px;
+                padding: 10px 14px; font-size: 14px; min-height: 44px;
             }
-
             .ann-toolbar button { min-height: 40px; padding: 8px 14px; font-size: 13px; }
-
             .file-preview-item { width: 90px; height: 90px; }
 
             #status {
-                bottom: 60px;
-                font-size: 13px;
-                padding: 8px 14px;
+                bottom: 64px; font-size: 12px; padding: 6px 12px;
             }
             #copy-hint {
-                bottom: 120px;
-                font-size: 14px;
-                padding: 10px 16px;
+                bottom: 120px; font-size: 13px; padding: 8px 14px;
             }
         }
 
-        /* ============================================================ */
-        /* МАЛЕНЬКИЕ ЭКРАНЫ (до 400px)                                   */
-        /* ============================================================ */
         @media (max-width: 400px) {
-            .left-tool-btn { width: 38px; height: 38px; font-size: 17px; }
+            .left-tool-btn { width: 34px; height: 34px; font-size: 15px; }
             .color-btn { width: 24px; height: 24px; }
-            .header h1 { font-size: 13px; }
-            .nav button { padding: 8px 10px; font-size: 12px; }
+            .color-picker-custom { width: 24px; height: 24px; }
+            .header h1 { font-size: 12px; }
+            .nav button { padding: 7px 10px; font-size: 11px; }
+            #zoom-controls button { min-width: 30px; min-height: 30px; padding: 5px 7px; }
         }
 
-        /* ============================================================ */
-        /* ЛАНДШАФТ                                                      */
-        /* ============================================================ */
         @media (max-width: 900px) and (orientation: landscape) {
-            .left-tool-btn { width: 36px; height: 36px; font-size: 16px; }
-            #color-picker { bottom: 80px; }
-            #thickness-control { bottom: 80px; }
-            .app-sidebar { width: 50vw; }
+            .left-tool-btn { width: 32px; height: 32px; font-size: 14px; }
+            #left-toolbar { max-height: 80vh; }
+            #color-picker { bottom: 4px; }
+            #zoom-controls { bottom: 4px; }
+            .app-sidebar { width: 55vw; }
         }
 
-        /* ============================================================ */
-        /* ОТКЛЮЧАЕМ HOVER НА ТАЧ-УСТРОЙСТВАХ                            */
-        /* ============================================================ */
         @media (hover: none) {
-            .left-tool-btn:hover,
-            .color-btn:hover,
-            .grid-item:hover,
-            .assignment:hover,
-            .class-card:hover {
+            .left-tool-btn:hover, .color-btn:hover,
+            .grid-item:hover, .assignment:hover, .class-card:hover {
                 transform: none !important;
             }
             .left-tool-btn .tooltip { display: none !important; }
@@ -2631,6 +2588,7 @@ function getSelectedBounds() {
 // СБРОС ВСЕХ РЕЖИМОВ
 // ============================================================
 function resetAllModes() {
+    console.log('🟡 resetAllModes вызвана | shapeStart:', !!shapeStart);
     if (isDrawing) {
         isDrawing = false;
         if (drawPoints.length < 2 && currentDrawObj) {
@@ -11266,10 +11224,10 @@ let lastTapY = 0;
 
 function initAllEventListeners() {
     if (!canvas) return;
-        // ============================================================
-    // УНИВЕРСАЛЬНЫЙ СЛОЙ: TOUCH → MOUSE (чтобы вся логика работала)
+
+    // ЕДИНЫЙ СЛОЙ TOUCH → MOUSE + PINCH-TO-ZOOM (ИСПРАВЛЕННЫЙ)
     // ============================================================
-    (function enableTouchAsMouse() {
+    (function enableTouchSupport() {
         if (!canvas) return;
 
         function makeMouseEvent(type, touch, extra = {}) {
@@ -11282,51 +11240,132 @@ function initAllEventListeners() {
                 screenX: touch.screenX,
                 screenY: touch.screenY,
                 button: 0,
-                buttons: 1,
+                buttons: type === 'mouseup' ? 0 : 1,
                 ...extra
             });
         }
 
+        let pinchStartDist = 0;
+        let pinchStartZoom = 1;
+        let pinchCenter = { x: 0, y: 0 };
+        let pinchStartCamera = { x: 0, y: 0 };
+        let isMultiTouch = false;
+
         canvas.addEventListener('touchstart', function(e) {
-            // Мульти-тач оставляем для pinch-to-zoom
-            if (e.touches.length > 1) return;
-            e.preventDefault();
+            console.log('🟢 TOUCHSTART | touches:', e.touches.length);
 
-            const touch = e.touches[0];
-            activeTouchId = touch.identifier;
-            touchMoved = false;
+            // ===== ДВА ПАЛЬЦА: PINCH-TO-ZOOM =====
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                e.stopPropagation();
+                isMultiTouch = true;
+                activeTouchId = null;
 
-            // Превращаем в mousedown
-            canvas.dispatchEvent(makeMouseEvent('mousedown', touch));
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                pinchStartDist = Math.sqrt(dx * dx + dy * dy);
+                pinchStartZoom = zoom;
+                pinchStartCamera = { x: camera.x, y: camera.y };
 
-            // Двойной тап → dblclick
-            const now = Date.now();
-            const dx = touch.clientX - lastTapX;
-            const dy = touch.clientY - lastTapY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                pinchCenter = {
+                    x: ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) * scaleX,
+                    y: ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top) * scaleY
+                };
 
-            if (now - lastTapTime < 300 && dist < 30) {
-                canvas.dispatchEvent(makeMouseEvent('dblclick', touch));
+                // Сбрасываем активные режимы
+                isDrawing = false;
+                isSelecting = false;
+                isDraggingGroup = false;
+                isPanning = false;
+                if (shapeStart) { shapeStart = null; shapeEnd = null; }
+                render();
+                return;
             }
 
-            lastTapTime = now;
-            lastTapX = touch.clientX;
-            lastTapY = touch.clientY;
+            // ===== ОДИН ПАЛЕЦ: КАК МЫШЬ =====
+            if (e.touches.length === 1 && !isMultiTouch) {
+                const touch = e.touches[0];
+                activeTouchId = touch.identifier;
+                touchMoved = false;
+
+                // ВАЖНО: сначала устанавливаем activeTouchId, потом dispatch
+                canvas.dispatchEvent(makeMouseEvent('mousedown', touch));
+
+                // Двойной тап
+                const now = Date.now();
+                const dx = touch.clientX - lastTapX;
+                const dy = touch.clientY - lastTapY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (now - lastTapTime < 300 && dist < 30) {
+                    canvas.dispatchEvent(makeMouseEvent('dblclick', touch));
+                    lastTapTime = 0;
+                } else {
+                    lastTapTime = now;
+                }
+                lastTapX = touch.clientX;
+                lastTapY = touch.clientY;
+            }
         }, { passive: false });
 
         canvas.addEventListener('touchmove', function(e) {
-            if (e.touches.length > 1) return;
-            const touch = e.touches[0];
-            if (touch.identifier !== activeTouchId) return;
+            // ===== ДВА ПАЛЬЦА: PINCH =====
+            if (e.touches.length === 2 && pinchStartDist > 0) {
+                e.preventDefault();
+                e.stopPropagation();
 
-            e.preventDefault();
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const factor = dist / pinchStartDist;
+                const newZoom = Math.max(
+                    CONFIG.MIN_SCALE,
+                    Math.min(CONFIG.MAX_SCALE, pinchStartZoom * factor)
+                );
 
-            touchMoved = true;
-            canvas.dispatchEvent(makeMouseEvent('mousemove', touch));
+                const worldX = pinchCenter.x / pinchStartZoom + pinchStartCamera.x;
+                const worldY = pinchCenter.y / pinchStartZoom + pinchStartCamera.y;
+
+                zoom = newZoom;
+                camera.x = worldX - pinchCenter.x / zoom;
+                camera.y = worldY - pinchCenter.y / zoom;
+
+                const zd = document.getElementById('zoom-display');
+                if (zd) zd.textContent = Math.round(zoom * 100) + '%';
+                requestRender();
+                return;
+            }
+
+            // ===== ОДИН ПАЛЕЦ =====
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                if (touch.identifier !== activeTouchId) return;
+
+                touchMoved = true;
+                e.preventDefault();  // ВАЖНО: предотвращаем скролл
+                canvas.dispatchEvent(makeMouseEvent('mousemove', touch));
+            }
         }, { passive: false });
 
         canvas.addEventListener('touchend', function(e) {
-            if (!activeTouchId) return;
+            // Если был мультитач — просто сбрасываем
+            if (isMultiTouch) {
+                if (e.touches.length < 2) {
+                    pinchStartDist = 0;
+                    isMultiTouch = false;
+                }
+                // НЕ возвращаемся сразу — нужно завершить возможные операции
+                if (e.touches.length === 0) {
+                    activeTouchId = null;
+                    touchMoved = false;
+                }
+                return;
+            }
+
+            if (activeTouchId === null) return;
 
             // Ищем завершённый палец
             let ended = null;
@@ -11338,21 +11377,59 @@ function initAllEventListeners() {
             }
             if (!ended) return;
 
-            e.preventDefault();
-
+            // ВАЖНО: НЕ сбрасываем activeTouchId до dispatch!
             canvas.dispatchEvent(makeMouseEvent('mouseup', ended));
 
-            // Если это был «тап» (не свайп) — генерируем click
+            // Если это был тап (не свайп) — генерируем click
             if (!touchMoved) {
                 canvas.dispatchEvent(makeMouseEvent('click', ended));
             }
 
             activeTouchId = null;
+            touchMoved = false;
         }, { passive: false });
 
         canvas.addEventListener('touchcancel', function(e) {
+            // Принудительно завершаем все активные режимы
+            if (isDrawing) {
+                isDrawing = false;
+                drawPoints = [];
+                currentDrawObj = null;
+            }
+            if (isSelecting) {
+                isSelecting = false;
+                const box = document.getElementById('selection-box');
+                if (box) box.style.display = 'none';
+            }
+            if (isResizing) {
+                isResizing = false;
+                window._resizeStartState = null;
+            }
+            if (isDraggingGroup) {
+                isDraggingGroup = false;
+                groupBasePositions = [];
+            }
+            if (shapeStart) {
+                shapeStart = null;
+                shapeEnd = null;
+            }
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
+            }
+            isErasing = false;
+            eraserCooldown = false;
             activeTouchId = null;
+            touchMoved = false;
+            isMultiTouch = false;
+            pinchStartDist = 0;
+            render();
         }, { passive: false });
+
+        // Запрет контекстного меню (долгое нажатие)
+        canvas.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
     })();
 
     // ============================================================
@@ -11721,6 +11798,7 @@ function initAllEventListeners() {
     // ПАНОРАМИРОВАНИЕ
     // ============================================================
     canvas.addEventListener('mousedown', function(e) {
+        console.log('🔴 MOUSEDOWN | mode:', mode, '| target:', e.target && e.target.tagName);
         if (mode === 'pan') {
             e.preventDefault();
             e.stopPropagation();
@@ -11776,24 +11854,28 @@ function initAllEventListeners() {
     // СБРОС РЕЖИМОВ ПРИ ВЫХОДЕ
     // ============================================================
     canvas.addEventListener('mouseleave', function(e) {
-        isErasing = false;
-        eraserCooldown = false;
-        resetAllModes();
-        if (isPanning) {
-            isPanning = false;
-            canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
-            render();
+        // НЕ сбрасываем shapeStart при уходе с canvas — фигура может создаваться
+        // Только если это НЕ во время активного рисования
+        if (!shapeStart && !isDrawing && !isSelecting && !isResizing && !isDraggingGroup) {
+            isErasing = false;
+            eraserCooldown = false;
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
+                render();
+            }
         }
     });
 
     window.addEventListener('blur', function() {
-        isErasing = false;
-        eraserCooldown = false;
-        resetAllModes();
-        if (isPanning) {
-            isPanning = false;
-            canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
-            render();
+        if (!shapeStart && !isDrawing && !isSelecting && !isResizing && !isDraggingGroup) {
+            isErasing = false;
+            eraserCooldown = false;
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
+                render();
+            }
         }
     });
 
@@ -11812,89 +11894,6 @@ function initAllEventListeners() {
         }
     });
     
-        // ============================================================
-    // PINCH-TO-ZOOM (два пальца) + ПАНОРАМИРОВАНИЕ ДВУМЯ ПАЛЬЦАМИ
-    // ============================================================
-    let pinchStartDist = 0;
-    let pinchStartZoom = 1;
-    let pinchCenter = { x: 0, y: 0 };
-    let pinchStartCamera = { x: 0, y: 0 };
-    let twoFingerStart = null;
-
-    canvas.addEventListener('touchstart', function(e) {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            pinchStartDist = Math.sqrt(dx * dx + dy * dy);
-            pinchStartZoom = zoom;
-            pinchStartCamera = { x: camera.x, y: camera.y };
-
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            pinchCenter = {
-                x: ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) * scaleX,
-                y: ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top) * scaleY
-            };
-
-            twoFingerStart = {
-                x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-                y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-                camX: camera.x,
-                camY: camera.y
-            };
-
-            // Отменяем активные режимы
-            isDrawing = false;
-            isSelecting = false;
-            isDraggingGroup = false;
-            isPanning = false;
-        }
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', function(e) {
-        if (e.touches.length === 2 && pinchStartDist > 0) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            // === ЗУМ ===
-            const factor = dist / pinchStartDist;
-            const newZoom = Math.max(
-                CONFIG.MIN_SCALE,
-                Math.min(CONFIG.MAX_SCALE, pinchStartZoom * factor)
-            );
-
-            const worldX = pinchCenter.x / pinchStartZoom + pinchStartCamera.x;
-            const worldY = pinchCenter.y / pinchStartZoom + pinchStartCamera.y;
-
-            zoom = newZoom;
-            camera.x = worldX - pinchCenter.x / zoom;
-            camera.y = worldY - pinchCenter.y / zoom;
-
-            document.getElementById('zoom-display').textContent = Math.round(zoom * 100) + '%';
-            requestRender();
-        }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', function(e) {
-        if (e.touches.length < 2) {
-            pinchStartDist = 0;
-            twoFingerStart = null;
-        }
-    });
-
-    // Запрет контекстного меню (долгое нажатие)
-    canvas.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-    });
-
     // ============================================================
     // ОСНОВНЫЕ МЫШИНЫЕ СОБЫТИЯ
     // ============================================================
@@ -12300,6 +12299,11 @@ function initAllEventListeners() {
     });
 
     canvas.addEventListener('mouseup', function(e) {
+        console.log('🔵 MOUSEUP | mode:', mode, '| shapeStart:', !!shapeStart, '| shapeEnd:', !!shapeEnd, '| target:', e.target && e.target.tagName);
+        if (isPanning) {
+            isPanning = false;
+            canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
+        }
         if (mode === 'pan') return;
         e.preventDefault();
 
