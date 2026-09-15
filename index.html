@@ -55,23 +55,6 @@
         .color-btn[data-color="#000000"] { --dot-color: #000000; }
         .color-btn[data-color="#ff2d55"] { --dot-color: #ff2d55; }
         .color-btn[data-color="#00c7be"] { --dot-color: #00c7be; }
-        #sheet-hidden-input {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            width: 1px;
-            height: 1px;
-            opacity: 0.01;
-            border: none;
-            outline: none;
-            padding: 0;
-            margin: 0;
-            resize: none;
-            z-index: 1;
-            pointer-events: none;
-            font-size: 16px;
-            font-family: inherit;
-        }
         /* ===== ГОЛОСОВЫЕ КОММЕНТАРИИ ===== */
         .voice-comment {
             display: flex;
@@ -3351,7 +3334,9 @@ function drawObjects() {
         }
         
         if (obj.type !== 'free-line') {
-            drawShape(ctx, obj.type, screenP1, screenP2, obj.color || currentColor, worldThickness, obj.dashed || false);
+            const isLine = (obj.type === 'segment' || obj.type === 'ray' || obj.type === 'line');
+            drawShape(ctx, obj.type, screenP1, screenP2, obj.color || currentColor, 
+                    worldThickness, isLine ? (obj.dashed || false) : false);
             return;
         }
         
@@ -3509,11 +3494,14 @@ function drawTempShape() {
         }
         ctx.setLineDash([]);
     } else if (SHAPE_LIST.find(s => s.id === mode)) {
-        drawShape(ctx, mode, p1, p2, currentColor, currentThickness * zoom, isDashed);
+        // Для фигур пунктир НЕ применяем
+        drawShape(ctx, mode, p1, p2, currentColor, currentThickness * zoom, false);
     }
 }
 
 function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
+    const isLineType = (type === 'segment' || type === 'ray' || type === 'line');
+    const useDash = isLineType ? dashed : false;
     const x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y;
     const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
     const w = x2 - x1, h = y2 - y1;
@@ -3521,7 +3509,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
     ctx.strokeStyle = color || '#000';
     ctx.fillStyle = color + '20' || 'rgba(0,0,0,0.05)';
     ctx.lineWidth = thickness || 2;
-    ctx.setLineDash(dashed ? getDashPattern(currentThickness, zoom) : []);
+    ctx.setLineDash(useDash ? getDashPattern(currentThickness, zoom) : []);
     ctx.beginPath();
     switch (type) {
         case 'coords': drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness); return;
@@ -3605,7 +3593,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.moveTo(cx - s2 / 2 + off, cy + s2 / 2 - off);
             ctx.lineTo(cx + s2 / 2 + off, cy + s2 / 2 - off);
             ctx.stroke();
-            ctx.setLineDash(dashed ? getDashPattern(currentThickness, zoom) : []);
+            ctx.setLineDash(useDash ? getDashPattern(currentThickness, zoom) : []);
             return;
         }
         case 'cylinder': {
@@ -3626,7 +3614,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.moveTo(cx - cylR, cy - cylH / 2);
             ctx.lineTo(cx - cylR, cy + cylH / 2);
             ctx.stroke();
-            ctx.setLineDash(dashed ? getDashPattern(thickness / zoom, zoom) : []);
+            ctx.setLineDash(useDash ? getDashPattern(thickness / zoom, zoom) : []);
             return;
         }
         case 'sphere': {
@@ -3643,7 +3631,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.beginPath();
             ctx.ellipse(cx, cy, sphereR, sphereR * 0.25, 0, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.setLineDash(dashed ? getDashPattern(thickness / zoom, zoom) : []);
+            ctx.setLineDash(useDash ? getDashPattern(thickness / zoom, zoom) : []);
             return;
         }
         case 'segment': case 'ray': case 'line':
@@ -3651,7 +3639,7 @@ function drawShape(ctx, type, p1, p2, color, thickness, dashed) {
             ctx.fillStyle = color || '#000';
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.setLineDash(dashed ? getDashPattern(thickness / zoom, zoom) : []);
+            ctx.setLineDash(useDash ? getDashPattern(thickness / zoom, zoom) : []);
             
             if (type === 'ray') {
                 const angle = Math.atan2(y2 - y1, x2 - x1);
@@ -3949,10 +3937,10 @@ function updateSelectionFrame() {
     const frame = document.getElementById('selection-frame');
     const handles = document.getElementById('resize-handles');
     if (!frame || !handles) return;
-    if (selected.length === 0) {
-        frame.style.display = 'none';
-        handles.style.display = 'none';
-        return;
+    if (selected.length > 0 && !_blockSheetEditBtn) {
+        updateSheetEditButton();
+    } else if (selected.length === 0) {
+        forceHideSheetEditButton();
     }
     const b = getSelectedBounds();
     if (!b) {
@@ -3989,19 +3977,42 @@ function updateSelectionFrame() {
     s('handle-b', p1.x + w / 2, p2.y);
     s('handle-l', p1.x, p1.y + h / 2);
     s('handle-r', p2.x, p1.y + h / 2);    // Обновляем кнопку редактирования листа
-    updateSheetEditButton();
+        // Обновляем кнопку редактирования листа — только если есть выделение
+    if (selected.length > 0) {
+        updateSheetEditButton();
+    } else {
+        forceHideSheetEditButton();
+    }
 }
 
 // ============================================================
 // РЕДАКТИРОВАНИЕ ТЕКСТА НА ЛИСТЕ
 // ============================================================
-
+let _blockSheetEditBtn = false;
 let editingSheet = null;
 let isSheetTextMode = false;
+// ===== RICH TEXT ДЛЯ ЛИСТА =====
+let isSheetSelecting = false;
+let sheetSelection = { anchor: 0, focus: 0 };
+let sheetRichTextCache = {}; // кэш для измерений
 
 function updateSheetEditButton() {
     const btn = document.getElementById('sheet-edit-btn');
     if (!btn) return;
+    if (_blockSheetEditBtn && !isSheetTextMode) {
+        btn.style.display = 'none';
+        btn.classList.remove('active');
+        btn.textContent = '✏️ Редактировать';
+        return;
+    }
+    
+    // ===== ЕСЛИ РЕЖИМ РЕДАКТИРОВАНИЯ АКТИВЕН — ПОКАЗЫВАЕМ "ГОТОВО" =====
+    if (isSheetTextMode && editingSheet) {
+        btn.style.display = 'block';
+        btn.classList.add('active');
+        btn.textContent = '✓ Готово';
+        return;
+    }
     
     // Ищем выделенный лист
     let sheetObj = null;
@@ -4012,70 +4023,511 @@ function updateSheetEditButton() {
         }
     }
     
-    // ===== ЕСЛИ ЛИСТ НЕ ВЫДЕЛЕН — СКРЫВАЕМ КНОПКУ И ВЫХОДИМ ИЗ РЕЖИМА =====
+    // Если лист не выбран — скрываем
     if (!sheetObj) {
         btn.style.display = 'none';
         btn.classList.remove('active');
         btn.textContent = '✏️ Редактировать';
-        
-        // Если режим редактирования был активен — выходим
-        if (isSheetTextMode) {
-            isSheetTextMode = false;
-            editingSheet = null;
-            focusTarget = 'canvas';
-            
-            const toolbar = document.getElementById('sheet-text-toolbar');
-            if (toolbar) toolbar.classList.remove('show');
-            
-            if (canvas) canvas.style.cursor = 'default';
-            
-            console.log('🚪 Вышли из режима редактирования листа (лист снят с выделения)');
-        }
         return;
     }
     
-    // ===== ЛИСТ ВЫДЕЛЕН =====
     if (!isSheetTextMode) {
-        // Показываем кнопку "Редактировать"
+        // ===== СЧИТАЕМ ПОЗИЦИЮ ОТНОСИТЕЛЬНО CANVAS =====
         const bounds = getObjectBounds(sheetObj);
         if (bounds) {
+            const rect = canvas.getBoundingClientRect();
             const p = worldToScreen(bounds.maxX, bounds.minY);
-            btn.style.left = (p.x + 12) + 'px';
-            btn.style.top = p.y + 'px';
+            
+            // p.x, p.y — координаты внутри canvas, добавляем смещение canvas
+            let left = rect.left + p.x + 12;
+            let top = rect.top + p.y;
+            
+            // Не вылезаем за экран
+            if (left + 200 > window.innerWidth) left = window.innerWidth - 210;
+            if (top < 10) top = 10;
+            if (top + 40 > window.innerHeight) top = window.innerHeight - 50;
+            
+            btn.style.position = 'fixed';
+            btn.style.left = left + 'px';
+            btn.style.top = top + 'px';
             btn.style.display = 'block';
             btn.classList.remove('active');
             btn.textContent = '✏️ Редактировать';
         }
     } else {
-        // Режим редактирования активен — показываем "Готово"
         btn.style.display = 'block';
         btn.classList.add('active');
         btn.textContent = '✓ Готово';
     }
 }
 
-// ============================================================
-// ПРИНУДИТЕЛЬНОЕ СКРЫТИЕ КНОПКИ РЕДАКТИРОВАНИЯ ЛИСТА
-// ============================================================
+// ===== МИГАНИЕ КУРСОРА НА ЛИСТЕ =====
+let _cursorBlinkInterval = null;
+
+function startCursorBlink() {
+    stopCursorBlink();
+    _cursorBlinkInterval = setInterval(() => {
+        if (isSheetTextMode && editingSheet) {
+            render();
+        } else {
+            stopCursorBlink();
+        }
+    }, 500);
+}
+
+function stopCursorBlink() {
+    if (_cursorBlinkInterval) {
+        clearInterval(_cursorBlinkInterval);
+        _cursorBlinkInterval = null;
+    }
+}
+
 function forceHideSheetEditButton() {
+    stopCursorBlink();
+    _blockSheetEditBtn = true;
     const btn = document.getElementById('sheet-edit-btn');
     if (btn) {
         btn.style.display = 'none';
         btn.classList.remove('active');
         btn.textContent = '✏️ Редактировать';
-        console.log('🔒 Кнопка редактирования листа принудительно скрыта');
+    }
+    document.removeEventListener('keydown', handleSheetKeydown, true);
+    isSheetTextMode = false;
+    editingSheet = null;
+    if (window.sheetSelection) {
+        window.sheetSelection.anchor = 0;
+        window.sheetSelection.focus = 0;
+    }
+    focusTarget = 'canvas';
+    const toolbar = document.getElementById('sheet-text-toolbar');
+    if (toolbar) toolbar.classList.remove('show');
+    if (canvas) canvas.style.cursor = 'default';
+}
+
+// ============================================================
+// ОБНОВЛЕНИЕ ПАНЕЛИ ПО ВЫДЕЛЕНИЮ
+// ============================================================
+function updateSheetToolbarFromSelection() {
+    if (!editingSheet || !editingSheet.richText) return;
+    
+    const range = getSheetSelectionRange();
+    const chars = flattenSegments(editingSheet.richText);
+    
+    let c;
+    if (range.start === range.end) {
+        // Нет выделения — берём символ слева или справа
+        if (range.start > 0 && chars[range.start - 1]) {
+            c = chars[range.start - 1];
+        } else if (range.start < chars.length && chars[range.start]) {
+            c = chars[range.start];
+        } else {
+            c = editingSheet._currentStyle || {
+                bold: false, italic: false, underline: false, strike: false,
+                color: editingSheet.textColor || '#000000',
+                size: editingSheet.textSize || 18,
+                font: editingSheet.textFont || 'Arial'
+            };
+        }
+    } else {
+        // Есть выделение — берём первый символ
+        c = chars[range.start] || editingSheet._currentStyle || {
+            bold: false, italic: false, underline: false, strike: false,
+            color: editingSheet.textColor || '#000000',
+            size: editingSheet.textSize || 18,
+            font: editingSheet.textFont || 'Arial'
+        };
     }
     
-    // Сбрасываем режим
-    if (isSheetTextMode) {
-        isSheetTextMode = false;
-        editingSheet = null;
-        focusTarget = 'canvas';
+    document.getElementById('sheet-text-bold').classList.toggle('active', c.bold);
+    document.getElementById('sheet-text-italic').classList.toggle('active', c.italic);
+    document.getElementById('sheet-text-underline').classList.toggle('active', c.underline);
+    document.getElementById('sheet-text-color').value = c.color || '#000000';
+    const sizeEl = document.getElementById('sheet-text-size');
+        if (sizeEl && document.activeElement !== sizeEl) {
+            if (range.start === range.end) {
+                // Нет выделения — показываем размер текущего стиля
+                const curStyle = getSheetCurrentStyle(editingSheet);
+                sizeEl.value = curStyle.size || 18;
+            } else {
+                // Есть выделение — показываем размер первого выделенного
+                sizeEl.value = c.size || 18;
+            }
+        }
+    document.getElementById('sheet-text-font').value = c.font || 'Arial';
+    
+    ['sheet-text-left', 'sheet-text-center', 'sheet-text-right'].forEach(id => 
+        document.getElementById(id).classList.remove('active'));
+    const align = editingSheet.textAlign || 'left';
+    document.getElementById('sheet-text-' + align).classList.add('active');
+}
+
+// ============================================================
+// ПРИМЕНЕНИЕ СТИЛЯ К ВЫДЕЛЕНИЮ НА ЛИСТЕ
+// ============================================================
+function applyStyleToSheetSelection(styleFn) {
+    if (!editingSheet || !editingSheet.richText) return;
+    
+    const range = getSheetSelectionRange();
+    
+    if (range.start === range.end) {
+        if (!editingSheet._currentStyle) {
+            editingSheet._currentStyle = {
+                bold: false, italic: false, underline: false, strike: false,
+                color: editingSheet.textColor || '#000000',
+                size: editingSheet.textSize || 18,
+                font: editingSheet.textFont || 'Arial'
+            };
+        }
+        styleFn(editingSheet._currentStyle);
+        return;
+    }
+    
+    const chars = flattenSegments(editingSheet.richText);
+    for (let i = range.start; i < range.end; i++) {
+        if (i < chars.length) {
+            styleFn(chars[i]);
+        }
+    }
+    
+    editingSheet.richText = charsToSegments(chars);
+    editingSheet.text = segmentsToText(editingSheet.richText);
+    autoExpandSheet(editingSheet);
+    render();
+    saveBoardToServer();
+}
+
+function handleSheetKeydown(e) {
+    if (!isSheetTextMode || !editingSheet) return;
+    
+    // Не перехватываем ввод в полях панели листа
+    if (e.target && e.target.closest && e.target.closest('#sheet-text-toolbar')) {
+        return;
+    }
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const range = getSheetSelectionRange();
+    const chars = flattenSegments(editingSheet.richText);
+    
+    // ===== СТИЛЬ ДЛЯ ВСТАВЛЯЕМЫХ СИМВОЛОВ =====
+    // Если есть _currentStyle (пользователь нажал B/I/U/цвет без выделения) — используем его.
+    // Иначе — стиль символа слева от курсора.
+    let baseStyle;
+    if (editingSheet._currentStyle) {
+        baseStyle = { ...editingSheet._currentStyle };
+    } else if (range.start > 0 && chars[range.start - 1]) {
+        const left = chars[range.start - 1];
+        baseStyle = {
+            bold: left.bold, italic: left.italic, underline: left.underline,
+            strike: left.strike, color: left.color, size: left.size, font: left.font
+        };
+    } else {
+        baseStyle = {
+            bold: false, italic: false, underline: false, strike: false,
+            color: editingSheet.textColor || '#000000',
+            size: editingSheet.textSize || 18,
+            font: editingSheet.textFont || 'Arial'
+        };
+    }
+    
+    // ===== ESCAPE =====
+    if (e.key === 'Escape') {
+        stopSheetTextEditing();
+        return;
+    }
+    
+    // ===== CTRL-КОМБИНАЦИИ =====
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'b' || e.key === 'B' || e.key === 'и') {
+            document.getElementById('sheet-text-bold').click();
+            return;
+        }
+        if (e.key === 'i' || e.key === 'I' || e.key === 'ш') {
+            document.getElementById('sheet-text-italic').click();
+            return;
+        }
+        if (e.key === 'u' || e.key === 'U' || e.key === 'г') {
+            document.getElementById('sheet-text-underline').click();
+            return;
+        }
+        if (e.key === 'a' || e.key === 'A' || e.key === 'ф') {
+            sheetSelection.anchor = 0;
+            sheetSelection.focus = chars.length;
+            render();
+            updateSheetToolbarFromSelection();
+            return;
+        }
+        if (e.key === 'c' || e.key === 'C' || e.key === 'с') {
+            copySelected();
+            return;
+        }
+        if (e.key === 'z' || e.key === 'Z' || e.key === 'я') {
+            undo();
+            return;
+        }
+        return;
+    }
+    
+    // ===== СТРЕЛКИ =====
+    if (e.key === 'ArrowLeft') {
+        if (range.start !== range.end) {
+            sheetSelection.anchor = sheetSelection.focus = range.start;
+        } else if (sheetSelection.focus > 0) {
+            sheetSelection.focus--;
+            sheetSelection.anchor = sheetSelection.focus;
+        }
+        render();
+        updateSheetToolbarFromSelection();
+        return;
+    }
+    if (e.key === 'ArrowRight') {
+        if (range.start !== range.end) {
+            sheetSelection.anchor = sheetSelection.focus = range.end;
+        } else if (sheetSelection.focus < chars.length) {
+            sheetSelection.focus++;
+            sheetSelection.anchor = sheetSelection.focus;
+        }
+        render();
+        updateSheetToolbarFromSelection();
+        return;
+    }
+
+        if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
         
-        const toolbar = document.getElementById('sheet-text-toolbar');
-        if (toolbar) toolbar.classList.remove('show');
+        const flatChars = flattenSegments(editingSheet.richText);
+        const range2 = getSheetSelectionRange();
+        const focus = sheetSelection.focus;
         
-        if (canvas) canvas.style.cursor = 'default';
+        // Определяем текущую строку и X курсора
+        let lineIdx = 0, charInLine = 0;
+        let found = false;
+        for (let i = 0; i < flatChars.length; i++) {
+            if (i === focus) { found = true; break; }
+            if (flatChars[i].char === '\n') { lineIdx++; charInLine = 0; }
+            else charInLine++;
+        }
+        if (!found) { charInLine = 0; lineIdx = 0; for (let i = 0; i < flatChars.length; i++) { if (flatChars[i].char === '\n') lineIdx++; } }
+        
+        if (lineIdx === 0) {
+            sheetSelection.anchor = sheetSelection.focus = 0;
+            render();
+            updateSheetToolbarFromSelection();
+            return;
+        }
+        
+        // X курсора в текущей строке
+        const measureCtx = document.createElement('canvas').getContext('2d');
+        let xCursor = 0;
+        let startOfCur = 0;
+        for (let i = focus - 1; i >= 0; i--) {
+            if (flatChars[i].char === '\n') { startOfCur = i + 1; break; }
+        }
+        for (let i = startOfCur; i < focus; i++) {
+            measureCtx.font = buildFont(flatChars[i], 1);
+            xCursor += measureCtx.measureText(flatChars[i].char).width;
+        }
+        
+        // Начало предыдущей строки
+        let prevStart = 0;
+        for (let i = startOfCur - 2; i >= 0; i--) {
+            if (flatChars[i].char === '\n') { prevStart = i + 1; break; }
+        }
+        // Конец предыдущей строки
+        let prevEnd = startOfCur - 1;
+        
+        // Ищем позицию в предыдущей строке по X
+        let newCharInLine = 0;
+        let xAcc = 0;
+        for (let i = prevStart; i < prevEnd; i++) {
+            const c = flatChars[i];
+            if (!c) break;
+            measureCtx.font = buildFont(c, 1);
+            const charW = measureCtx.measureText(c.char).width;
+            if (xAcc + charW / 2 >= xCursor) break;
+            xAcc += charW;
+            newCharInLine++;
+        }
+        
+        sheetSelection.anchor = sheetSelection.focus = prevStart + newCharInLine;
+        render();
+        updateSheetToolbarFromSelection();
+        return;
+    }
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const flatChars = flattenSegments(editingSheet.richText);
+        const focus = sheetSelection.focus;
+        
+        // Определяем текущую строку
+        let lineIdx = 0;
+        let found = false;
+        for (let i = 0; i < flatChars.length; i++) {
+            if (i === focus) { found = true; break; }
+            if (flatChars[i].char === '\n') lineIdx++;
+        }
+        if (!found) { for (let i = 0; i < flatChars.length; i++) { if (flatChars[i].char === '\n') lineIdx++; } }
+        
+        // Всего строк
+        let totalLines = 1;
+        for (const c of flatChars) if (c.char === '\n') totalLines++;
+        
+        if (lineIdx >= totalLines - 1) {
+            sheetSelection.anchor = sheetSelection.focus = flatChars.length;
+            render();
+            updateSheetToolbarFromSelection();
+            return;
+        }
+        
+        // X курсора в текущей строке
+        const measureCtx = document.createElement('canvas').getContext('2d');
+        let xCursor = 0;
+        let startOfCur = 0;
+        for (let i = focus - 1; i >= 0; i--) {
+            if (flatChars[i].char === '\n') { startOfCur = i + 1; break; }
+        }
+        for (let i = startOfCur; i < focus; i++) {
+            measureCtx.font = buildFont(flatChars[i], 1);
+            xCursor += measureCtx.measureText(flatChars[i].char).width;
+        }
+        
+        // Начало следующей строки
+        let nextStart = flatChars.length;
+        for (let i = focus; i < flatChars.length; i++) {
+            if (flatChars[i].char === '\n') { nextStart = i + 1; break; }
+        }
+        // Конец следующей строки
+        let nextEnd = flatChars.length;
+        for (let i = nextStart; i < flatChars.length; i++) {
+            if (flatChars[i].char === '\n') { nextEnd = i; break; }
+        }
+        
+        // Ищем позицию в следующей строке по X
+        let newCharInLine = 0;
+        let xAcc = 0;
+        for (let i = nextStart; i < nextEnd; i++) {
+            const c = flatChars[i];
+            if (!c) break;
+            measureCtx.font = buildFont(c, 1);
+            const charW = measureCtx.measureText(c.char).width;
+            if (xAcc + charW / 2 >= xCursor) break;
+            xAcc += charW;
+            newCharInLine++;
+        }
+        
+        sheetSelection.anchor = sheetSelection.focus = nextStart + newCharInLine;
+        render();
+        updateSheetToolbarFromSelection();
+        return;
+    }
+
+    if (e.key === 'Home') { sheetSelection.anchor = sheetSelection.focus = 0; render(); updateSheetToolbarFromSelection(); return; }
+    if (e.key === 'End') { sheetSelection.anchor = sheetSelection.focus = chars.length; render(); updateSheetToolbarFromSelection(); return; }
+    
+    // ===== BACKSPACE =====
+    if (e.key === 'Backspace') {
+        if (range.start !== range.end) {
+            const newChars = [...chars.slice(0, range.start), ...chars.slice(range.end)];
+            editingSheet.richText = charsToSegments(newChars);
+            editingSheet.text = segmentsToText(editingSheet.richText);
+            sheetSelection.anchor = sheetSelection.focus = range.start;
+        } else if (range.start > 0) {
+            const newChars = [...chars];
+            newChars.splice(range.start - 1, 1);
+            editingSheet.richText = charsToSegments(newChars);
+            editingSheet.text = segmentsToText(editingSheet.richText);
+            sheetSelection.anchor = sheetSelection.focus = range.start - 1;
+        }
+        autoExpandSheet(editingSheet);
+        render();
+        updateSheetToolbarFromSelection();
+        saveBoardHistory();
+        saveBoardToServer();
+        return;
+    }
+    
+    // ===== DELETE =====
+    if (e.key === 'Delete') {
+        if (range.start !== range.end) {
+            const newChars = [...chars.slice(0, range.start), ...chars.slice(range.end)];
+            editingSheet.richText = charsToSegments(newChars);
+            editingSheet.text = segmentsToText(editingSheet.richText);
+            sheetSelection.anchor = sheetSelection.focus = range.start;
+        } else if (range.start < chars.length) {
+            const newChars = [...chars];
+            newChars.splice(range.start, 1);
+            editingSheet.richText = charsToSegments(newChars);
+            editingSheet.text = segmentsToText(editingSheet.richText);
+        }
+        autoExpandSheet(editingSheet);
+        render();
+        updateSheetToolbarFromSelection();
+        saveBoardHistory();
+        saveBoardToServer();
+        return;
+    }
+    
+    // ===== ENTER =====
+    if (e.key === 'Enter') {
+        const before = chars.slice(0, range.start);
+        const after = chars.slice(range.end);
+        const inserted = [{ ...baseStyle, char: '\n' }];
+        const newChars = [...before, ...inserted, ...after];
+        editingSheet.richText = charsToSegments(newChars);
+        editingSheet.text = segmentsToText(editingSheet.richText);
+        sheetSelection.anchor = sheetSelection.focus = range.start + 1;
+        autoExpandSheet(editingSheet);
+        render();
+        updateSheetToolbarFromSelection();
+        saveBoardHistory();
+        saveBoardToServer();
+        return;
+    }
+    
+    // ===== TAB =====
+    if (e.key === 'Tab') {
+        const before = chars.slice(0, range.start);
+        const after = chars.slice(range.end);
+        const inserted = [];
+        for (let i = 0; i < 4; i++) inserted.push({ ...baseStyle, char: ' ' });
+        const newChars = [...before, ...inserted, ...after];
+        editingSheet.richText = charsToSegments(newChars);
+        editingSheet.text = segmentsToText(editingSheet.richText);
+        sheetSelection.anchor = sheetSelection.focus = range.start + 4;
+        autoExpandSheet(editingSheet);
+        render();
+        updateSheetToolbarFromSelection();
+        saveBoardHistory();
+        saveBoardToServer();
+        return;
+    }
+    
+    // ===== ОБЫЧНЫЙ СИМВОЛ =====
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const before = chars.slice(0, range.start);
+        const after = chars.slice(range.end);
+        const inserted = [{ ...baseStyle, char: e.key }];
+        const newChars = [...before, ...inserted, ...after];
+        
+        editingSheet.richText = charsToSegments(newChars);
+        editingSheet.text = segmentsToText(editingSheet.richText);
+        sheetSelection.anchor = sheetSelection.focus = range.start + 1;
+        
+        autoExpandSheet(editingSheet);
+        render();
+        updateSheetToolbarFromSelection();
+        
+        clearTimeout(window._sheetSaveTimeout);
+        window._sheetSaveTimeout = setTimeout(() => {
+            saveBoardHistory();
+            saveBoardToServer();
+        }, 800);
+        return;
     }
 }
 
@@ -4117,36 +4569,295 @@ function startSheetTextEditing() {
     
     if (canvas) canvas.style.cursor = 'text';
     
-    if (!sheetObj.text) {
-        sheetObj.text = '';
-        sheetObj.textFont = 'Arial';
-        sheetObj.textSize = 18;
-        sheetObj.textColor = '#000000';
-        sheetObj.textAlign = 'left';
-        sheetObj.textBold = false;
-        sheetObj.textItalic = false;
-        sheetObj.textUnderline = false;
+    // ===== ИНИЦИАЛИЗИРУЕМ richText =====
+    if (!sheetObj.richText) {
+        sheetObj.richText = textToSegments(sheetObj.text || '', {
+            bold: sheetObj.textBold || false,
+            italic: sheetObj.textItalic || false,
+            underline: sheetObj.textUnderline || false,
+            strike: false,
+            color: sheetObj.textColor || '#000000',
+            size: sheetObj.textSize || 18,
+            font: sheetObj.textFont || 'Arial'
+        });
     }
-    
-    // ===== ФОКУСИРУЕМ СКРЫТЫЙ TEXTAREA ДЛЯ ВЫЗОВА КЛАВИАТУРЫ =====
-    const hiddenInput = document.getElementById('sheet-hidden-input');
-    if (hiddenInput) {
-        hiddenInput.value = sheetObj.text || '';
-        hiddenInput.focus();
-        setTimeout(() => {
-            hiddenInput.focus();
-            // Ставим курсор в конец
-            const len = hiddenInput.value.length;
-            try { hiddenInput.setSelectionRange(len, len); } catch(e) {}
-        }, 50);
+    sheetObj.text = segmentsToText(sheetObj.richText);
+
+        // ===== ИНИЦИАЛИЗИРУЕМ ТЕКУЩИЙ СТИЛЬ (КАК В WORD) =====
+    if (!sheetObj._currentStyle) {
+        sheetObj._currentStyle = {
+            bold: sheetObj.textBold || false,
+            italic: sheetObj.textItalic || false,
+            underline: sheetObj.textUnderline || false,
+            strike: false,
+            color: sheetObj.textColor || '#000000',
+            size: sheetObj.textSize || 18,
+            font: sheetObj.textFont || 'Arial'
+        };
     }
+
+    // Ставим курсор в конец
+    const totalChars = sheetObj.richText.reduce((s, seg) => s + seg.text.length, 0);
+    sheetSelection.anchor = totalChars;
+    sheetSelection.focus = totalChars;
     
     render();
     showHint('✏️ Печатайте текст');
+    startCursorBlink();
+
+    // ===== ПОДКЛЮЧАЕМ ОБРАБОТЧИК КЛАВИАТУРЫ =====
+    document.removeEventListener('keydown', handleSheetKeydown, true);
+    document.addEventListener('keydown', handleSheetKeydown, true);
+}
+
+// ============================================================
+// УТИЛИТЫ RICH-TEXT ДЛЯ ЛИСТА
+// ============================================================
+
+function textToSegments(text, baseStyle) {
+    if (!text) return [];
+    return [{
+        text: text,
+        bold: baseStyle.bold || false,
+        italic: baseStyle.italic || false,
+        underline: baseStyle.underline || false,
+        strike: baseStyle.strike || false,
+        color: baseStyle.color || '#000000',
+        size: baseStyle.size || 18,
+        font: baseStyle.font || 'Arial'
+    }];
+}
+
+function segmentsToText(segments) {
+    if (!segments || !segments.length) return '';
+    return segments.map(s => s.text).join('');
+}
+
+function flattenSegments(segments) {
+    const chars = [];
+    (segments || []).forEach(seg => {
+        for (let i = 0; i < seg.text.length; i++) {
+            chars.push({
+                char: seg.text[i],
+                bold: seg.bold || false,
+                italic: seg.italic || false,
+                underline: seg.underline || false,
+                strike: seg.strike || false,
+                color: seg.color || '#000000',
+                size: seg.size || 18,
+                font: seg.font || 'Arial'
+            });
+        }
+    });
+    return chars;
+}
+
+function charsToSegments(chars) {
+    if (!chars.length) return [];
+    const segments = [];
+    let current = { ...chars[0], text: chars[0].char };
+    delete current.char;
+    for (let i = 1; i < chars.length; i++) {
+        const c = chars[i];
+        const same = c.bold === current.bold && c.italic === current.italic &&
+                     c.underline === current.underline && c.strike === current.strike &&
+                     c.color === current.color && c.size === current.size && c.font === current.font;
+        if (same) {
+            current.text += c.char;
+        } else {
+            segments.push(current);
+            current = { ...c, text: c.char };
+            delete current.char;
+        }
+    }
+    segments.push(current);
+    return segments;
+}
+
+function buildFont(seg, zoomLevel) {
+    const size = (seg.size || 18) * zoomLevel;
+    return (seg.bold ? 'bold ' : '') + (seg.italic ? 'italic ' : '') +
+           size + 'px ' + (seg.font || 'Arial');
+}
+
+function getSheetSelectionRange() {
+    return {
+        start: Math.min(sheetSelection.anchor, sheetSelection.focus),
+        end: Math.max(sheetSelection.anchor, sheetSelection.focus)
+    };
+}
+
+function wrapRichTextLines(richText, maxWidthWorld) {
+    const chars = flattenSegments(richText);
+    
+    // Разбиваем по \n на абзацы, сохраняя индексы
+    const paragraphs = [];   // [{chars: [...], startFlatIdx: N}]
+    let current = [];
+    let currentStart = 0;
+    
+    chars.forEach((c, i) => {
+        if (c.char === '\n') {
+            paragraphs.push({ chars: current, startFlatIdx: currentStart });
+            current = [];
+            currentStart = i + 1;
+        } else {
+            current.push(c);
+        }
+    });
+    paragraphs.push({ chars: current, startFlatIdx: currentStart });
+    
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+    
+    const lines = [];              // визуальные строки
+    const flatIndexToLine = [];    // flatIndexToLine[flatIdx] = lineIdx
+    const lineToFlatStart = [];    // lineToFlatStart[lineIdx] = flatIdx первого символа строки
+    
+    paragraphs.forEach((para, paraIdx) => {
+        if (para.chars.length === 0) {
+            // Пустой абзац (две \n подряд или \n в конце)
+            const lineIdx = lines.length;
+            lines.push({ line: [], startX: 0, width: 0, isParagraphEnd: true });
+            lineToFlatStart.push(para.startFlatIdx);
+            // \n сам по себе — не символ в lines, но его индекс в flat = para.startFlatIdx
+            // (если это \n в конце абзаца, он находится ПЕРЕД startFlatIdx следующего)
+            return;
+        }
+        
+        let currentLine = [];
+        let currentWidth = 0;
+        let lineStartFlatIdx = para.startFlatIdx;
+        let charOffsetInPara = 0;
+        
+        para.chars.forEach((c, i) => {
+            measureCtx.font = buildFont(c, 1);
+            const charW = measureCtx.measureText(c.char).width;
+            
+            if (currentWidth + charW > maxWidthWorld && currentLine.length > 0) {
+                // Заканчиваем текущую строку
+                const lineIdx = lines.length;
+                lines.push({ line: currentLine, startX: 0, width: currentWidth, isParagraphEnd: false });
+                lineToFlatStart.push(lineStartFlatIdx);
+                // Все символы этой строки → lineIdx
+                for (let j = 0; j < currentLine.length; j++) {
+                    flatIndexToLine[lineStartFlatIdx + j] = lineIdx;
+                }
+                
+                // Начинаем новую
+                currentLine = [];
+                currentWidth = 0;
+                lineStartFlatIdx = para.startFlatIdx + i;
+            }
+            
+            currentLine.push(c);
+            currentWidth += charW;
+        });
+        
+        // Последняя строка абзаца
+        const lineIdx = lines.length;
+        lines.push({ 
+            line: currentLine, 
+            startX: 0, 
+            width: currentWidth, 
+            isParagraphEnd: true,
+            paragraphEndFlatIdx: para.startFlatIdx + para.chars.length  // индекс \n после абзаца
+        });
+        lineToFlatStart.push(lineStartFlatIdx);
+        for (let j = 0; j < currentLine.length; j++) {
+            flatIndexToLine[lineStartFlatIdx + j] = lineIdx;
+        }
+        
+        // Если это не последний абзац — есть \n после него
+        if (paraIdx < paragraphs.length - 1) {
+            flatIndexToLine[para.startFlatIdx + para.chars.length] = lineIdx;
+        }
+    });
+    
+    // Считаем startX для каждой строки (выравнивание)
+    const maxWidth = maxWidthWorld;
+    const align = arguments[2] || 'left';
+    
+    lines.forEach(li => {
+        if (align === 'center') li.startX = (maxWidth - li.width) / 2;
+        else if (align === 'right') li.startX = maxWidth - li.width;
+        else li.startX = 0;
+    });
+    
+    return { lines, flatIndexToLine, lineToFlatStart };
+}
+
+function getSheetTextLayout(sheetObj) {
+    const minX = Math.min(sheetObj.x1, sheetObj.x2);
+    const maxX = Math.max(sheetObj.x1, sheetObj.x2);
+    const minY = Math.min(sheetObj.y1, sheetObj.y2);
+    const maxY = Math.max(sheetObj.y1, sheetObj.y2);
+    const padding = 20;
+    const maxWidthWorld = (maxX - minX) - padding * 2;
+    
+    const richText = sheetObj.richText || [];
+    const baseSize = sheetObj.textSize || 18;
+    const align = sheetObj.textAlign || 'left';
+    
+    const wrapped = wrapRichTextLines(richText, maxWidthWorld, align);
+    const lines = wrapped.lines;
+    const flatIndexToLine = wrapped.flatIndexToLine;
+    const lineToFlatStart = wrapped.lineToFlatStart;
+    
+    // Считаем Y-позицию каждой строки и lineHeight для каждой строки
+    const lineHeights = [];
+    const lineYs = [];
+    let curY = 0;
+    lines.forEach(lineInfo => {
+        let maxSizeInLine = baseSize;
+        lineInfo.line.forEach(c => {
+            if ((c.size || baseSize) > maxSizeInLine) maxSizeInLine = c.size;
+        });
+        const lh = maxSizeInLine * 1.4;
+        lineHeights.push(lh);
+        lineYs.push(curY);
+        curY += lh;
+    });
+    
+    return {
+        lines,
+        flatIndexToLine,
+        lineToFlatStart,
+        lineHeights,
+        lineYs,
+        minX, maxX, minY, maxY,
+        padding,
+        maxWidthWorld,
+        baseSize,
+        lineHeight: baseSize * 1.4,
+        textLeft: minX + padding,
+        textTop: minY + padding
+    };
 }
 
 function stopSheetTextEditing() {
+    stopCursorBlink();
+    document.removeEventListener('keydown', handleSheetKeydown, true);
     if (!isSheetTextMode) return;
+
+    if (editingSheet) {
+        // Синхронизируем обычный text с richText (для совместимости)
+        editingSheet.text = segmentsToText(editingSheet.richText);
+        
+                // Сохраняем текущий стиль в сам лист (для следующего редактирования)
+        if (editingSheet._currentStyle) {
+            editingSheet.textColor = editingSheet._currentStyle.color;
+            editingSheet.textSize = editingSheet._currentStyle.size;
+            editingSheet.textFont = editingSheet._currentStyle.font;
+            editingSheet.textBold = editingSheet._currentStyle.bold;
+            editingSheet.textItalic = editingSheet._currentStyle.italic;
+            editingSheet.textUnderline = editingSheet._currentStyle.underline;
+        }
+        // НЕ удаляем _currentStyle — оставляем для следующего открытия
+        
+        // Сбрасываем выделение
+        sheetSelection.anchor = 0;
+        sheetSelection.focus = 0;
+    }
     
     if (editingSheet) {
         autoExpandSheet(editingSheet);
@@ -4155,13 +4866,6 @@ function stopSheetTextEditing() {
     isSheetTextMode = false;
     editingSheet = null;
     focusTarget = 'canvas';
-    
-    // ===== СКРЫВАЕМ КЛАВИАТУРУ =====
-    const hiddenInput = document.getElementById('sheet-hidden-input');
-    if (hiddenInput) {
-        hiddenInput.blur();
-        hiddenInput.value = '';
-    }
     
     const toolbar = document.getElementById('sheet-text-toolbar');
     if (toolbar) toolbar.classList.remove('show');
@@ -4181,253 +4885,222 @@ function stopSheetTextEditing() {
     setTimeout(updateSheetEditButton, 100);
 }
 
-function handleSheetTextInput(e) {
-    if (!isSheetTextMode || !editingSheet) return false;
-    
-    // ===== НЕ ПЕРЕХВАТЫВАЕМ CTRL/CMD + КЛАВИША =====
-    // Пусть paste-обработчик сработает
-    if (e.ctrlKey || e.metaKey) {
-        return false;
-    }
-    
-    const key = e.key;
-    
-    // Обрабатываем только печатные символы и Backspace/Enter
-    if (key.length === 1) {
-        e.preventDefault();
-        if (!editingSheet.text) editingSheet.text = '';
-        editingSheet.text += key;
-        autoExpandSheet(editingSheet);
-        saveBoardHistory();
-        render();
-        saveBoardToServer();
-        return true;
-    }
-    
-    if (key === 'Backspace') {
-        e.preventDefault();
-        if (editingSheet.text && editingSheet.text.length > 0) {
-            editingSheet.text = editingSheet.text.slice(0, -1);
-            saveBoardHistory();
-            render();
-            saveBoardToServer();
-        }
-        return true;
-    }
-    
-    if (key === 'Enter') {
-        e.preventDefault();
-        if (!editingSheet.text) editingSheet.text = '';
-        editingSheet.text += '\n';
-        autoExpandSheet(editingSheet);
-        saveBoardHistory();
-        render();
-        saveBoardToServer();
-        return true;
-    }
-    
-    if (key === 'Escape') {
-        stopSheetTextEditing();
-        return true;
-    }
-    
-    return false;
-}
-
-// Автоматическое растягивание листа по тексту
 function autoExpandSheet(sheetObj) {
     if (!sheetObj || sheetObj.type !== 'sheet') return;
-    if (!sheetObj.text || sheetObj.text.trim() === '') return;
+    if (!sheetObj.richText || sheetObj.richText.length === 0) return;
     
     const minX = Math.min(sheetObj.x1, sheetObj.x2);
     const maxX = Math.max(sheetObj.x1, sheetObj.x2);
     const minY = Math.min(sheetObj.y1, sheetObj.y2);
     const maxY = Math.max(sheetObj.y1, sheetObj.y2);
     
-    const padding = 20; // Отступ внутри листа
+    const padding = 20;
     const maxWidth = (maxX - minX) - padding * 2;
-    
     if (maxWidth <= 0) return;
     
-    // Измеряем текст
-    const fontSize = sheetObj.textSize || 18;
-    const font = sheetObj.textFont || 'Arial';
+    const layoutInfo = getSheetTextLayout(sheetObj);
     
-    const measureCanvas = document.createElement('canvas');
-    const measureCtx = measureCanvas.getContext('2d');
-    measureCtx.font = (sheetObj.textBold ? 'bold ' : '') + 
-                     (sheetObj.textItalic ? 'italic ' : '') + 
-                     fontSize + 'px ' + font;
+    // Высота = сумма высот ВСЕХ строк с учётом их собственных размеров
+    let totalHeight = 0;
+    const chars = flattenSegments(sheetObj.richText);
+    const measureCtx = document.createElement('canvas').getContext('2d');
     
-    // Разбиваем на строки с учётом переноса
-    const lines = [];
-    sheetObj.text.split('\n').forEach(paragraph => {
-        if (paragraph === '') {
-            lines.push('');
-            return;
-        }
-        const words = paragraph.split(' ');
-        let currentLine = '';
-        words.forEach(word => {
-            if (measureCtx.measureText(word).width > maxWidth) {
-                if (currentLine) {
-                    lines.push(currentLine);
-                    currentLine = '';
-                }
-                let chunk = '';
-                for (let i = 0; i < word.length; i++) {
-                    const testChunk = chunk + word[i];
-                    if (measureCtx.measureText(testChunk).width > maxWidth && chunk) {
-                        lines.push(chunk);
-                        chunk = word[i];
-                    } else {
-                        chunk = testChunk;
-                    }
-                }
-                currentLine = chunk;
-                return;
-            }
-            const testLine = currentLine ? currentLine + ' ' + word : word;
-            if (measureCtx.measureText(testLine).width > maxWidth && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
+    layoutInfo.lines.forEach(lineInfo => {
+        let maxSizeInLine = sheetObj.textSize || 18;
+        lineInfo.line.forEach(c => {
+            if ((c.size || 18) > maxSizeInLine) maxSizeInLine = c.size;
         });
-        if (currentLine) lines.push(currentLine);
+        totalHeight += maxSizeInLine * 1.4;
     });
     
-    // Вычисляем необходимую высоту
-    const lineHeight = fontSize * 1.4;
-    const textHeight = lines.length * lineHeight + padding * 2;
-    
-    // Если текст не помещается по высоте — увеличиваем лист
+    totalHeight += padding * 2;
     const currentHeight = maxY - minY;
-    if (textHeight > currentHeight) {
-        // Увеличиваем высоту, сохраняя верхнюю границу
-        sheetObj.y2 = minY + textHeight;
-        console.log(`📏 Лист растянут по высоте: ${currentHeight} -> ${textHeight}`);
-    }
     
-    // Также можно проверить ширину (опционально)
-    // Если самая длинная строка не помещается — можно расширить лист
-    // Но обычно текст переносится, так что это не обязательно
+    if (totalHeight > currentHeight) {
+        sheetObj.y2 = minY + totalHeight;
+    }
 }
 
 function drawSheetText(ctx, sheetObj) {
-    if (!sheetObj.text || sheetObj.text.trim() === '') {
+    const richText = sheetObj.richText;
+    
+    if (!richText || richText.length === 0) {
         if (isSheetTextMode && editingSheet === sheetObj) {
-            drawSheetTextCursor(ctx, sheetObj, []);
+            const layoutInfo = getSheetTextLayout(sheetObj);
+            const p1 = worldToScreen(layoutInfo.textLeft, layoutInfo.textTop);
+            drawSheetCursor(ctx, sheetObj, layoutInfo, p1);
         }
         return;
     }
+    
+    const layoutInfo = getSheetTextLayout(sheetObj);
+    const { lines, textLeft, textTop, lineYs } = layoutInfo;
+    
+    const p1 = worldToScreen(textLeft, textTop);
+    
+    ctx.save();
+    ctx.textBaseline = 'top';
+    
+    if (isSheetTextMode && editingSheet === sheetObj) {
+        drawSheetSelectionBackground(ctx, sheetObj, layoutInfo, p1);
+    }
+    
+    lines.forEach((lineInfo, lineIdx) => {
+        const line = lineInfo.line;
+        const textX = worldToScreen(textLeft + lineInfo.startX, textTop).x;
+        let xCursor = textX;
+        const yScreen = p1.y + lineYs[lineIdx] * zoom;
+        
+        line.forEach(c => {
+            const fontSize = (c.size || 18) * zoom;
+            ctx.font = buildFont(c, zoom);
+            ctx.fillStyle = c.color;
+            const charW = ctx.measureText(c.char).width;
+            ctx.fillText(c.char, xCursor, yScreen);
+            
+            if (c.underline) {
+                ctx.strokeStyle = c.color;
+                ctx.lineWidth = Math.max(1, 1.5 * zoom);
+                ctx.beginPath();
+                ctx.moveTo(xCursor, yScreen + fontSize + 2 * zoom);
+                ctx.lineTo(xCursor + charW, yScreen + fontSize + 2 * zoom);
+                ctx.stroke();
+            }
+            if (c.strike) {
+                ctx.strokeStyle = c.color;
+                ctx.lineWidth = Math.max(1, 1.5 * zoom);
+                ctx.beginPath();
+                ctx.moveTo(xCursor, yScreen + fontSize / 2);
+                ctx.lineTo(xCursor + charW, yScreen + fontSize / 2);
+                ctx.stroke();
+            }
+            xCursor += charW;
+        });
+    });
+    
+    ctx.restore();
+    
+    if (isSheetTextMode && editingSheet === sheetObj) {
+        drawSheetCursor(ctx, sheetObj, layoutInfo, p1);
+    }
+}
 
-    const minX = Math.min(sheetObj.x1, sheetObj.x2);
-    const maxX = Math.max(sheetObj.x1, sheetObj.x2);
-    const minY = Math.min(sheetObj.y1, sheetObj.y2);
-    const maxY = Math.max(sheetObj.y1, sheetObj.y2);
+function drawSheetSelectionBackground(ctx, sheetObj, layoutInfo, p1) {
+    const range = getSheetSelectionRange();
+    if (range.start === range.end) return;
+    
+    const { lines, lineYs, lineToFlatStart } = layoutInfo;
+    const baseSize = layoutInfo.baseSize;
+    
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 122, 255, 0.3)';
+    
+    lines.forEach((lineInfo, lineIdx) => {
+        const startFlat = lineToFlatStart[lineIdx] !== undefined ? lineToFlatStart[lineIdx] : 0;
+        const textX = worldToScreen(layoutInfo.textLeft + lineInfo.startX, 0).x;
+        const yScreen = p1.y + lineYs[lineIdx] * zoom;
+        let xCursor = textX;
+        
+        let maxSizeInLine = baseSize;
+        lineInfo.line.forEach(c => {
+            if ((c.size || baseSize) > maxSizeInLine) maxSizeInLine = c.size;
+        });
+        const lineHeightScreen = maxSizeInLine * 1.4 * zoom;
+        
+        let flatIdx = startFlat;
+        lineInfo.line.forEach(c => {
+            ctx.font = buildFont(c, zoom);
+            const charW = ctx.measureText(c.char).width;
+            
+            if (flatIdx >= range.start && flatIdx < range.end) {
+                ctx.fillRect(xCursor, yScreen, charW, lineHeightScreen);
+            }
+            
+            xCursor += charW;
+            flatIdx++;
+        });
+    });
+    
+    ctx.restore();
+}
 
-    const padding = 20;
-    const maxWidthWorld = (maxX - minX) - padding * 2;
-
-    if (maxWidthWorld <= 0) return;
-
-    const fontSizeWorld = sheetObj.textSize || 18;
-    const font = sheetObj.textFont || 'Arial';
-
+function drawSheetCursor(ctx, sheetObj, layoutInfo, p1) {
+    if (!isSheetTextMode || editingSheet !== sheetObj) return;
+    
+    const range = getSheetSelectionRange();
+    if (range.start !== range.end) return;
+    
+    const focus = sheetSelection.focus;
+    const { lines, textLeft, lineYs, baseSize, flatIndexToLine, lineToFlatStart } = layoutInfo;
+    
     const measureCanvas = document.createElement('canvas');
     const measureCtx = measureCanvas.getContext('2d');
-    const measureStyle = (sheetObj.textBold ? 'bold ' : '') +
-                         (sheetObj.textItalic ? 'italic ' : '') +
-                         fontSizeWorld + 'px ' + font;
-    measureCtx.font = measureStyle;
-
-    const lines = [];
-    sheetObj.text.split('\n').forEach(paragraph => {
-        if (paragraph === '') { lines.push(''); return; }
-        const words = paragraph.split(' ');
-        let currentLine = '';
-        words.forEach(word => {
-            if (measureCtx.measureText(word).width > maxWidthWorld) {
-                if (currentLine) {
-                    lines.push(currentLine);
-                    currentLine = '';
-                }
-                let chunk = '';
-                for (let i = 0; i < word.length; i++) {
-                    const testChunk = chunk + word[i];
-                    if (measureCtx.measureText(testChunk).width > maxWidthWorld && chunk) {
-                        lines.push(chunk);
-                        chunk = word[i];
-                    } else {
-                        chunk = testChunk;
-                    }
-                }
-                currentLine = chunk;
-                return;
-            }
-            const testLine = currentLine ? currentLine + ' ' + word : word;
-            if (measureCtx.measureText(testLine).width > maxWidthWorld && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
-        });
-        if (currentLine) lines.push(currentLine);
-    });
-
-    const screenFontSize = fontSizeWorld * zoom;
-    const style = (sheetObj.textBold ? 'bold ' : '') +
-                  (sheetObj.textItalic ? 'italic ' : '') +
-                  screenFontSize + 'px ' + font;
-
-    ctx.save();
-    ctx.font = style;
-    ctx.fillStyle = sheetObj.textColor || '#000000';
-    ctx.textBaseline = 'top';
-
-    const align = sheetObj.textAlign || 'left';
-    if (align === 'center') ctx.textAlign = 'center';
-    else if (align === 'right') ctx.textAlign = 'right';
-    else ctx.textAlign = 'left';
-
-    const p1 = worldToScreen(minX + padding, minY + padding);
-    const p2 = worldToScreen(maxX - padding, maxY - padding);
-
-    let textX = p1.x;
-    if (align === 'center') textX = (p1.x + p2.x) / 2;
-    else if (align === 'right') textX = p2.x;
-
-    const lineHeightScreen = screenFontSize * 1.4;
-    let yScreen = p1.y;
-
-    lines.forEach(line => {
-        if (yScreen > p2.y + screenFontSize) return;
-        ctx.fillText(line, textX, yScreen);
-
-        if (sheetObj.textUnderline) {
-            const metrics = ctx.measureText(line);
-            const width = metrics.width;
-            let xStart = textX;
-            if (align === 'center') xStart = textX - width / 2;
-            else if (align === 'right') xStart = textX - width;
-            ctx.strokeStyle = sheetObj.textColor || '#000000';
-            ctx.lineWidth = Math.max(1, 1.5 * zoom);
-            ctx.beginPath();
-            ctx.moveTo(xStart, yScreen + screenFontSize + 2 * zoom);
-            ctx.lineTo(xStart + width, yScreen + screenFontSize + 2 * zoom);
-            ctx.stroke();
-        }
-        yScreen += lineHeightScreen;
-    });
-
-    ctx.restore();
-
-    if (isSheetTextMode && editingSheet === sheetObj) {
-        drawSheetTextCursor(ctx, sheetObj, lines);
+    
+    if (!lines || lines.length === 0) {
+        const screenX = worldToScreen(textLeft, 0).x;
+        const screenY = p1.y;
+        ctx.save();
+        ctx.fillStyle = '#007aff';
+        ctx.fillRect(screenX, screenY, Math.max(2, 2 * zoom), baseSize * zoom);
+        ctx.restore();
+        return;
     }
+    
+    const flatChars = flattenSegments(sheetObj.richText);
+    
+    // ===== ОПРЕДЕЛЯЕМ ВИЗУАЛЬНУЮ СТРОКУ ЧЕРЕЗ МАПУ =====
+    let lineIdx;
+    let charInLine;
+    
+    if (focus < flatIndexToLine.length && flatIndexToLine[focus] !== undefined) {
+        lineIdx = flatIndexToLine[focus];
+        // Считаем позицию в строке как focus - начало строки
+        const startFlat = lineToFlatStart[lineIdx] !== undefined ? lineToFlatStart[lineIdx] : 0;
+        charInLine = focus - startFlat;
+    } else if (focus > 0 && flatIndexToLine[focus - 1] !== undefined) {
+        // focus = конец текста или после \n
+        lineIdx = flatIndexToLine[focus - 1];
+        const startFlat = lineToFlatStart[lineIdx] !== undefined ? lineToFlatStart[lineIdx] : 0;
+        charInLine = (focus - 1) - startFlat + 1;
+    } else {
+        lineIdx = 0;
+        charInLine = 0;
+    }
+    
+    if (lineIdx >= lines.length) lineIdx = lines.length - 1;
+    if (lineIdx < 0) lineIdx = 0;
+    
+    const lineInfo = lines[lineIdx];
+    if (!lineInfo) return;
+    if (charInLine > lineInfo.line.length) charInLine = lineInfo.line.length;
+    if (charInLine < 0) charInLine = 0;
+    
+    // ===== X В СТРОКЕ =====
+    let xWorld = lineInfo.startX;
+    for (let i = 0; i < charInLine && i < lineInfo.line.length; i++) {
+        measureCtx.font = buildFont(lineInfo.line[i], 1);
+        xWorld += measureCtx.measureText(lineInfo.line[i].char).width;
+    }
+    
+    let charSize = baseSize;
+    if (charInLine < lineInfo.line.length) {
+        charSize = lineInfo.line[charInLine].size || baseSize;
+    } else if (lineInfo.line.length > 0) {
+        charSize = lineInfo.line[lineInfo.line.length - 1].size || baseSize;
+    }
+    
+    const screenX = worldToScreen(textLeft + xWorld, 0).x;
+    const screenY = p1.y + lineYs[lineIdx] * zoom;
+    
+    ctx.save();
+    ctx.fillStyle = '#007aff';
+    ctx.fillRect(screenX, screenY, Math.max(2, 2 * zoom), charSize * zoom);
+    ctx.restore();
+}
+
+// Оставляем старую функцию для совместимости (заглушка)
+function drawSheetSelectionAndCursor(ctx, sheetObj) {
+    // Пустой лист — просто ничего не рисуем
 }
 
 // Курсор в режиме редактирования листа
@@ -4622,6 +5295,12 @@ function setMode(newMode) {
         thickness.classList.remove('show');
     }
     
+        // Скрываем панель текста при переключении с режима "text"
+    if (newMode !== 'text') {
+        const textToolbar = document.getElementById('text-toolbar');
+        if (textToolbar) textToolbar.classList.remove('show');
+    }
+
     if (mode !== 'select' && mode !== 'text') {
         selected = [];
         render();
@@ -4684,15 +5363,10 @@ function pasteObjects() {
 function deleteSelected() {
     if (selected.length === 0) return;
     
-    // ===== ЕСЛИ УДАЛЯЕМ ЛИСТ В РЕЖИМЕ РЕДАКТИРОВАНИЯ — ВЫХОДИМ =====
+    // ===== ПРИНУДИТЕЛЬНО ВЫХОДИМ ИЗ РЕЖИМА РЕДАКТИРОВАНИЯ ЛИСТА =====
+    // Всегда, независимо от того, что удаляем
     if (isSheetTextMode) {
-        const hasSheet = selected.some(id => {
-            const o = objects.find(obj => obj.id === id);
-            return o && o.type === 'sheet';
-        });
-        if (hasSheet) {
-            stopSheetTextEditing();
-        }
+        stopSheetTextEditing();
     }
     
     const ids = new Set(selected);
@@ -4707,8 +5381,13 @@ function deleteSelected() {
     // ===== ПРИНУДИТЕЛЬНО СКРЫВАЕМ КНОПКУ =====
     forceHideSheetEditButton();
     
+    // ===== НЕ ДАЁМ updateSelectionFrame СНОВА ПОКАЗАТЬ КНОПКУ =====
+    // Явно обнуляем всё, что может её вернуть
+    editingSheet = null;
+    isSheetTextMode = false;
+    
     saveBoardHistory();
-    requestRender();
+    render();   // синхронный render вместо requestRender
     showHint('🗑️ Удалено');
     saveBoardToServer();
 }
@@ -4995,9 +5674,20 @@ function openTextEditor(obj) {
     if (!obj || obj.type !== 'text') return;
     editingTextObj = obj;
     isTextEditorOpen = true;
+    
+    // ===== ЗАПОМИНАЕМ ИСХОДНОЕ СОСТОЯНИЕ =====
+    window._textEditorOriginal = {
+        text: obj.text || '',
+        size: obj.size,
+        width: obj.width,
+        height: obj.height,
+        wasNew: !obj.text || obj.text.trim() === ''  // был ли объект только что создан
+    };
+    
     let cleanText = obj.text || '';
     if (obj.bullet) cleanText = cleanText.split('\n').map(line => line.replace(/^•\s*/, '')).join('\n');
     else if (obj.numbered) cleanText = cleanText.split('\n').map(line => line.replace(/^\d+\.\s*/, '')).join('\n');
+    
     const input = document.getElementById('text-editor-input');
     if (input) {
         input.value = cleanText;
@@ -5033,7 +5723,9 @@ function openTextEditor(obj) {
 
 function closeTextEditor(save) {
     const input = document.getElementById('text-editor-input');
+    
     if (editingTextObj && save) {
+        // ===== СОХРАНЯЕМ =====
         editingTextObj.text = input ? input.value : '';
         applyTextSettingsToSelected();
         updateTextDimensions(editingTextObj);
@@ -5041,19 +5733,35 @@ function closeTextEditor(save) {
         requestRender();
         saveBoardToServer();
         showStatus('📝 Текст обновлён');
+        
     } else if (editingTextObj && !save) {
-        if (!editingTextObj.text || editingTextObj.text.trim() === '') {
+        // ===== ОТМЕНА =====
+        const original = window._textEditorOriginal;
+        
+        if (original && original.wasNew) {
+            // Объект был только что создан — удаляем его
             const idx = objects.indexOf(editingTextObj);
             if (idx >= 0) objects.splice(idx, 1);
             selected = [];
             saveBoardToServer();
             requestRender();
+        } else if (original) {
+            // Объект существовал — восстанавливаем исходный текст
+            editingTextObj.text = original.text;
+            editingTextObj.size = original.size;
+            editingTextObj.width = original.width;
+            editingTextObj.height = original.height;
+            requestRender();
         }
     }
+    
+    // Скрываем редактор
     const textEditor = document.getElementById('text-editor');
-    if (textEditor) textEditor.style.display = 'none';   // <-- скрываем
+    if (textEditor) textEditor.style.display = 'none';
+    
     editingTextObj = null;
     isTextEditorOpen = false;
+    window._textEditorOriginal = null;
 }
 
 function updateTextPanelFromObject(obj) {
@@ -5345,10 +6053,6 @@ function loadBoardPage() {
                 <div class="resize-handle handle-l" id="handle-l"></div>
                 <div class="resize-handle handle-r" id="handle-r"></div>
             </div>
-
-            <!-- ===== СКРЫТЫЙ TEXTAREA ДЛЯ РЕДАКТИРОВАНИЯ ЛИСТА ===== -->
-            <textarea id="sheet-hidden-input"
-                      autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
 
             <!-- ===== КАНВАС ===== -->
             <canvas id="board"></canvas>
@@ -10630,6 +11334,188 @@ function initAnnotationForImage(imgElement, wrapper, submissionId, isTeacher) {
 }
 
 // ============================================================
+// RICH-TEXT ДЛЯ ЛИСТА — ЛОГИКА КАК В WORD
+// ============================================================
+
+// Получить текущий стиль (для ввода без выделения)
+function getSheetCurrentStyle(sheetObj) {
+    if (!sheetObj) return null;
+    if (!sheetObj._currentStyle) {
+        sheetObj._currentStyle = {
+            bold: false, italic: false, underline: false, strike: false,
+            color: sheetObj.textColor || '#000000',
+            size: sheetObj.textSize || 18,
+            font: sheetObj.textFont || 'Arial'
+        };
+    }
+    return sheetObj._currentStyle;
+}
+
+// Получить стиль символа под курсором (слева от курсора, иначе справа)
+function getSheetStyleAtCursor(sheetObj) {
+    const chars = flattenSegments(sheetObj.richText || []);
+    const pos = sheetSelection.focus;
+    
+    // Символ слева
+    if (pos > 0 && chars[pos - 1]) {
+        return {
+            bold: chars[pos - 1].bold,
+            italic: chars[pos - 1].italic,
+            underline: chars[pos - 1].underline,
+            strike: chars[pos - 1].strike,
+            color: chars[pos - 1].color,
+            size: chars[pos - 1].size,
+            font: chars[pos - 1].font
+        };
+    }
+    // Символ справа
+    if (pos < chars.length && chars[pos]) {
+        return {
+            bold: chars[pos].bold,
+            italic: chars[pos].italic,
+            underline: chars[pos].underline,
+            strike: chars[pos].strike,
+            color: chars[pos].color,
+            size: chars[pos].size,
+            font: chars[pos].font
+        };
+    }
+    // Пусто — текущий стиль
+    return { ...getSheetCurrentStyle(sheetObj) };
+}
+
+// Проверить: все ли символы в выделении имеют свойство = true
+function isSheetSelectionAll(sheetObj, prop) {
+    const range = getSheetSelectionRange();
+    if (range.start === range.end) return false;
+    
+    const chars = flattenSegments(sheetObj.richText || []);
+    for (let i = range.start; i < range.end; i++) {
+        if (!chars[i] || !chars[i][prop]) return false;
+    }
+    return true;
+}
+
+// Проверить: все ли символы в выделении имеют одинаковое значение свойства
+function getSheetSelectionValue(sheetObj, prop) {
+    const range = getSheetSelectionRange();
+    if (range.start === range.end) return null;
+    
+    const chars = flattenSegments(sheetObj.richText || []);
+    if (range.start >= chars.length) return null;
+    
+    const first = chars[range.start][prop];
+    for (let i = range.start + 1; i < range.end; i++) {
+        if (chars[i] && chars[i][prop] !== first) return null; // разные значения
+    }
+    return first;
+}
+
+// Применить свойство к выделению ИЛИ к текущему стилю
+function applySheetStyle(sheetObj, prop, value) {
+    if (!sheetObj) return;
+    
+    const range = getSheetSelectionRange();
+    const chars = flattenSegments(sheetObj.richText || []);
+    
+    if (range.start === range.end) {
+        // Нет выделения — меняем текущий стиль
+        const style = getSheetCurrentStyle(sheetObj);
+        style[prop] = value;
+        // Синхронизируем с полями листа
+        if (prop === 'color') sheetObj.textColor = value;
+        if (prop === 'size') sheetObj.textSize = value;
+        if (prop === 'font') sheetObj.textFont = value;
+        render();
+        return;
+    }
+    
+    // Есть выделение — применяем к символам
+    for (let i = range.start; i < range.end; i++) {
+        if (chars[i]) chars[i][prop] = value;
+    }
+    
+    sheetObj.richText = charsToSegments(chars);
+    sheetObj.text = segmentsToText(sheetObj.richText);
+    autoExpandSheet(sheetObj);
+    render();
+    saveBoardHistory();
+    saveBoardToServer();
+}
+
+// Переключить булево свойство (B/I/U) для выделения или текущего стиля
+function toggleSheetStyle(sheetObj, prop) {
+    if (!sheetObj) return;
+    
+    const range = getSheetSelectionRange();
+    
+    if (range.start === range.end) {
+        // Нет выделения — переключаем текущий стиль
+        const style = getSheetCurrentStyle(sheetObj);
+        style[prop] = !style[prop];
+        render();
+        updateSheetToolbarFromSelection();
+        return;
+    }
+    
+    // Есть выделение — проверяем, все ли уже с этим свойством
+    const allSet = isSheetSelectionAll(sheetObj, prop);
+    const newValue = !allSet;
+    
+    applySheetStyle(sheetObj, prop, newValue);
+    updateSheetToolbarFromSelection();
+}
+
+function updateSheetToolbarFromSelection() {
+    if (!editingSheet) return;
+    
+    const range = getSheetSelectionRange();
+    const chars = flattenSegments(editingSheet.richText || []);
+    let c;
+    
+    if (range.start === range.end) {
+        c = getSheetStyleAtCursor(editingSheet);
+    } else {
+        c = chars[range.start] || getSheetCurrentStyle(editingSheet);
+    }
+    
+    if (!c) c = getSheetCurrentStyle(editingSheet);
+    
+    document.getElementById('sheet-text-bold').classList.toggle('active', !!c.bold);
+    document.getElementById('sheet-text-italic').classList.toggle('active', !!c.italic);
+    document.getElementById('sheet-text-underline').classList.toggle('active', !!c.underline);
+    
+    const colorEl = document.getElementById('sheet-text-color');
+    const sizeEl = document.getElementById('sheet-text-size');
+    const fontEl = document.getElementById('sheet-text-font');
+    
+    if (document.activeElement !== colorEl) {
+        colorEl.value = c.color || '#000000';
+    }
+    if (document.activeElement !== sizeEl) {
+        if (range.start === range.end) {
+            sizeEl.value = getSheetCurrentStyle(editingSheet).size || 18;
+        } else {
+            const sz = getSheetSelectionValue(editingSheet, 'size');
+            sizeEl.value = sz !== null ? sz : (c.size || 18);
+        }
+    }
+    if (document.activeElement !== fontEl) {
+        if (range.start === range.end) {
+            fontEl.value = getSheetCurrentStyle(editingSheet).font || 'Arial';
+        } else {
+            const f = getSheetSelectionValue(editingSheet, 'font');
+            fontEl.value = f !== null ? f : (c.font || 'Arial');
+        }
+    }
+    
+    ['sheet-text-left', 'sheet-text-center', 'sheet-text-right'].forEach(id => 
+        document.getElementById(id).classList.remove('active'));
+    const align = editingSheet.textAlign || 'left';
+    document.getElementById('sheet-text-' + align).classList.add('active');
+}
+
+// ============================================================
 // ПРИМЕНЕНИЕ СУЩЕСТВУЮЩИХ ВЫДЕЛЕНИЙ ТЕКСТА
 // ============================================================
 function applyExistingTextHighlights(container, textCommentsBySubtask) {
@@ -11023,11 +11909,6 @@ function addGlobalKeyListeners() {
             // Иначе не мешаем — сработает обработчик 'paste'
             return;
         }
-        if (e.key === 't' || e.key === 'T') { e.preventDefault(); document.getElementById('btn-text').click(); return; }
-        if (e.key === 'i' || e.key === 'I') { e.preventDefault(); document.getElementById('btn-image').click(); return; }
-        if (e.key === 'p' || e.key === 'P') { e.preventDefault(); document.getElementById('btn-draw').click(); return; }
-        if (e.key === 'e' || e.key === 'E') { e.preventDefault(); document.getElementById('btn-eraser').click(); return; }
-        if (e.key === 's' || e.key === 'S') { e.preventDefault(); document.getElementById('btn-sheets').click(); return; }
         if (e.key === 'Escape') { selected = []; requestRender(); return; }
     });
 }
@@ -11410,6 +12291,148 @@ function deleteSelected() {
     showHint('🗑️ Удалено');
     saveBoardToServer();
 }
+
+function hitTestSheetText(worldX, worldY, sheetObj) {
+    const layoutInfo = getSheetTextLayout(sheetObj);
+    const { lines, textLeft, textTop, lineYs, lineHeights, lineToFlatStart } = layoutInfo;
+    
+    if (!lines || lines.length === 0) return 0;
+    
+    const localX = worldX - textLeft;
+    const localY = worldY - textTop;
+    
+    if (localY < 0) return 0;
+    
+    // Находим строку по Y
+    let lineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+        if (localY >= lineYs[i] && localY < lineYs[i] + lineHeights[i]) {
+            lineIdx = i;
+            break;
+        }
+    }
+    
+    if (lineIdx === -1) {
+        // Клик ниже текста
+        const chars = flattenSegments(sheetObj.richText);
+        return chars.length;
+    }
+    
+    const lineInfo = lines[lineIdx];
+    const lineLocalX = localX - lineInfo.startX;
+    
+    const startFlat = lineToFlatStart[lineIdx] !== undefined ? lineToFlatStart[lineIdx] : 0;
+    
+    if (lineLocalX < 0) {
+        return startFlat;
+    }
+    
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+    
+    let xCursor = 0;
+    let charInLine = 0;
+    for (const c of lineInfo.line) {
+        measureCtx.font = buildFont(c, 1);
+        const charW = measureCtx.measureText(c.char).width;
+        if (lineLocalX < xCursor + charW / 2) break;
+        xCursor += charW;
+        charInLine++;
+    }
+    
+    return startFlat + charInLine;
+}
+
+function countCharsBeforeLine(lines, lineIdx) {
+    let total = 0;
+    for (let i = 0; i < lineIdx; i++) {
+        lines[i].line.forEach(() => total++);
+        total++; // \n между строками
+    }
+    return total;
+}
+
+// ============================================================
+// ПОЗИЦИЯ КУРСОРА В ВИЗУАЛЬНЫХ СТРОКАХ (с учётом переноса)
+// ============================================================
+// lines — массив { line: [символы], startX, width }
+// focus — индекс в ПЛОСКОМ массиве chars (с \n)
+// Возвращаем: { lineIdx, x, charInLine } — где x в МИРОВЫХ координатах
+
+function getCursorPositionInLines(lines, focus) {
+    // Строим карту: для каждого символа (по индексу) — его строка и X
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+    
+    let flatIdx = 0;
+    
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+        const lineInfo = lines[lineIdx];
+        let xInLine = lineInfo.startX;
+        
+        for (let i = 0; i < lineInfo.line.length; i++) {
+            if (flatIdx === focus) {
+                return { lineIdx, x: xInLine, charInLine: i };
+            }
+            const c = lineInfo.line[i];
+            measureCtx.font = buildFont(c, 1);
+            xInLine += measureCtx.measureText(c.char).width;
+            flatIdx++;
+        }
+        
+        // Конец строки
+        if (flatIdx === focus) {
+            return { lineIdx, x: xInLine, charInLine: lineInfo.line.length };
+        }
+        
+        // Переход на новую строку — это \n, увеличиваем счётчик
+        // НО: \n есть только в конце логической строки, а не визуальной.
+        // Поэтому считаем \n только если следующая строка начинается с нового логического абзаца.
+        // Упрощение: сравниваем длину lineInfo.line с реальным количеством символов
+        // до следующего \n в flat-массиве. Но у нас нет flat-массива здесь.
+        // 
+        // ВМЕСТО ЭТОГО: используем тот факт, что wrapRichTextLines уже разбил
+        // по \n, а потом по ширине. Значит, между lineIdx и lineIdx+1 может
+        // быть \n (если это был абзац) или ничего (если это был перенос).
+        //
+        // Мы не можем это определить из lines. Поэтому эта функция НЕ МОЖЕТ
+        // корректно работать с focus. Нужен flat-массив.
+        
+        // Решение: передавать flatChars вместо lines.
+        flatIdx++; // предполагаем, что между строками всегда \n
+    }
+    
+    // Конец текста
+    const lastLine = lines[lines.length - 1];
+    if (!lastLine) return { lineIdx: 0, x: 0, charInLine: 0 };
+    
+    let lastX = lastLine.startX;
+    lastLine.line.forEach(c => {
+        measureCtx.font = buildFont(c, 1);
+        lastX += measureCtx.measureText(c.char).width;
+    });
+    return { lineIdx: lines.length - 1, x: lastX, charInLine: lastLine.line.length };
+}
+// По X (мировые координаты) найти индекс символа в строке
+function findCharInLineByX(lineInfo, targetX, sheetObj) {
+    const localX = targetX - lineInfo.startX;
+    if (localX <= 0) return 0;
+    
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+    
+    let xCursor = 0;
+    for (let i = 0; i < lineInfo.line.length; i++) {
+        const c = lineInfo.line[i];
+        measureCtx.font = buildFont(c, 1);
+        const charW = measureCtx.measureText(c.char).width;
+        if (localX < xCursor + charW / 2) return i;
+        xCursor += charW;
+    }
+    
+    return lineInfo.line.length;
+}
+
 // ============================================================
 // ИСТОРИЯ (undo/redo)
 // ============================================================
@@ -11924,6 +12947,15 @@ function initAllEventListeners() {
         closeTextEditor(false);
     });
 
+    // ===== ЖИВОЙ ПРЕДПРОСМОТР =====
+    document.getElementById('text-editor-input').addEventListener('input', function() {
+        if (!editingTextObj) return;
+        
+        editingTextObj.text = this.value;
+        updateTextDimensions(editingTextObj);
+        requestRender();
+    });
+
     document.getElementById('text-editor-input').addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeTextEditor(false);
         if (e.key === 'Enter' && e.ctrlKey) closeTextEditor(true);
@@ -12090,21 +13122,26 @@ function initAllEventListeners() {
         }
     });
 
-    window.addEventListener('blur', function() {
-        if (!shapeStart && !isDrawing && !isSelecting && !isResizing && !isDraggingGroup) {
-            isErasing = false;
-            eraserCooldown = false;
-            if (isPanning) {
-                isPanning = false;
-                canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
-                render();
-            }
-        }
-    });
-
     document.addEventListener('mouseup', function(e) {
         isErasing = false;
         eraserCooldown = false;
+        
+        // ===== НЕ СБРАСЫВАЕМ РЕЖИМ, ЕСЛИ КЛИК ПО ЛЮБОМУ ЭЛЕМЕНТУ ПАНЕЛИ ЛИСТА =====
+        const sheetToolbar = document.getElementById('sheet-text-toolbar');
+        const sheetEditBtn = document.getElementById('sheet-edit-btn');
+        
+        if (isSheetTextMode) {
+            // Если режим редактирования листа активен — любые клики вне canvas не сбрасывают его,
+            // кроме кликов по самому canvas (там своя логика)
+            if (sheetToolbar && sheetToolbar.contains(e.target)) return;
+            if (sheetEditBtn && sheetEditBtn.contains(e.target)) return;
+            // Клик по <select>, <input>, <option> внутри панели
+            if (e.target.closest && e.target.closest('#sheet-text-toolbar')) return;
+            // Клик по самому canvas — тоже не сбрасываем здесь (обработается в canvas mouseup)
+            if (canvas && canvas.contains(e.target)) return;
+            // Всё остальное — не трогаем режим листа
+            return;
+        }
         
         if (canvas && !canvas.contains(e.target)) {
             resetAllModes();
@@ -12123,7 +13160,6 @@ function initAllEventListeners() {
     canvas.addEventListener('mousedown', function(e) {
         const coords = getCoords(e);
 
-        // ===== РЕЖИМ РЕДАКТИРОВАНИЯ ЛИСТА =====
         if (isSheetTextMode && editingSheet) {
             const minX = Math.min(editingSheet.x1, editingSheet.x2);
             const maxX = Math.max(editingSheet.x1, editingSheet.x2);
@@ -12132,18 +13168,21 @@ function initAllEventListeners() {
             
             if (coords.x >= minX && coords.x <= maxX && 
                 coords.y >= minY && coords.y <= maxY) {
-                // Клик по листу — фокус на листе, продолжаем редактирование
                 focusTarget = 'sheet';
-                e.preventDefault();
-                return;
-            } else {
-                // Клик вне листа — НЕ закрываем режим, просто снимаем фокус
-                // НО: если кликнули по кнопке "Готово" — это обработается отдельно
-                // Здесь просто игнорируем клик вне листа, чтобы не сбрасывать режим
-                // Если хотите завершить — нажмите "Готово" или Esc
+                
+                // ===== ОПРЕДЕЛЯЕМ ПОЗИЦИЮ КУРСОРА =====
+                const idx = hitTestSheetText(coords.x, coords.y, editingSheet);
+                sheetSelection.anchor = idx;
+                sheetSelection.focus = idx;
+                isSheetSelecting = true;
+                
+                updateSheetToolbarFromSelection();
+                render();
                 e.preventDefault();
                 return;
             }
+            e.preventDefault();
+            return;
         }
 
         // ===== ОБЫЧНЫЙ РЕЖИМ =====
@@ -12209,15 +13248,25 @@ function initAllEventListeners() {
             
             if (found) {
                 if (!e.shiftKey) {
-                    selected = [found.id];  
-                    // Если это не лист — скрываем кнопку
-                    if (found.type !== 'sheet') {
+                    selected = [found.id];
+                    if (found.type === 'sheet') {
+                        _blockSheetEditBtn = false;
+                    } else {
                         forceHideSheetEditButton();
                     }
                 } else {
                     const idx = selected.indexOf(found.id);
                     if (idx >= 0) selected.splice(idx, 1);
                     else selected.push(found.id);
+                    const hasSheet = selected.some(id => {
+                        const o = objects.find(obj => obj.id === id);
+                        return o && o.type === 'sheet';
+                    });
+                    if (hasSheet) {
+                        _blockSheetEditBtn = false;
+                    } else {
+                        forceHideSheetEditButton();
+                    }
                 }
                 render();
                 startDragGroup(e);
@@ -12341,6 +13390,14 @@ function initAllEventListeners() {
         if (mode === 'pan') return;
         e.preventDefault();
         const coords = getCoords(e);
+        if (isSheetSelecting && editingSheet) {
+            const idx = hitTestSheetText(coords.x, coords.y, editingSheet);
+            sheetSelection.focus = idx;
+            
+            updateSheetToolbarFromSelection();
+            render();
+            return;
+        }
 
         if (isDraggingGroup) {
             applyDragGroup(coords);
@@ -12395,7 +13452,7 @@ function initAllEventListeners() {
                     
                     // ===== FREE-LINE =====
                     if (state.type === 'free-line' && state.points) {
-                        // Определяем опорную точку
+                        // Исходные границы
                         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
                         state.points.forEach(p => {
                             if (p.x < minX) minX = p.x;
@@ -12403,10 +13460,11 @@ function initAllEventListeners() {
                             if (p.y < minY) minY = p.y;
                             if (p.y > maxY) maxY = p.y;
                         });
+                        
                         const oldW = maxX - minX;
                         const oldH = maxY - minY;
                         
-                        // Считаем новые границы
+                        // Считаем новые границы (что сдвинулось)
                         let newMinX = minX, newMaxX = maxX, newMinY = minY, newMaxY = maxY;
                         if (resizeHandle === 'tl' || resizeHandle === 'l' || resizeHandle === 'bl') newMinX += slowDx;
                         if (resizeHandle === 'tr' || resizeHandle === 'r' || resizeHandle === 'br') newMaxX += slowDx;
@@ -12418,14 +13476,18 @@ function initAllEventListeners() {
                         const scaleX = oldW > 0 ? newW / oldW : 1;
                         const scaleY = oldH > 0 ? newH / oldH : 1;
                         
-                        // Опорная точка
-                        let ax = newMinX, ay = newMinY;
-                        if (resizeHandle === 'tr' || resizeHandle === 'r' || resizeHandle === 'br') ax = newMinX;
-                        if (resizeHandle === 'tl' || resizeHandle === 'l' || resizeHandle === 'bl') ax = newMaxX;
-                        // Простое масштабирование от левого верхнего
-                        ax = minX;
-                        ay = minY;
+                        // ===== ОПОРНАЯ ТОЧКА — та, которая НЕ двигалась =====
+                        let ax, ay;
+                        if (resizeHandle === 'tl') { ax = maxX; ay = maxY; }       // тянем за левый верх — опора правый низ
+                        if (resizeHandle === 'tr') { ax = minX; ay = maxY; }       // тянем за правый верх — опора левый низ
+                        if (resizeHandle === 'bl') { ax = maxX; ay = minY; }       // тянем за левый низ — опора правый верх
+                        if (resizeHandle === 'br') { ax = minX; ay = minY; }       // тянем за правый низ — опора левый верх
+                        if (resizeHandle === 't')  { ax = (minX + maxX) / 2; ay = maxY; }  // тянем за верх — опора низ
+                        if (resizeHandle === 'b')  { ax = (minX + maxX) / 2; ay = minY; }  // тянем за низ — опора верх
+                        if (resizeHandle === 'l')  { ax = maxX; ay = (minY + maxY) / 2; }  // тянем за лево — опора право
+                        if (resizeHandle === 'r')  { ax = minX; ay = (minY + maxY) / 2; }  // тянем за право — опора лево
                         
+                        // Масштабируем точки относительно опорной точки
                         obj.points = state.points.map(p => ({
                             x: ax + (p.x - ax) * scaleX,
                             y: ay + (p.y - ay) * scaleY
@@ -12571,6 +13633,12 @@ function initAllEventListeners() {
             return;
         }
 
+        if (isSheetSelecting) {
+            isSheetSelecting = false;
+            render();
+            return;
+        }
+
         if (isResizing) {
             isResizing = false;
             window._resizeStartState = null;
@@ -12689,7 +13757,7 @@ function initAllEventListeners() {
                     color: currentColor,
                     thickness: currentThickness,
                     dash: isDashed ? [6, 6] : [],
-                    dashed: isDashed,
+                    dashed: false,
                     userId: getCurrentUserId()
                 };
             }
@@ -12738,135 +13806,203 @@ function initAllEventListeners() {
     });
 
         // ============================================================
-    // СКРЫТЫЙ TEXTAREA ДЛЯ РЕДАКТИРОВАНИЯ ЛИСТА
-    // ============================================================
-    const sheetHiddenInput = document.getElementById('sheet-hidden-input');
-    if (sheetHiddenInput) {
-        // Синхронизация при вводе
-        sheetHiddenInput.addEventListener('input', function() {
-            if (!isSheetTextMode || !editingSheet) return;
-            editingSheet.text = this.value;
-            autoExpandSheet(editingSheet);
-            render();
-            
-            // Сохраняем с задержкой
-            clearTimeout(this._saveTimeout);
-            this._saveTimeout = setTimeout(() => {
-                saveBoardHistory();
-                saveBoardToServer();
-            }, 500);
-        });
-        
-        // Escape — выход из режима
-        sheetHiddenInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                stopSheetTextEditing();
-            }
-        });
-    }
-
-
+        // КНОПКА РЕДАКТИРОВАНИЯ ЛИСТА
         // ============================================================
-    // КНОПКА РЕДАКТИРОВАНИЯ ЛИСТА
-    // ============================================================
-    const sheetEditBtn = document.getElementById('sheet-edit-btn');
-    if (sheetEditBtn) {
-        sheetEditBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (isSheetTextMode) {
-                stopSheetTextEditing();
-            } else {
-                startSheetTextEditing();
-            }
-        });
-    }
+        const sheetEditBtn = document.getElementById('sheet-edit-btn');
+        if (sheetEditBtn) {
+            // ===== БЛОКИРУЕМ ВСПЛЫТИЕ НА CANVAS =====
+            sheetEditBtn.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+            });
+            sheetEditBtn.addEventListener('mouseup', function(e) {
+                e.stopPropagation();
+            });
+            sheetEditBtn.addEventListener('touchstart', function(e) {
+                e.stopPropagation();
+            });
+            sheetEditBtn.addEventListener('touchend', function(e) {
+                e.stopPropagation();
+            });
+            sheetEditBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                if (isSheetTextMode) {
+                    stopSheetTextEditing();
+                } else {
+                    startSheetTextEditing();
+                }
+            });
+        }
 
-    // ============================================================
-    // ПАНЕЛЬ ФОРМАТИРОВАНИЯ ЛИСТА
-    // ============================================================
-    const sheetFontSelect = document.getElementById('sheet-text-font');
-    if (sheetFontSelect) {
-        sheetFontSelect.addEventListener('change', function() {
-            if (editingSheet) {
-                editingSheet.textFont = this.value;
-                saveBoardHistory();
-                render();
-                saveBoardToServer();
-            }
-        });
-    }
+    (function initSheetTextToolbar() {
+        const boldBtn = document.getElementById('sheet-text-bold');
+        const italicBtn = document.getElementById('sheet-text-italic');
+        const underlineBtn = document.getElementById('sheet-text-underline');
+        const colorInput = document.getElementById('sheet-text-color');
+        const sizeInput = document.getElementById('sheet-text-size');
+        const fontSelect = document.getElementById('sheet-text-font');
+        
+        if (!boldBtn) return;
 
-    const sheetSizeInput = document.getElementById('sheet-text-size');
-    if (sheetSizeInput) {
-        sheetSizeInput.addEventListener('input', function() {
-            if (editingSheet) {
-                editingSheet.textSize = parseInt(this.value) || 18;
-                render();
-            }
+        // ===== B / I / U =====
+        boldBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
+        boldBtn.addEventListener('click', e => {
+            e.preventDefault(); e.stopPropagation();
+            if (!editingSheet) return;
+            toggleSheetStyle(editingSheet, 'bold');
         });
-        sheetSizeInput.addEventListener('change', function() {
-            if (editingSheet) {
-                saveBoardHistory();
-                saveBoardToServer();
-            }
-        });
-    }
 
-    const sheetColorInput = document.getElementById('sheet-text-color');
-    if (sheetColorInput) {
-        sheetColorInput.addEventListener('input', function() {
-            if (editingSheet) {
-                editingSheet.textColor = this.value;
-                render();
-            }
+        italicBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
+        italicBtn.addEventListener('click', e => {
+            e.preventDefault(); e.stopPropagation();
+            if (!editingSheet) return;
+            toggleSheetStyle(editingSheet, 'italic');
         });
-        sheetColorInput.addEventListener('change', function() {
-            if (editingSheet) {
-                saveBoardHistory();
-                saveBoardToServer();
-            }
-        });
-    }
 
-    ['bold', 'italic', 'underline'].forEach(style => {
-        const btn = document.getElementById(`sheet-text-${style}`);
-        if (btn) {
-            btn.addEventListener('click', function() {
+        underlineBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
+        underlineBtn.addEventListener('click', e => {
+            e.preventDefault(); e.stopPropagation();
+            if (!editingSheet) return;
+            toggleSheetStyle(editingSheet, 'underline');
+        });
+
+        // ===== ЦВЕТ =====
+        if (colorInput) {
+            colorInput.addEventListener('mousedown', e => e.stopPropagation());
+            colorInput.addEventListener('input', function(e) {
+                e.stopPropagation();
                 if (!editingSheet) return;
-                this.classList.toggle('active');
-                editingSheet['text' + style.charAt(0).toUpperCase() + style.slice(1)] = 
-                    this.classList.contains('active');
-                saveBoardHistory();
+                const range = getSheetSelectionRange();
+                if (range.start === range.end) {
+                    // Нет выделения — в текущий стиль
+                    getSheetCurrentStyle(editingSheet).color = this.value;
+                    editingSheet.textColor = this.value;
+                } else {
+                    // Есть выделение — применяем
+                    const chars = flattenSegments(editingSheet.richText);
+                    for (let i = range.start; i < range.end; i++) {
+                        if (chars[i]) chars[i].color = this.value;
+                    }
+                    editingSheet.richText = charsToSegments(chars);
+                    editingSheet.text = segmentsToText(editingSheet.richText);
+                }
                 render();
+                saveBoardHistory();
                 saveBoardToServer();
             });
         }
-    });
 
-    ['left', 'center', 'right'].forEach(align => {
-        const btn = document.getElementById(`sheet-text-${align}`);
-        if (btn) {
-            btn.addEventListener('click', function() {
+        if (sizeInput) {
+            sizeInput.addEventListener('mousedown', e => e.stopPropagation());
+            sizeInput.addEventListener('keydown', e => {
+                if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+                    e.stopPropagation();
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applySizeFromInput();
+                    sizeInput.blur();
+                }
+            });
+            sizeInput.addEventListener('blur', function() {
+                applySizeFromInput();
+            });
+            sizeInput.addEventListener('change', function() {
+                applySizeFromInput();
+            });
+        }
+
+        function applySizeFromInput() {
+            if (!editingSheet) return;
+            const el = document.getElementById('sheet-text-size');
+            if (!el) return;
+            const size = parseInt(el.value);
+            if (!size || size < 4 || size > 200) return;
+            
+            const range = getSheetSelectionRange();
+            const chars = flattenSegments(editingSheet.richText);
+            
+            if (range.start === range.end) {
+                if (!editingSheet._currentStyle) {
+                    editingSheet._currentStyle = {
+                        bold: false, italic: false, underline: false, strike: false,
+                        color: editingSheet.textColor || '#000000',
+                        size: editingSheet.textSize || 18,
+                        font: editingSheet.textFont || 'Arial'
+                    };
+                }
+                editingSheet._currentStyle.size = size;
+                editingSheet.textSize = size;
+            } else {
+                for (let i = range.start; i < range.end; i++) {
+                    if (chars[i]) chars[i].size = size;
+                }
+                editingSheet.richText = charsToSegments(chars);
+                editingSheet.text = segmentsToText(editingSheet.richText);
+                autoExpandSheet(editingSheet);
+            }
+            
+            el.value = size;
+            render();
+            saveBoardHistory();
+            saveBoardToServer();
+        }
+
+        // ===== ШРИФТ =====
+        if (fontSelect) {
+            fontSelect.addEventListener('mousedown', e => e.stopPropagation());
+            fontSelect.addEventListener('change', function(e) {
+                e.stopPropagation();
                 if (!editingSheet) return;
-                ['sheet-text-left', 'sheet-text-center', 'sheet-text-right'].forEach(id => 
-                    document.getElementById(id).classList.remove('active'));
+                const font = this.value;
+                const range = getSheetSelectionRange();
+                if (range.start === range.end) {
+                    getSheetCurrentStyle(editingSheet).font = font;
+                    editingSheet.textFont = font;
+                } else {
+                    const chars = flattenSegments(editingSheet.richText);
+                    for (let i = range.start; i < range.end; i++) {
+                        if (chars[i]) chars[i].font = font;
+                    }
+                    editingSheet.richText = charsToSegments(chars);
+                    editingSheet.text = segmentsToText(editingSheet.richText);
+                }
+                render();
+                saveBoardHistory();
+                saveBoardToServer();
+            });
+        }
+
+        ['left', 'center', 'right'].forEach(align => {
+            const btn = document.getElementById('sheet-text-' + align);
+            if (!btn) return;
+            btn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
+            btn.addEventListener('click', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                if (!editingSheet) return;
+                ['sheet-text-left', 'sheet-text-center', 'sheet-text-right'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('active');
+                });
                 this.classList.add('active');
                 editingSheet.textAlign = align;
-                saveBoardHistory();
                 render();
+                saveBoardHistory();
                 saveBoardToServer();
             });
-        }
-    });
-
-    const sheetDoneBtn = document.getElementById('sheet-text-done');
-    if (sheetDoneBtn) {
-        sheetDoneBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            stopSheetTextEditing();
         });
-    }
+
+        // ===== ГОТОВО =====
+        const doneBtn = document.getElementById('sheet-text-done');
+        if (doneBtn) {
+            doneBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
+            doneBtn.addEventListener('click', e => {
+                e.preventDefault(); e.stopPropagation();
+                stopSheetTextEditing();
+            });
+        }
+    })();
 
     // ============================================================
     // СОХРАНЕНИЕ
@@ -12876,6 +14012,8 @@ function initAllEventListeners() {
         showHint('💾 Сохранено!');
     });
 }
+
+
 // ============================================================
 // ЛАСТИК - ИСПРАВЛЕННАЯ ВЕРСИЯ
 // ============================================================
@@ -13044,27 +14182,48 @@ document.addEventListener('paste', function(e) {
         return;
     }
     
-    // ===== 2. РЕЖИМ РЕДАКТИРОВАНИЯ ЛИСТА =====
-    // В лист можно вставить только текст (из глобального буфера)
     if (isSheetTextMode && editingSheet) {
-        console.log('📋 → ВСТАВКА В ЛИСТ');
         e.preventDefault();
         e.stopPropagation();
         
         const text = e.clipboardData.getData('text/plain');
-        console.log('📋 Текст из буфера:', text ? text.substring(0, 100) : 'ПУСТО');
+        if (!text || text.length === 0) return;
         
-        if (text && text.length > 0) {
-            if (!editingSheet.text) editingSheet.text = '';
-            editingSheet.text += text;
-            autoExpandSheet(editingSheet);
-            saveBoardHistory();
-            render();
-            saveBoardToServer();
-            showHint('📋 Текст вставлен в лист');
-        } else {
-            showHint('❌ Буфер пуст');
+        const range = getSheetSelectionRange();
+        const chars = flattenSegments(editingSheet.richText);
+        
+        let baseStyle = editingSheet._currentStyle || {
+            bold: false, italic: false, underline: false, strike: false,
+            color: editingSheet.textColor || '#000000',
+            size: editingSheet.textSize || 18,
+            font: editingSheet.textFont || 'Arial'
+        };
+        if (range.start > 0 && chars[range.start - 1]) {
+            const left = chars[range.start - 1];
+            baseStyle = {
+                bold: left.bold, italic: left.italic, underline: left.underline,
+                strike: left.strike, color: left.color, size: left.size, font: left.font
+            };
         }
+        
+        const before = chars.slice(0, range.start);
+        const after = chars.slice(range.end);
+        const inserted = [];
+        for (const ch of text) {
+            inserted.push({ ...baseStyle, char: ch });
+        }
+        const newChars = [...before, ...inserted, ...after];
+        
+        editingSheet.richText = charsToSegments(newChars);
+        editingSheet.text = segmentsToText(editingSheet.richText);
+        sheetSelection.anchor = sheetSelection.focus = range.start + text.length;
+        
+        autoExpandSheet(editingSheet);
+        render();
+        updateSheetToolbarFromSelection();
+        saveBoardHistory();
+        saveBoardToServer();
+        showHint('📋 Текст вставлен в лист');
         return;
     }
     
@@ -13133,147 +14292,191 @@ document.addEventListener('paste', function(e) {
 }, true);
 
 copySelected = async function() {
+    // ============================================================
+    // ПРИОРИТЕТ 1: РЕЖИМ РЕДАКТИРОВАНИЯ ЛИСТА — КОПИРУЕМ ТЕКСТ
+    // ============================================================
+    if (isSheetTextMode && editingSheet) {
+        const range = getSheetSelectionRange();
+        const chars = flattenSegments(editingSheet.richText);
+        
+        // Есть выделение → копируем только фрагмент
+        let textToCopy = '';
+        if (range.start !== range.end) {
+            textToCopy = chars.slice(range.start, range.end).map(c => c.char).join('');
+        } else {
+            // Нет выделения → копируем весь текст листа
+            textToCopy = segmentsToText(editingSheet.richText);
+        }
+        
+        if (!textToCopy || textToCopy.length === 0) {
+            showHint('❌ На листе нет текста');
+            return;
+        }
+        
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+            if (range.start !== range.end) {
+                showHint(`📝 Скопирован фрагмент (${textToCopy.length} симв.)`);
+            } else {
+                showHint(`📝 Скопирован весь текст листа (${textToCopy.length} симв.)`);
+            }
+        } catch(e) {
+            // Fallback для старых браузеров
+            const ta = document.createElement('textarea');
+            ta.value = textToCopy;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showHint(`📝 Скопирован текст (${textToCopy.length} симв.)`);
+        }
+        return;
+    }
+    
+    // ============================================================
+    // ПРИОРИТЕТ 2: ВЫДЕЛЕНЫ ОБЪЕКТЫ
+    // ============================================================
     if (selected.length === 0) {
         showHint('Нет объектов для копирования');
         return;
     }
     
-    // Сохраняем во внутренний буфер
+    // ===== Сохраняем во внутренний буфер для Ctrl+V внутри доски =====
     clipboard = [];
-    let hasText = false;
-    let textContent = '';
-    let hasImages = false;
-    let allTextObjects = true;
-    let allImagesObjects = true;
-    
-    // Собираем данные о выделенных объектах
     const selectedObjects = [];
     selected.forEach(id => {
         const obj = objects.find(o => o.id === id);
         if (obj) {
             selectedObjects.push(obj);
             clipboard.push(JSON.parse(JSON.stringify(obj)));
-            
-            if (obj.type === 'text' && obj.text) {
-                hasText = true;
-                textContent += (textContent ? '\n' : '') + obj.text;
-            } else {
-                allTextObjects = false;
-            }
-            if (obj.type === 'image') {
-                hasImages = true;
-            } else {
-                allImagesObjects = false;
-            }
         }
     });
     
-    console.log('📋 Выделено объектов:', selectedObjects.length);
-    console.log('📋 Типы:', selectedObjects.map(o => o.type).join(', '));
+    // Проверяем типы
+    let allText = true;
+    let allImages = true;
+    let hasText = false;
+    let hasImages = false;
+    let textContent = '';
     
-    // ===== СЛУЧАЙ 1: ТОЛЬКО ТЕКСТ =====
-    if (allTextObjects && hasText && selectedObjects.length > 0) {
+    selectedObjects.forEach(obj => {
+        if (obj.type === 'text' && obj.text) {
+            hasText = true;
+            textContent += (textContent ? '\n' : '') + obj.text;
+        } else {
+            allText = false;
+        }
+        if (obj.type === 'image') {
+            hasImages = true;
+        } else {
+            allImages = false;
+        }
+    });
+    
+    // ============================================================
+    // СЛУЧАЙ A: ТОЛЬКО ТЕКСТОВЫЕ ОБЪЕКТЫ → копируем текст
+    // ============================================================
+    if (allText && hasText && selectedObjects.length > 0) {
         try {
             await navigator.clipboard.writeText(textContent);
-            showHint('📝 Текст скопирован (' + selectedObjects.length + ' блок' + (selectedObjects.length > 1 ? 'ов' : '') + ')');
-            console.log('✅ Текст скопирован:', textContent.substring(0, 50));
+            showHint(`📝 Текст скопирован (${selectedObjects.length} блок.)`);
             return;
         } catch(e) {
-            console.log('⚠️ Не удалось скопировать текст:', e);
+            const ta = document.createElement('textarea');
+            ta.value = textContent;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showHint('📝 Текст скопирован');
+            return;
         }
     }
     
-    // ===== СЛУЧАЙ 2: ТОЛЬКО ИЗОБРАЖЕНИЯ =====
-    if (allImagesObjects && hasImages && selectedObjects.length > 0) {
+    // ============================================================
+    // СЛУЧАЙ B: ТОЛЬКО КАРТИНКИ → копируем PNG
+    // ============================================================
+    if (allImages && hasImages && selectedObjects.length > 0) {
         try {
             const img = selectedObjects[0];
             if (img && img.imgData) {
                 const response = await fetch(img.imgData);
                 const blob = await response.blob();
                 await navigator.clipboard.write([
-                    new ClipboardItem({
-                        [blob.type]: blob
-                    })
+                    new ClipboardItem({ [blob.type]: blob })
                 ]);
                 showHint('🖼️ Изображение скопировано');
-                console.log('✅ Изображение скопировано');
                 return;
             }
         } catch(e) {
-            console.log('⚠️ Не удалось скопировать изображение:', e);
+            console.log('⚠️ Не удалось скопировать изображение через API, рендерим PNG');
+            // Падаем в общий случай C — рендерим PNG
         }
     }
     
-    // ===== СЛУЧАЙ 3: СМЕШАННЫЕ ОБЪЕКТЫ =====
+    // ============================================================
+    // СЛУЧАЙ C: СМЕШАННОЕ / ФИГУРЫ / ЛИСТ → рендерим всё в PNG
+    // ============================================================
     try {
-        console.log('🖼️ Создаём PNG для Paint...');
-        
-        // ===== ОПРЕДЕЛЕНИЕ ГРАНИЦ =====
+        // Определяем границы всех выделенных объектов
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         let hasValidBounds = false;
         
-        console.log('📊 Объекты для рендера:');
-        
-        selectedObjects.forEach((obj, index) => {
-            console.log(`  ${index+1}. Тип: ${obj.type}, ID: ${obj.id}`);
-            
+        selectedObjects.forEach(obj => {
             let bounds = null;
             
             if (obj.type === 'text') {
-                console.log(`     Текст: "${obj.text?.substring(0, 30)}", x: ${obj.x}, y: ${obj.y}, w: ${obj.width}, h: ${obj.height}`);
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                const fontSize = obj.size || 24;
+                const font = obj.font || 'Arial';
+                tempCtx.font = (obj.bold ? 'bold ' : '') + (obj.italic ? 'italic ' : '') + fontSize + 'px ' + font;
+                const lines = (obj.text || '').split('\n');
+                let maxWidth = 0;
+                lines.forEach(line => {
+                    const w = tempCtx.measureText(line).width;
+                    if (w > maxWidth) maxWidth = w;
+                });
+                const lineHeight = fontSize * 1.4;
                 bounds = {
                     minX: obj.x,
-                    maxX: obj.x + (obj.width || 100),
+                    maxX: obj.x + maxWidth,
                     minY: obj.y,
-                    maxY: obj.y + (obj.height || 40)
+                    maxY: obj.y + lines.length * lineHeight
                 };
             } else if (obj.type === 'image') {
-                console.log(`     Изображение: x: ${obj.x}, y: ${obj.y}, w: ${obj.width}, h: ${obj.height}`);
-                bounds = {
-                    minX: obj.x,
-                    maxX: obj.x + obj.width,
-                    minY: obj.y,
-                    maxY: obj.y + obj.height
-                };
+                bounds = { minX: obj.x, maxX: obj.x + obj.width, minY: obj.y, maxY: obj.y + obj.height };
             } else if (obj.type === 'free-line' && obj.points && obj.points.length > 0) {
                 const xs = obj.points.map(p => p.x);
                 const ys = obj.points.map(p => p.y);
-                console.log(`     Free-line: точек ${obj.points.length}, x: ${Math.min(...xs)}-${Math.max(...xs)}, y: ${Math.min(...ys)}-${Math.max(...ys)}`);
-                bounds = {
-                    minX: Math.min(...xs),
-                    maxX: Math.max(...xs),
-                    minY: Math.min(...ys),
-                    maxY: Math.max(...ys)
-                };
-            } else if (obj.type === 'segment' || obj.type === 'ray' || obj.type === 'line') {
-                console.log(`     Линия: (${obj.x1},${obj.y1}) -> (${obj.x2},${obj.y2})`);
-                bounds = {
-                    minX: Math.min(obj.x1, obj.x2),
-                    maxX: Math.max(obj.x1, obj.x2),
-                    minY: Math.min(obj.y1, obj.y2),
-                    maxY: Math.max(obj.y1, obj.y2)
-                };
+                bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
             } else if (obj.type === 'circle' || obj.type === 'sphere') {
                 const cx = (obj.x1 + obj.x2) / 2;
                 const cy = (obj.y1 + obj.y2) / 2;
                 const r = Math.sqrt((obj.x2 - obj.x1) ** 2 + (obj.y2 - obj.y1) ** 2) / 2;
-                console.log(`     Круг: центр (${cx},${cy}), r: ${r}`);
-                bounds = {
-                    minX: cx - r,
-                    maxX: cx + r,
-                    minY: cy - r,
-                    maxY: cy + r
-                };
+                bounds = { minX: cx - r, maxX: cx + r, minY: cy - r, maxY: cy + r };
+            } else if (obj.type === 'coords') {
+                bounds = { minX: -500, maxX: 500, minY: -500, maxY: 500 };
             } else if (obj.type === 'sheet') {
-                console.log(`     Лист: (${obj.x1},${obj.y1}) -> (${obj.x2},${obj.y2})`);
-                bounds = {
-                    minX: Math.min(obj.x1, obj.x2),
-                    maxX: Math.max(obj.x1, obj.x2),
-                    minY: Math.min(obj.y1, obj.y2),
-                    maxY: Math.max(obj.y1, obj.y2)
-                };
-            } else if (obj.type !== 'coords') {
-                console.log(`     Фигура: (${obj.x1},${obj.y1}) -> (${obj.x2},${obj.y2})`);
+                const minX2 = Math.min(obj.x1, obj.x2);
+                const maxX2 = Math.max(obj.x1, obj.x2);
+                const minY2 = Math.min(obj.y1, obj.y2);
+                const maxY2 = Math.max(obj.y1, obj.y2);
+                bounds = { minX: minX2, maxX: maxX2, minY: minY2, maxY: maxY2 };
+                
+                // Учитываем richText — если текст длиннее листа
+                if (obj.richText) {
+                    const layout = getSheetTextLayout(obj);
+                    if (layout.lines.length > 0) {
+                        const textBottom = layout.textTop + layout.lines.length * layout.lineHeight;
+                        if (textBottom > bounds.maxY) bounds.maxY = textBottom;
+                    }
+                }
+            } else {
                 bounds = {
                     minX: Math.min(obj.x1, obj.x2),
                     maxX: Math.max(obj.x1, obj.x2),
@@ -13283,7 +14486,6 @@ copySelected = async function() {
             }
             
             if (bounds) {
-                console.log(`     Границы: x: ${bounds.minX}-${bounds.maxX}, y: ${bounds.minY}-${bounds.maxY}`);
                 if (bounds.minX < minX) minX = bounds.minX;
                 if (bounds.maxX > maxX) maxX = bounds.maxX;
                 if (bounds.minY < minY) minY = bounds.minY;
@@ -13293,68 +14495,115 @@ copySelected = async function() {
         });
         
         if (!hasValidBounds) {
-            console.error('❌ Не удалось определить границы');
             showHint('❌ Не удалось определить область');
             return;
         }
         
-        // Добавляем отступы
-        const pad = 60;
-        minX -= pad;
-        minY -= pad;
-        maxX += pad;
-        maxY += pad;
-        
+        const pad = 20;
+        minX -= pad; minY -= pad; maxX += pad; maxY += pad;
         const width = maxX - minX;
         const height = maxY - minY;
-        
-        console.log('📐 ИТОГОВЫЕ ГРАНИЦЫ:');
-        console.log(`   minX: ${minX}, maxX: ${maxX}, width: ${width}`);
-        console.log(`   minY: ${minY}, maxY: ${maxY}, height: ${height}`);
         
         if (width < 1 || height < 1) {
             showHint('❌ Область слишком маленькая');
             return;
         }
         
-        // ===== СОЗДАЁМ ВРЕМЕННЫЙ CANVAS =====
+        // Создаём временный canvas
         const scale = 2;
-        const canvasWidth = Math.round(width * scale);
-        const canvasHeight = Math.round(height * scale);
-        
-        console.log(`📐 Временный canvas: ${canvasWidth}x${canvasHeight}`);
-        
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvasWidth;
-        tempCanvas.height = canvasHeight;
+        tempCanvas.width = Math.round(width * scale);
+        tempCanvas.height = Math.round(height * scale);
         const tempCtx = tempCanvas.getContext('2d');
         
-        // БЕЛЫЙ ФОН
+        // Белый фон
         tempCtx.fillStyle = '#ffffff';
-        tempCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
         
-        // ===== РИСУЕМ ОБЪЕКТЫ НА ВРЕМЕННОМ CANVAS =====
-        const toScreen = (wx, wy) => {
-            return {
-                x: (wx - minX) * scale,
-                y: (wy - minY) * scale
-            };
-        };
+        const toScreen = (wx, wy) => ({
+            x: (wx - minX) * scale,
+            y: (wy - minY) * scale
+        });
         
-        console.log('🎨 Рисуем объекты на временном canvas...');
+        // Рисуем объекты
+        const imagePromises = [];
         
         selectedObjects.forEach(obj => {
             const color = obj.color || currentColor || '#000000';
             const thickness = obj.thickness || currentThickness || 2;
             
-            // ===== ТЕКСТ =====
+            // ----- ЛИСТ -----
+            if (obj.type === 'sheet') {
+                const p1 = toScreen(Math.min(obj.x1, obj.x2), Math.min(obj.y1, obj.y2));
+                const p2 = toScreen(Math.max(obj.x1, obj.x2), Math.max(obj.y1, obj.y2));
+                const w = p2.x - p1.x;
+                const h = p2.y - p1.y;
+                
+                // Белый фон листа
+                tempCtx.fillStyle = '#ffffff';
+                tempCtx.fillRect(p1.x, p1.y, w, h);
+                
+                // Рамка
+                tempCtx.strokeStyle = obj.color || '#333';
+                tempCtx.lineWidth = 1.5 * scale;
+                tempCtx.strokeRect(p1.x, p1.y, w, h);
+                
+                // Текст на листе (richText)
+                if (obj.richText && obj.richText.length > 0) {
+                    const layout = getSheetTextLayout(obj);
+                    if (layout.lines.length > 0) {
+                        let yScreen = toScreen(layout.textLeft, layout.textTop).y;
+                        const lineHeightScreen = layout.lineHeight * scale;
+                        
+                        layout.lines.forEach(lineInfo => {
+                            const lineStartX = toScreen(layout.textLeft + lineInfo.startX, 0).x;
+                            let xCursor = lineStartX;
+                            
+                            lineInfo.line.forEach(c => {
+                                const fontSize = (c.size || 18) * scale;
+                                const style = (c.bold ? 'bold ' : '') + (c.italic ? 'italic ' : '') + fontSize + 'px ' + (c.font || 'Arial');
+                                tempCtx.font = style;
+                                tempCtx.fillStyle = c.color || '#000000';
+                                tempCtx.textBaseline = 'top';
+                                tempCtx.fillText(c.char, xCursor, yScreen);
+                                
+                                const charW = tempCtx.measureText(c.char).width;
+                                
+                                // Подчёркивание
+                                if (c.underline) {
+                                    tempCtx.strokeStyle = c.color || '#000000';
+                                    tempCtx.lineWidth = Math.max(1, 1.5 * scale);
+                                    tempCtx.beginPath();
+                                    tempCtx.moveTo(xCursor, yScreen + fontSize + 2 * scale);
+                                    tempCtx.lineTo(xCursor + charW, yScreen + fontSize + 2 * scale);
+                                    tempCtx.stroke();
+                                }
+                                // Зачёркивание
+                                if (c.strike) {
+                                    tempCtx.strokeStyle = c.color || '#000000';
+                                    tempCtx.lineWidth = Math.max(1, 1.5 * scale);
+                                    tempCtx.beginPath();
+                                    tempCtx.moveTo(xCursor, yScreen + fontSize / 2);
+                                    tempCtx.lineTo(xCursor + charW, yScreen + fontSize / 2);
+                                    tempCtx.stroke();
+                                }
+                                
+                                xCursor += charW;
+                            });
+                            
+                            yScreen += lineHeightScreen;
+                        });
+                    }
+                }
+                return;
+            }
+            
+            // ----- ТЕКСТ -----
             if (obj.type === 'text') {
                 const p = toScreen(obj.x, obj.y);
-                const fontSize = Math.max(8, (obj.size || 24) * scale);
-                const font = obj.font || 'Arial';
-                const style = (obj.bold ? 'bold ' : '') + (obj.italic ? 'italic ' : '') + fontSize + 'px ' + font;
+                const fontSize = (obj.size || 24) * scale;
+                const style = (obj.bold ? 'bold ' : '') + (obj.italic ? 'italic ' : '') + fontSize + 'px ' + (obj.font || 'Arial');
                 
-                tempCtx.save();
                 tempCtx.font = style;
                 tempCtx.textBaseline = 'top';
                 tempCtx.fillStyle = obj.color || '#000000';
@@ -13367,45 +14616,34 @@ copySelected = async function() {
                     tempCtx.fillText(line, p.x, p.y + yOffset);
                     yOffset += lineHeight;
                 });
-                tempCtx.restore();
                 return;
             }
             
-            // ===== ИЗОБРАЖЕНИЕ =====
+            // ----- ИЗОБРАЖЕНИЕ -----
             if (obj.type === 'image' && obj.imgData) {
                 const p1 = toScreen(obj.x, obj.y);
                 const w = obj.width * scale;
                 const h = obj.height * scale;
                 
-                const img = new Image();
-                img.onload = function() {
-                    tempCtx.drawImage(img, p1.x, p1.y, w, h);
-                };
-                img.src = obj.imgData;
-                if (img.complete && img.naturalWidth > 0) {
-                    tempCtx.drawImage(img, p1.x, p1.y, w, h);
-                } else {
-                    tempCtx.fillStyle = '#f0f0f0';
-                    tempCtx.fillRect(p1.x, p1.y, w, h);
-                    tempCtx.strokeStyle = '#ccc';
-                    tempCtx.lineWidth = 1;
-                    tempCtx.strokeRect(p1.x, p1.y, w, h);
-                    tempCtx.fillStyle = '#999';
-                    tempCtx.font = '14px Arial';
-                    tempCtx.textAlign = 'center';
-                    tempCtx.textBaseline = 'middle';
-                    tempCtx.fillText('🖼️', p1.x + w/2, p1.y + h/2);
-                }
+                const promise = new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        tempCtx.drawImage(img, p1.x, p1.y, w, h);
+                        resolve();
+                    };
+                    img.onerror = () => resolve();
+                    img.src = obj.imgData;
+                });
+                imagePromises.push(promise);
                 return;
             }
             
-            // ===== FREE-LINE (рисованная линия) =====
+            // ----- FREE-LINE -----
             if (obj.type === 'free-line' && obj.points && obj.points.length > 1) {
                 tempCtx.strokeStyle = color;
                 tempCtx.lineWidth = Math.max(1, thickness * scale);
                 tempCtx.lineCap = 'round';
                 tempCtx.lineJoin = 'round';
-                
                 tempCtx.beginPath();
                 const first = toScreen(obj.points[0].x, obj.points[0].y);
                 tempCtx.moveTo(first.x, first.y);
@@ -13417,16 +14655,14 @@ copySelected = async function() {
                 return;
             }
             
-            // ===== ЛИНИИ (сегмент, луч, прямая) =====
+            // ----- ЛИНИИ -----
             if (obj.type === 'segment' || obj.type === 'ray' || obj.type === 'line') {
                 const p1 = toScreen(obj.x1, obj.y1);
                 const p2 = toScreen(obj.x2, obj.y2);
                 
                 tempCtx.strokeStyle = color;
                 tempCtx.lineWidth = Math.max(1, thickness * scale);
-                if (obj.dash) {
-                    tempCtx.setLineDash(obj.dash.map(d => d * scale));
-                }
+                if (obj.dash) tempCtx.setLineDash(obj.dash.map(d => d * scale));
                 
                 tempCtx.beginPath();
                 tempCtx.moveTo(p1.x, p1.y);
@@ -13434,7 +14670,6 @@ copySelected = async function() {
                 tempCtx.stroke();
                 tempCtx.setLineDash([]);
                 
-                // Луч - стрелка
                 if (obj.type === 'ray') {
                     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
                     const len = 15 * scale;
@@ -13449,77 +14684,7 @@ copySelected = async function() {
                 return;
             }
             
-            // ===== ЛИСТ =====
-            if (obj.type === 'sheet') {
-                const p1 = toScreen(obj.x1, obj.y1);
-                const p2 = toScreen(obj.x2, obj.y2);
-                const x = Math.min(p1.x, p2.x);
-                const y = Math.min(p1.y, p2.y);
-                const w = Math.abs(p2.x - p1.x);
-                const h = Math.abs(p2.y - p1.y);
-                
-                tempCtx.shadowColor = 'rgba(0,0,0,0.15)';
-                tempCtx.shadowBlur = 20 * scale;
-                tempCtx.shadowOffsetX = 4 * scale;
-                tempCtx.shadowOffsetY = 4 * scale;
-                tempCtx.fillStyle = '#ffffff';
-                tempCtx.fillRect(x, y, w, h);
-                tempCtx.shadowColor = 'transparent';
-                tempCtx.shadowBlur = 0;
-                tempCtx.shadowOffsetX = 0;
-                tempCtx.shadowOffsetY = 0;
-                
-                tempCtx.strokeStyle = obj.color || '#333';
-                tempCtx.lineWidth = 1.5 * scale;
-                tempCtx.strokeRect(x, y, w, h);
-                
-                const cornerSize = Math.min(w, h) * 0.06;
-                tempCtx.strokeStyle = obj.color || '#333';
-                tempCtx.lineWidth = 2 * scale;
-                tempCtx.beginPath();
-                tempCtx.moveTo(x, y + cornerSize);
-                tempCtx.lineTo(x, y);
-                tempCtx.lineTo(x + cornerSize, y);
-                tempCtx.stroke();
-                tempCtx.beginPath();
-                tempCtx.moveTo(x + w - cornerSize, y);
-                tempCtx.lineTo(x + w, y);
-                tempCtx.lineTo(x + w, y + cornerSize);
-                tempCtx.stroke();
-                tempCtx.beginPath();
-                tempCtx.moveTo(x, y + h - cornerSize);
-                tempCtx.lineTo(x, y + h);
-                tempCtx.lineTo(x + cornerSize, y + h);
-                tempCtx.stroke();
-                tempCtx.beginPath();
-                tempCtx.moveTo(x + w - cornerSize, y + h);
-                tempCtx.lineTo(x + w, y + h);
-                tempCtx.lineTo(x + w, y + h - cornerSize);
-                tempCtx.stroke();
-                return;
-            }
-            
-            // ===== КРУГ =====
-            if (obj.type === 'circle') {
-                const p1 = toScreen(obj.x1, obj.y1);
-                const p2 = toScreen(obj.x2, obj.y2);
-                const cx = (p1.x + p2.x) / 2;
-                const cy = (p1.y + p2.y) / 2;
-                const r = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2) / 2;
-                
-                tempCtx.strokeStyle = color;
-                tempCtx.lineWidth = Math.max(1, thickness * scale);
-                if (obj.dash) {
-                    tempCtx.setLineDash(obj.dash.map(d => d * scale));
-                }
-                tempCtx.beginPath();
-                tempCtx.arc(cx, cy, r, 0, Math.PI * 2);
-                tempCtx.stroke();
-                tempCtx.setLineDash([]);
-                return;
-            }
-            
-            // ===== ВСЕ ОСТАЛЬНЫЕ ФИГУРЫ =====
+            // ----- ФИГУРЫ (все остальные) -----
             if (obj.type !== 'coords') {
                 const p1 = toScreen(obj.x1, obj.y1);
                 const p2 = toScreen(obj.x2, obj.y2);
@@ -13531,22 +14696,27 @@ copySelected = async function() {
                 
                 tempCtx.strokeStyle = color;
                 tempCtx.lineWidth = Math.max(1, thickness * scale);
-                if (obj.dash) {
-                    tempCtx.setLineDash(obj.dash.map(d => d * scale));
-                }
                 tempCtx.beginPath();
                 
-                const shapeType = obj.type || '';
-                
-                switch (shapeType) {
+                switch (obj.type) {
+                    case 'circle':
+                        tempCtx.arc(cx, cy, r, 0, Math.PI * 2);
+                        break;
+                    case 'square': {
+                        const s = Math.min(Math.abs(w), Math.abs(h));
+                        tempCtx.rect(cx - s / 2, cy - s / 2, s, s);
+                        break;
+                    }
+                    case 'rect':
+                        tempCtx.rect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(w), Math.abs(h));
+                        break;
                     case 'triangle':
                         tempCtx.moveTo(cx, p1.y);
                         tempCtx.lineTo(p1.x, p2.y);
                         tempCtx.lineTo(p2.x, p2.y);
                         tempCtx.closePath();
                         break;
-                        
-                    case 'triangle_eq':
+                    case 'triangle_eq': {
                         const side = Math.min(Math.abs(w), Math.abs(h));
                         const h3 = side * Math.sqrt(3) / 2;
                         tempCtx.moveTo(cx, p1.y);
@@ -13554,32 +14724,13 @@ copySelected = async function() {
                         tempCtx.lineTo(cx + side / 2, p1.y + h3);
                         tempCtx.closePath();
                         break;
-                        
+                    }
                     case 'triangle_right':
                         tempCtx.moveTo(p1.x, p1.y);
                         tempCtx.lineTo(p1.x, p2.y);
                         tempCtx.lineTo(p2.x, p2.y);
                         tempCtx.closePath();
                         break;
-                        
-                    case 'square':
-                        const s = Math.min(Math.abs(w), Math.abs(h));
-                        tempCtx.rect(cx - s / 2, cy - s / 2, s, s);
-                        break;
-                        
-                    case 'rect':
-                        tempCtx.rect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(w), Math.abs(h));
-                        break;
-                        
-                    case 'parallelogram':
-                        const shift = w * 0.3;
-                        tempCtx.moveTo(p1.x + shift, p1.y);
-                        tempCtx.lineTo(p2.x, p1.y);
-                        tempCtx.lineTo(p2.x - shift, p2.y);
-                        tempCtx.lineTo(p1.x, p2.y);
-                        tempCtx.closePath();
-                        break;
-                        
                     case 'rhombus':
                         tempCtx.moveTo(cx, p1.y);
                         tempCtx.lineTo(p2.x, cy);
@@ -13587,8 +14738,16 @@ copySelected = async function() {
                         tempCtx.lineTo(p1.x, cy);
                         tempCtx.closePath();
                         break;
-                        
-                    case 'trapezoid':
+                    case 'parallelogram': {
+                        const shift = w * 0.3;
+                        tempCtx.moveTo(p1.x + shift, p1.y);
+                        tempCtx.lineTo(p2.x, p1.y);
+                        tempCtx.lineTo(p2.x - shift, p2.y);
+                        tempCtx.lineTo(p1.x, p2.y);
+                        tempCtx.closePath();
+                        break;
+                    }
+                    case 'trapezoid': {
                         const topW = w * 0.5;
                         tempCtx.moveTo(cx - topW / 2, p1.y);
                         tempCtx.lineTo(cx + topW / 2, p1.y);
@@ -13596,8 +14755,8 @@ copySelected = async function() {
                         tempCtx.lineTo(p1.x, p2.y);
                         tempCtx.closePath();
                         break;
-                        
-                    case 'hexagon':
+                    }
+                    case 'hexagon': {
                         for (let i = 0; i < 6; i++) {
                             const angle = Math.PI / 6 + i * Math.PI / 3;
                             const px = cx + r * Math.cos(angle);
@@ -13607,168 +14766,45 @@ copySelected = async function() {
                         }
                         tempCtx.closePath();
                         break;
-                        
-                    case 'cube':
-                        const s2 = Math.min(Math.abs(w), Math.abs(h)) * 0.5;
-                        const off = s2 * 0.35;
-                        
-                        tempCtx.rect(cx - s2 / 2, cy - s2 / 2, s2, s2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx - s2 / 2, cy - s2 / 2);
-                        tempCtx.lineTo(cx - s2 / 2 + off, cy - s2 / 2 - off);
-                        tempCtx.lineTo(cx + s2 / 2 + off, cy - s2 / 2 - off);
-                        tempCtx.lineTo(cx + s2 / 2, cy - s2 / 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx + s2 / 2, cy - s2 / 2);
-                        tempCtx.lineTo(cx + s2 / 2 + off, cy - s2 / 2 - off);
-                        tempCtx.lineTo(cx + s2 / 2 + off, cy + s2 / 2 - off);
-                        tempCtx.lineTo(cx + s2 / 2, cy + s2 / 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.setLineDash([4 * scale, 5 * scale]);
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx - s2 / 2, cy - s2 / 2);
-                        tempCtx.lineTo(cx - s2 / 2 + off, cy - s2 / 2 - off);
-                        tempCtx.lineTo(cx - s2 / 2 + off, cy + s2 / 2 - off);
-                        tempCtx.lineTo(cx - s2 / 2, cy + s2 / 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx - s2 / 2 + off, cy - s2 / 2 - off);
-                        tempCtx.lineTo(cx - s2 / 2 + off, cy + s2 / 2 - off);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx - s2 / 2 + off, cy + s2 / 2 - off);
-                        tempCtx.lineTo(cx + s2 / 2 + off, cy + s2 / 2 - off);
-                        tempCtx.stroke();
-                        tempCtx.setLineDash([]);
-                        break;
-                        
-                    case 'cylinder':
-                        const cylR = Math.min(Math.abs(w), Math.abs(h)) * 0.4;
-                        const cylH = Math.abs(h) * 0.6;
-                        
-                        tempCtx.ellipse(cx, cy - cylH / 2, cylR, cylR * 0.25, 0, 0, Math.PI * 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.ellipse(cx, cy + cylH / 2, cylR, cylR * 0.25, 0, 0, Math.PI * 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx - cylR, cy - cylH / 2);
-                        tempCtx.lineTo(cx - cylR, cy + cylH / 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx + cylR, cy - cylH / 2);
-                        tempCtx.lineTo(cx + cylR, cy + cylH / 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.setLineDash([4 * scale, 5 * scale]);
-                        tempCtx.beginPath();
-                        tempCtx.moveTo(cx - cylR, cy - cylH / 2);
-                        tempCtx.lineTo(cx - cylR, cy + cylH / 2);
-                        tempCtx.stroke();
-                        tempCtx.setLineDash([]);
-                        break;
-                        
-                    case 'sphere':
-                        const sphereR = Math.min(Math.abs(w), Math.abs(h)) * 0.45;
-                        
-                        tempCtx.arc(cx, cy, sphereR, 0, Math.PI * 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.ellipse(cx, cy, sphereR, sphereR * 0.25, 0, 0, Math.PI * 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.beginPath();
-                        tempCtx.ellipse(cx, cy, sphereR * 0.25, sphereR, 0, 0, Math.PI * 2);
-                        tempCtx.stroke();
-                        
-                        tempCtx.setLineDash([4 * scale, 5 * scale]);
-                        tempCtx.beginPath();
-                        tempCtx.ellipse(cx, cy, sphereR, sphereR * 0.25, 0, 0, Math.PI * 2);
-                        tempCtx.stroke();
-                        tempCtx.setLineDash([]);
-                        break;
-                        
+                    }
                     default:
                         tempCtx.rect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(w), Math.abs(h));
                 }
-                
                 tempCtx.stroke();
-                tempCtx.setLineDash([]);
+                return;
             }
         });
         
-        // ===== КОНВЕРТИРУЕМ В PNG =====
-        const pngDataUrl = tempCanvas.toDataURL('image/png', 1.0);
-        console.log('✅ PNG создан, размер:', Math.round(pngDataUrl.length / 1024), 'KB');
+        // Ждём загрузки картинок
+        if (imagePromises.length > 0) {
+            await Promise.all(imagePromises);
+        }
         
-        // ===== КОПИРУЕМ В БУФЕР ОБМЕНА =====
+        // Конвертируем в PNG blob
+        const pngBlob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+        
+        // Копируем в глобальный буфер
         try {
-            const response = await fetch(pngDataUrl);
-            const blob = await response.blob();
-            
             await navigator.clipboard.write([
-                new ClipboardItem({
-                    'image/png': blob
-                })
+                new ClipboardItem({ 'image/png': pngBlob })
             ]);
-            
-            showHint('✅ Изображение скопировано в буфер обмена!');
-            console.log('✅ Изображение скопировано');
-            
-        } catch (clipboardError) {
-            console.error('❌ Ошибка копирования:', clipboardError);
-            
-            // Кнопка скачивания
-            showHint('⚠️ Скачайте PNG файл');
-            
-            const downloadBtn = document.createElement('button');
-            downloadBtn.textContent = '📥 Скачать PNG';
-            downloadBtn.style.cssText = `
-                position: fixed;
-                bottom: 150px;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 99999;
-                padding: 16px 32px;
-                background: #34c759;
-                color: white;
-                border: none;
-                border-radius: 12px;
-                font-size: 18px;
-                font-weight: bold;
-                cursor: pointer;
-                box-shadow: 0 4px 20px rgba(52, 199, 89, 0.4);
-            `;
-            
-            downloadBtn.onclick = function() {
-                const link = document.createElement('a');
-                link.download = 'доска.png';
-                link.href = pngDataUrl;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                this.textContent = '✅ Скачано!';
-                setTimeout(() => this.remove(), 2000);
-                showHint('📥 Файл скачан!');
-            };
-            
-            document.body.appendChild(downloadBtn);
-            setTimeout(() => { if (downloadBtn.parentNode) downloadBtn.remove(); }, 15000);
+            showHint('🖼️ Изображение скопировано в буфер обмена');
+        } catch(e) {
+            console.error('❌ Clipboard API error:', e);
+            // Fallback — скачивание
+            const url = URL.createObjectURL(pngBlob);
+            const link = document.createElement('a');
+            link.download = 'копия.png';
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showHint('⚠️ Clipboard API недоступен, файл скачан');
         }
         
     } catch (error) {
-        console.error('❌ Ошибка:', error);
+        console.error('❌ Ошибка копирования:', error);
         showHint('❌ Ошибка: ' + error.message);
     }
 };
