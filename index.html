@@ -9598,22 +9598,43 @@
         function getScale() {
           const img = wrapper.querySelector("img");
           if (!img || !img.complete || img.naturalWidth === 0) {
-            return { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0, naturalWidth: 1, naturalHeight: 1 };
+              return { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0, naturalWidth: 1, naturalHeight: 1 };
           }
+          
           const naturalWidth = img.naturalWidth;
           const naturalHeight = img.naturalHeight;
-          const rect = img.getBoundingClientRect();
-          const displayWidth = rect.width;
-          const displayHeight = rect.height;
+          
+          // ===== СЧИТАЕМ РАЗМЕРЫ ОТНОСИТЕЛЬНО WRAPPER, А НЕ IMG =====
           const wrapperRect = wrapper.getBoundingClientRect();
           const wrapperWidth = wrapperRect.width;
           const wrapperHeight = wrapperRect.height;
-          const scaleX = displayWidth / naturalWidth;
-          const scaleY = displayHeight / naturalHeight;
+          
+          // ===== НАХОДИМ РЕАЛЬНЫЕ РАЗМЕРЫ ИЗОБРАЖЕНИЯ (с учётом object-fit) =====
+          // Формула: если object-fit: contain, то изображение вписывается
+          // в прямоугольник wrapperWidth × wrapperHeight, сохраняя пропорции.
+          const naturalRatio = naturalWidth / naturalHeight;
+          const wrapperRatio = wrapperWidth / wrapperHeight;
+          
+          let displayWidth, displayHeight;
+          if (wrapperRatio > naturalRatio) {
+              // Wrapper шире — ограничиваем по высоте
+              displayHeight = wrapperHeight;
+              displayWidth = displayHeight * naturalRatio;
+          } else {
+              // Wrapper выше — ограничиваем по ширине
+              displayWidth = wrapperWidth;
+              displayHeight = displayWidth / naturalRatio;
+          }
+          
+          // ===== СМЕЩЕНИЕ (ЦЕНТРИРОВАНИЕ) =====
           const offsetX = (wrapperWidth - displayWidth) / 2;
           const offsetY = (wrapperHeight - displayHeight) / 2;
+          
+          const scaleX = displayWidth / naturalWidth;
+          const scaleY = displayHeight / naturalHeight;
+          
           return { scaleX, scaleY, offsetX, offsetY, naturalWidth, naturalHeight };
-        }
+      }
 
         function drawAnnotations() {
           const ctx = canvas.getContext("2d");
@@ -12298,7 +12319,7 @@
                             ? `
                             <div style="margin:8px 0;">
                                 <strong>📎 Фото ученика:</strong>
-                                <div id="student-image-wrapper-${idx}" style="position:relative;display:inline-block;width:100%;max-width:500px;border:1px solid #ddd;border-radius:4px;overflow:hidden;margin-top:4px;background:#f5f5f5;">
+                                <div id="student-image-wrapper-${idx}" style="position:relative;display:inline-block;width:100%;max-width:500px;border-radius:4px;overflow:hidden;margin-top:4px;background:#f5f5f5;box-shadow:0 0 0 1px #ddd;">
                                     <img src="${getFullImagePath(answerImage)}" 
                                         style="max-width:100%;max-height:400px;display:block;position:relative;z-index:1;" 
                                         id="student-image-${idx}"
