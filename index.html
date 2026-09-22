@@ -2491,7 +2491,6 @@
       };
 
       const SHAPE_LIST = [
-        { id: "coords", label: "Координатная плоскость", icon: "📐", group: "Специальные" },
         { id: "triangle", label: "Треугольник", icon: "△", group: "Планиметрия" },
         { id: "triangle_eq", label: "Равносторонний", icon: "△", group: "Планиметрия" },
         { id: "triangle_right", label: "Прямоугольный", icon: "⊿", group: "Планиметрия" },
@@ -3446,8 +3445,6 @@
           x2 = cx + r;
           y1 = cy - r;
           y2 = cy + r;
-        } else if (obj.type === "coords") {
-          return { minX: -10000, maxX: 10000, minY: -10000, maxY: 10000 };
         } else {
           x1 = Math.min(obj.x1, obj.x2);
           x2 = Math.max(obj.x1, obj.x2);
@@ -3608,7 +3605,7 @@
           }
 
           // Листы
-          if (obj.type === "sheet" || obj.type === "coords") {
+          if (obj.type === "sheet") {
             const b = getObjectBounds(obj);
             if (b && wx >= b.minX && wx <= b.maxX && wy >= b.minY && wy <= b.maxY) {
               return obj;
@@ -3774,7 +3771,7 @@
           }
 
           // ===== СОХРАНЯЕМ ВСЁ, КРОМЕ КООРДИНАТНЫХ ПЛОСКОСТЕЙ =====
-          const boardObjects = objects.filter((obj) => obj.type !== "coords");
+          const boardObjects = objects;
 
           
 
@@ -4315,9 +4312,6 @@
         ctx.setLineDash(useDash ? getDashPattern(currentThickness, zoom) : []);
         ctx.beginPath();
         switch (type) {
-          case "coords":
-            drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness);
-            return;
           case "triangle":
             ctx.moveTo(cx, y1);
             ctx.lineTo(x1, y2);
@@ -4512,92 +4506,6 @@
         }
         ctx.stroke();
         ctx.setLineDash([]);
-      }
-
-      function drawCoordinatePlane(ctx, x1, y1, x2, y2, color, thickness) {
-        const cx = (x1 + x2) / 2,
-          cy = (y1 + y2) / 2;
-        const size = Math.min(Math.abs(x2 - x1), Math.abs(y2 - y1)) / 2;
-        ctx.save();
-        const left = worldToScreen(cx - size, cy);
-        const right = worldToScreen(cx + size, cy);
-        const top = worldToScreen(cx, cy - size);
-        const bottom = worldToScreen(cx, cy + size);
-        ctx.strokeStyle = "#e74c3c";
-        ctx.lineWidth = 2 * zoom;
-        ctx.beginPath();
-        ctx.moveTo(left.x, left.y);
-        ctx.lineTo(right.x, right.y);
-        ctx.stroke();
-        ctx.fillStyle = "#e74c3c";
-        ctx.beginPath();
-        ctx.moveTo(right.x, right.y);
-        ctx.lineTo(right.x - 12 * zoom, right.y - 6 * zoom);
-        ctx.lineTo(right.x - 12 * zoom, right.y + 6 * zoom);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "#e74c3c";
-        ctx.font = 16 * zoom + "px Arial";
-        ctx.fillText("X", right.x - 25 * zoom, right.y - 12 * zoom);
-        ctx.strokeStyle = "#2ecc71";
-        ctx.lineWidth = 2 * zoom;
-        ctx.beginPath();
-        ctx.moveTo(top.x, top.y);
-        ctx.lineTo(bottom.x, bottom.y);
-        ctx.stroke();
-        ctx.fillStyle = "#2ecc71";
-        ctx.beginPath();
-        ctx.moveTo(top.x, top.y);
-        ctx.lineTo(top.x - 6 * zoom, top.y + 12 * zoom);
-        ctx.lineTo(top.x + 6 * zoom, top.y + 12 * zoom);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "#2ecc71";
-        ctx.font = 16 * zoom + "px Arial";
-        ctx.fillText("Y", top.x + 12 * zoom, top.y + 4 * zoom);
-        const oPos = worldToScreen(cx, cy);
-        ctx.fillStyle = "#333";
-        ctx.font = 16 * zoom + "px Arial";
-        ctx.fillText("O", oPos.x + 8 * zoom, oPos.y + 22 * zoom);
-        let step = 50;
-        if (zoom < 0.3) step = 200;
-        else if (zoom < 0.7) step = 100;
-        else if (zoom < 1.5) step = 50;
-        else if (zoom < 3) step = 20;
-        else step = 10;
-        const startX = Math.floor((-size / step) * step);
-        const endX = Math.floor((size / step) * step);
-        ctx.fillStyle = "#666";
-        ctx.font = 10 * zoom + "px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        for (let x = startX; x <= endX; x += step) {
-          if (Math.abs(x) < 0.01) continue;
-          const pos = worldToScreen(cx + x, cy);
-          ctx.fillStyle = "#ccc";
-          ctx.beginPath();
-          ctx.moveTo(pos.x, pos.y - 4 * zoom);
-          ctx.lineTo(pos.x, pos.y + 4 * zoom);
-          ctx.stroke();
-          ctx.fillStyle = "#666";
-          ctx.fillText(Math.round(x), pos.x, pos.y + 6 * zoom);
-        }
-        const startY = Math.floor((-size / step) * step);
-        const endY = Math.floor((size / step) * step);
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        for (let y = startY; y <= endY; y += step) {
-          if (Math.abs(y) < 0.01) continue;
-          const pos = worldToScreen(cx, cy + y);
-          ctx.fillStyle = "#ccc";
-          ctx.beginPath();
-          ctx.moveTo(pos.x - 4 * zoom, pos.y);
-          ctx.lineTo(pos.x + 4 * zoom, pos.y);
-          ctx.stroke();
-          ctx.fillStyle = "#666";
-          ctx.fillText(Math.round(-y), pos.x - 8 * zoom, pos.y);
-        }
-        ctx.restore();
       }
 
       function drawTextObject(ctx, obj) {
