@@ -7,3 +7,4 @@ public/icons/icon-*.jpg
 .DS_Store
 *.smoke_out*.txt
 *.smoke_err*.txt
+backup_*.sql
