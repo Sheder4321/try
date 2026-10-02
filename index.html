@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Образовательная платформа</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <!-- ===== АВТОРИЗАЦИЯ ===== -->
+    <div id="auth-container" class="auth-container">
+      <div class="auth-box">
+        <h2>Образовательная платформа</h2>
+        <div class="auth-tabs">
+          <button class="active" data-tab="login">Вход</button>
+          <button data-tab="register">Регистрация</button>
+        </div>
+        <div id="auth-error" class="auth-error"></div>
+        <form id="login-form">
+          <input type="text" id="login-username" placeholder="Имя пользователя" required />
+          <div class="password-wrap">
+            <input type="password" id="login-password" placeholder="Пароль" required />
+            <button type="button" class="toggle-password" data-target="login-password"
+              aria-label="Показать пароль">
+              <svg class="icon-eye" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="icon-eye-off" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          <button type="submit" class="auth-btn">Войти</button>
+          <div style="text-align: center; margin-top: 12px">
+            <a
+              href="#"
+              onclick="
+                event.preventDefault();
+                showForgotPassword();
+              "
+              style="color: #667eea; font-size: 13px; text-decoration: none"
+            >
+              Забыли пароль?
+            </a>
+          </div>
+        </form>
+        <form id="register-form" style="display: none">
+          <input type="text" id="register-username" placeholder="Имя пользователя" required />
+          <input type="email" id="register-email" placeholder="Email" required />
+          <div class="password-wrap">
+            <input type="password" id="register-password" placeholder="Пароль (мин. 6 символов)" required />
+            <button type="button" class="toggle-password" data-target="register-password"
+              aria-label="Показать пароль">
+              <svg class="icon-eye" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="icon-eye-off" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          <input type="text" id="register-name" placeholder="Имя" required />
+          <input type="text" id="register-surname" placeholder="Фамилия" required />
+          <select id="register-role">
+            <option value="student">Ученик</option>
+            <option value="teacher">Учитель</option>
+          </select>
+          <button type="submit" class="auth-btn">Зарегистрироваться</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== ПРИЛОЖЕНИЕ ===== -->
+    <div id="app" class="app">
+      <header class="header">
+        <h1>Образовательная платформа</h1>
+        <div class="user">
+          <span id="user-name"></span>
+          <span class="badge" id="user-role"></span>
+          <button onclick="logout()">Выйти</button>
+        </div>
+      </header>
+      <nav class="nav" id="main-nav">
+        <button class="active" data-page="board" onclick="loadPage('board')">Доска</button>
+        <button data-page="classes" onclick="loadPage('classes')">Классы</button>
+        <button data-page="assignments" onclick="loadPage('assignments')">Задания</button>
+      </nav>
+      <div class="main-content">
+        <div class="board-area" id="content-area">
+          <!-- Содержимое загружается динамически -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== МОДАЛЬНОЕ ОКНО ===== -->
+    <div id="modal" class="modal" onclick="if (event.target === this) closeModal();">
+      <div class="modal-content" id="modal-content"></div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

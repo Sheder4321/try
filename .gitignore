@@ -1,0 +1,9 @@
+node_modules/
+.gigatool/
+.env
+uploads/
+public/icons/icon-*.jpg
+*.log
+.DS_Store
+*.smoke_out*.txt
+*.smoke_err*.txt
