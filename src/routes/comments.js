@@ -1,8 +1,10 @@
 const express = require("express");
 const fs = require("fs");
+const path = require("path");
 const { pool } = require("../db");
 const { authenticateToken, requireTeacher } = require("../middleware/auth");
 const { audioUpload } = require("../middleware/upload");
+const { convertWebmToMp4, toServePath } = require("../audio-utils");
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -195,9 +197,24 @@ router.post("/voice-comments", requireTeacher, audioUpload.single("audio"), asyn
   }
 
   try {
-    let audioPath = req.file.path.replace(/\\/g, "/");
+    // ===== КОНВЕРТАЦИЯ webm → mp4 (для совместимости с iOS) =====
+    // Если браузер записал webm, а ffmpeg есть — транскодируем в AAC/mp4,
+    // чтобы iPhone/планшет могли воспроизвести.
+    let storedFsPath = req.file.path;
+    let converted = null;
+    try {
+      converted = await convertWebmToMp4(path.resolve(storedFsPath));
+    } catch (e) {
+      console.error("⚠️ Конвертация аудио пропущена:", e.message);
+    }
+    if (converted) {
+      storedFsPath = converted;
+    }
+
+    let audioPath = storedFsPath.replace(/\\/g, "/");
     if (!audioPath.startsWith("uploads/")) {
-      audioPath = "uploads/" + audioPath;
+      // may be absolute → привести к serve-пути
+      audioPath = toServePath(audioPath);
     }
 
     const result = await pool.query(
