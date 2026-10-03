@@ -18,12 +18,14 @@ if (smtpConfigured) {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Не блокировать старт приложения ожиданием SMTP:
+    // при недоступном/невраженном SMTP отправка просто упадёт по таймауту,
+    // а сервер поднимется мгновенно.
+    connectionTimeout: 5000,
+    socketTimeout: 5000,
+    greetingTimeout: 5000,
   });
-
-  transporter.verify((error) => {
-    if (error) console.error('❌ SMTP error:', error.message);
-    else console.log('✅ SMTP готов к отправке писем');
-  });
+  console.log('✅ SMTP настроен (проверка будет при первой отправке)');
 } else {
   // без SMTP тихо работаем (сброс пароля по email на проде недоступен до настройки)
 }
