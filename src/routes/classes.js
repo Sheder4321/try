@@ -61,6 +61,9 @@ router.get("/my", async (req, res) => {
 router.get("/:classId", async (req, res) => {
   const { classId } = req.params;
   try {
+    if (!/^\d+$/.test(classId)) {
+      return res.status(400).json({ error: "Некорректный id класса" });
+    }
     let hasAccess = false;
     if (req.user.role === "teacher") {
       const check = await pool.query("SELECT id FROM classes WHERE id = $1 AND teacher_id = $2", [
@@ -96,6 +99,9 @@ router.get("/:classId", async (req, res) => {
 router.get("/:classId/students", async (req, res) => {
   const { classId } = req.params;
   try {
+    if (!/^\d+$/.test(classId)) {
+      return res.status(400).json({ error: "Некорректный id класса" });
+    }
     const result = await pool.query(
       `
             SELECT u.id, u.username, u.full_name
@@ -116,6 +122,9 @@ router.get("/:classId/students", async (req, res) => {
 router.delete("/:classId/students/:studentId", requireTeacher, async (req, res) => {
   const { classId, studentId } = req.params;
   try {
+    if (!/^\d+$/.test(classId) || !/^\d+$/.test(studentId)) {
+      return res.status(400).json({ error: "Некорректный id" });
+    }
     const ownerCheck = await pool.query("SELECT id FROM classes WHERE id = $1 AND teacher_id = $2", [
       classId,
       req.user.id,
@@ -142,6 +151,9 @@ router.delete("/:classId/students/:studentId", requireTeacher, async (req, res) 
 router.delete("/:classId", requireTeacher, async (req, res) => {
   const { classId } = req.params;
   try {
+    if (!/^\d+$/.test(classId)) {
+      return res.status(400).json({ error: "Некорректный id класса" });
+    }
     const classCheck = await pool.query("SELECT id FROM classes WHERE id = $1 AND teacher_id = $2", [
       classId,
       req.user.id,

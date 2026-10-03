@@ -4,6 +4,8 @@ node_modules/
 uploads/
 public/icons/icon-*.jpg
 *.log
+server.out.txt
+server.err.txt
 .DS_Store
 *.smoke_out*.txt
 *.smoke_err*.txt
