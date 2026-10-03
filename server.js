@@ -160,6 +160,10 @@ app.get("/join-class/:token", (req, res) => res.sendFile(path.join(__dirname, "j
 app.get("/reset-password", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
+// Простой health-check для платформ (Render/OnReza): обычный GET без WebSocket,
+// чтобы smoke test завершался мгновенно и не вис, дожидаясь апгрейда до WS.
+app.get("/health", (req, res) => res.status(200).send("ok"));
+
 app.use(cors());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.static("public"));
