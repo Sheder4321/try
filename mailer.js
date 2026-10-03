@@ -2,6 +2,9 @@ const nodemailer = require('nodemailer');
 
 // SMTP полностью опционален: если переменные не заданы (например, на Render),
 // не создаём transporter и не ругаемся — письма просто пропускаются.
+// Для облачных хостингов (Render/OnReza) классические почтовые SMTP (yandex/mail.ru)
+// часто недоступны из-за исходящей блокировки — тогда используйте транзакционный
+// SMTP-провайдер (например UniOne), который явно разрешает облачный исходящий трафик.
 const smtpConfigured = !!(
   process.env.SMTP_HOST &&
   process.env.SMTP_USER &&

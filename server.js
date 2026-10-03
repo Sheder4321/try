@@ -301,7 +301,11 @@ app.post("/api/forgot-password", async (req, res) => {
       expiresAt,
     ]);
 
-    await sendPasswordResetEmail(email, rawToken);
+    // Отправка письма идёт в фоне (fire-and-forget): даже если SMTP недоступен,
+    // запрос вернётся мгновенно, а ошибка не заблокирует пользователя.
+    sendPasswordResetEmail(email, rawToken).catch((err) => {
+      console.error("❌ Ошибка фоновой отправки письма:", err && err.message ? err.message : err);
+    });
 
     res.json(genericResponse);
   } catch (error) {
