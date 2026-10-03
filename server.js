@@ -36,6 +36,10 @@ const pool = new Pool(
       },
 );
 
+pool.on("error", (err) => {
+  console.error("Ошибка пула БД (соединение разорвано):", err.message);
+});
+
 // ============================================================
 // MIDDLEWARE: АВТОРИЗАЦИЯ
 // ============================================================
@@ -2281,10 +2285,19 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 setupBoardSocket(wss);
 
+async function ensureDbKeepAlive() {
+  const timer = setInterval(async () => {
+    try { await pool.query("SELECT 1"); }
+    catch (e) { console.error("keep-alive ping:", e.message); }
+  }, 30000);
+  timer.unref();
+}
+
 pool.connect(async (err) => {
   if (err) { console.error("Ошибка подключения к БД:", err.message); process.exit(1); }
   else {
     await initDatabase();
     server.listen(port, "0.0.0.0", () => console.log("Сервер запущен на http://localhost:" + port));
+    if (!process.env.DB_KEEP_ALIVE) await ensureDbKeepAlive();
   }
 });
