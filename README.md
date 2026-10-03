@@ -40,29 +40,26 @@ npm start
 ## Структура проекта
 
 ```
-├── server.js                 # точка входа: Express + WebSocket + статика
+├── server.js                 # весь бэкенд: Express-роуты, WebSocket, авторизация,
+│                             #   загрузка файлов, конвертация аудио webm→mp4 (для iOS),
+│                             #   миграция схемы БД
+├── index.html                # весь фронтенд (HTML + встроенные CSS и JS)
+├── join-class.html           # страница присоединения к классу по ссылке
 ├── schema.sql                # схема БД (применяется при запуске)
 ├── mailer.js                 # отправка писем (сброс пароля)
-├── src/
-│   ├── db.js                 # пул подключений + применение schema.sql
-│   ├── middleware/
-│   │   ├── auth.js           # JWT-авторизация, проверка роли
-│   │   └── upload.js         # multer: файлы работ, аудио, файлы заданий
-│   ├── routes/
-│   │   ├── auth.js           # /api/register, /login, сброс пароля
-│   │   ├── classes.js        # /api/classes
-│   │   ├── invites.js        # /api/invite, /api/classes/:id/invite*
-│   │   ├── assignments.js    # /api/assignments
-│   │   ├── submissions.js    # /api/submissions (+ автопроверка)
-│   │   ├── comments.js       # аннотации, голосовые и текстовые комментарии
-│   │   └── boards.js         # /api/board, /api/class-board, /api/shared-board
-│   └── ws/
-│       └── boards.js         # WebSocket-комнаты досок
-├── public/                   # статика
-│   ├── index.html / join-class.html (корень проекта)
-│   ├── app.js, style.css     # фронтенд (вынесены из index.html)
-│   └── icons/                # иконки панели инструментов
+├── migrate_audio.js          # разовый скрипт: конвертация старых .webm записей в .mp4
 └── uploads/                  # загруженные файлы (не в git)
+```
+
+## Зависимости для аудио (iOS)
+
+Для воспроизведения голосовых комментариев на iPhone/планшете сервер
+транскодирует WebM → MP4 (AAC) в момент загрузки. Нужен `ffmpeg` в PATH
+(или переменная окружения `FFMPEG_PATH`, указывающая на исполняемый файл).
+
+```bash
+# Windows (winget)
+winget install --id Gyan.FFmpeg
 ```
 
 ## Скрипты
