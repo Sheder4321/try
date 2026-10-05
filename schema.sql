@@ -166,6 +166,23 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 7.5. ИНДЕКСЫ
+-- PostgreSQL не создаёт индексы на внешние ключи автоматически —
+-- без них каждый WHERE по этим колонкам идёт полным сканом таблицы.
+CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_class_students_student ON class_students(student_id);
+CREATE INDEX IF NOT EXISTS idx_shared_boards_student ON shared_boards(student_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_class ON assignments(class_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_teacher ON assignments(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_student ON submissions(student_id);
+CREATE INDEX IF NOT EXISTS idx_submission_files_submission ON submission_files(submission_id);
+CREATE INDEX IF NOT EXISTS idx_annotation_comments_submission ON annotation_comments(submission_id);
+CREATE INDEX IF NOT EXISTS idx_voice_comments_submission ON voice_comments(submission_id);
+CREATE INDEX IF NOT EXISTS idx_text_comments_submission ON text_comments(submission_id);
+CREATE INDEX IF NOT EXISTS idx_class_invites_class ON class_invites(class_id);
+CREATE INDEX IF NOT EXISTS idx_reset_tokens_hash ON password_reset_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS idx_reset_tokens_user ON password_reset_tokens(user_id);
+
 -- 8. UNIQUE НА EMAIL (если ещё нет)
 DO $$
 BEGIN

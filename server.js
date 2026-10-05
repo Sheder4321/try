@@ -174,7 +174,6 @@ app.get("/health", (req, res) => res.status(200).send("ok"));
 
 app.use(cors());
 app.use(express.json({ limit: "100mb" }));
-app.use(express.static("public"));
 // Имена файлов уникальны (timestamp+random) — можно кэшировать надолго.
 app.use("/uploads", express.static("uploads", { maxAge: "7d", immutable: true }));
 
@@ -411,20 +410,6 @@ app.post("/api/classes/:classId/invite", authenticateToken, requireTeacher, asyn
     const token = "invite_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
     const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
 
-    await pool.query(`
-            CREATE TABLE IF NOT EXISTS class_invites (
-                id SERIAL PRIMARY KEY,
-                class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
-                token VARCHAR(100) UNIQUE NOT NULL,
-                created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                max_uses INTEGER DEFAULT 1,
-                used_count INTEGER DEFAULT 0,
-                expires_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE
-            )
-        `);
-
     const result = await pool.query(
       `INSERT INTO class_invites (class_id, token, created_by, max_uses, expires_at)
             VALUES ($1, $2, $3, $4, $5)
@@ -451,17 +436,6 @@ app.get("/api/invite/:token", async (req, res) => {
   const { token } = req.params;
 
   try {
-    const tableCheck = await pool.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'class_invites'
-            );
-        `);
-
-    if (!tableCheck.rows[0].exists) {
-      return res.status(404).json({ error: "Приглашение не найдено" });
-    }
-
     const result = await pool.query(
       `
             SELECT i.*, c.name as class_name, c.id as class_id, COALESCE(u.full_name, u.username) as teacher_name
@@ -586,29 +560,11 @@ app.get("/api/classes/:classId/invites", authenticateToken, requireTeacher, asyn
       return res.status(404).json({ error: "Класс не найден" });
     }
 
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'class_invites'
-      );
-    `);
-
-    if (!tableCheck.rows[0].exists) {
-      return res.json([]);
-    }
-
+    // Чистка истёкших/исчерпанных приглашений этого класса
     await pool.query(
       `DELETE FROM class_invites 
       WHERE class_id = $1 
         AND (expires_at < NOW() OR used_count >= max_uses)`,
-      [classId],
-    );
-
-    await pool.query(
-      `DELETE FROM class_invites 
-      WHERE class_id = $1 
-        AND is_active = false 
-        AND used_count >= max_uses`,
       [classId],
     );
 
@@ -1512,6 +1468,20 @@ app.post("/api/submissions", async (req, res) => {
 app.post("/api/submissions/:submissionId/files", upload.array("files", 10), async (req, res) => {
   const { submissionId } = req.params;
   try {
+    // Проверка владения: файлы может прикреплять автор работы или учитель задания
+    const sub = await pool.query(
+      `SELECT s.student_id, a.teacher_id
+       FROM submissions s JOIN assignments a ON s.assignment_id = a.id
+       WHERE s.id = $1`,
+      [submissionId],
+    );
+    if (sub.rows.length === 0) {
+      return res.status(404).json({ error: "Работа не найдена" });
+    }
+    if (sub.rows[0].student_id !== req.user.id && sub.rows[0].teacher_id !== req.user.id) {
+      return res.status(403).json({ error: "Нет доступа к этой работе" });
+    }
+
     const files = req.files.map((file) => ({
       fileName: file.originalname,
       filePath: file.path,
@@ -1731,43 +1701,40 @@ app.get("/api/submissions/:submissionId/full", async (req, res) => {
       return res.status(403).json({ error: "Нет доступа к этой работе" });
     }
 
-    const filesResult = await pool.query(
-      "SELECT * FROM submission_files WHERE submission_id = $1 ORDER BY uploaded_at",
-      [submissionId],
-    );
-    submission.files = filesResult.rows || [];
-
-    const annotationsResult = await pool.query(
-      "SELECT * FROM annotation_comments WHERE submission_id = $1 ORDER BY created_at",
-      [submissionId],
-    );
-    submission.annotations = annotationsResult.rows || [];
-
-    const textCommentsResult = await pool.query(
-      "SELECT * FROM text_comments WHERE submission_id = $1 ORDER BY created_at",
-      [submissionId],
-    );
-    submission.textComments = textCommentsResult.rows || [];
-
-    const voiceCommentsResult = await pool.query(
-      `SELECT v.*, u.full_name as teacher_name 
+    // Независимые запросы — параллельно
+    const [filesResult, annotationsResult, textCommentsResult, voiceCommentsResult, assignmentResult] =
+      await Promise.all([
+        pool.query("SELECT * FROM submission_files WHERE submission_id = $1 ORDER BY uploaded_at", [
+          submissionId,
+        ]),
+        pool.query("SELECT * FROM annotation_comments WHERE submission_id = $1 ORDER BY created_at", [
+          submissionId,
+        ]),
+        pool.query("SELECT * FROM text_comments WHERE submission_id = $1 ORDER BY created_at", [
+          submissionId,
+        ]),
+        pool.query(
+          `SELECT v.*, u.full_name as teacher_name 
             FROM voice_comments v
             JOIN users u ON v.teacher_id = u.id
             WHERE v.submission_id = $1
             ORDER BY v.created_at ASC`,
-      [submissionId],
-    );
-    submission.voiceComments = voiceCommentsResult.rows || [];
-
-    const assignmentResult = await pool.query(
-      `
+          [submissionId],
+        ),
+        pool.query(
+          `
             SELECT a.*, COALESCE(u.full_name, u.username) as teacher_name
             FROM assignments a
             JOIN users u ON a.teacher_id = u.id
             WHERE a.id = $1
         `,
-      [submission.assignment_id],
-    );
+          [submission.assignment_id],
+        ),
+      ]);
+    submission.files = filesResult.rows || [];
+    submission.annotations = annotationsResult.rows || [];
+    submission.textComments = textCommentsResult.rows || [];
+    submission.voiceComments = voiceCommentsResult.rows || [];
     submission.assignment = assignmentResult.rows[0] || null;
 
     res.json(submission);
