@@ -7696,12 +7696,6 @@
         document.getElementById("text-underline").classList.toggle("active", obj.underline || false);
         document.getElementById("text-strike").classList.toggle("active", obj.strike || false);
         document.getElementById("text-bg-toggle").classList.toggle("active", obj.hasBg || false);
-        ["text-left", "text-center", "text-right"].forEach((id) =>
-          document.getElementById(id).classList.remove("active"),
-        );
-        if (obj.align === "center") document.getElementById("text-center").classList.add("active");
-        else if (obj.align === "right") document.getElementById("text-right").classList.add("active");
-        else document.getElementById("text-left").classList.add("active");
         document.getElementById("text-bullet").classList.toggle("active", obj.bullet || false);
         document.getElementById("text-numbered").classList.toggle("active", obj.numbered || false);
       }
@@ -7723,9 +7717,6 @@
             obj.underline = document.getElementById("text-underline").classList.contains("active");
             obj.strike = document.getElementById("text-strike").classList.contains("active");
             obj.hasBg = document.getElementById("text-bg-toggle").classList.contains("active");
-            if (document.getElementById("text-center").classList.contains("active")) obj.align = "center";
-            else if (document.getElementById("text-right").classList.contains("active")) obj.align = "right";
-            else obj.align = "left";
             obj.bullet = document.getElementById("text-bullet").classList.contains("active");
             obj.numbered = document.getElementById("text-numbered").classList.contains("active");
             updateTextDimensions(obj);
@@ -7899,10 +7890,6 @@
                 <button id="text-italic" title="Курсив"><i>I</i></button>
                 <button id="text-underline" title="Подчеркнутый"><u>U</u></button>
                 <button id="text-strike" title="Зачеркнутый"><s>S</s></button>
-                <div class="separator"></div>
-                <button id="text-left" title="По левому краю">≡</button>
-                <button id="text-center" title="По центру">☰</button>
-                <button id="text-right" title="По правому краю">≡</button>
                 <div class="separator"></div>
                 <button id="text-bullet" title="Маркированный список">•</button>
                 <button id="text-numbered" title="Нумерованный список">1.</button>
@@ -16051,30 +16038,6 @@ const submissionIdValue = submission.id;
           applyTextSettingsToSelected();
         });
 
-        document.getElementById("text-left").addEventListener("click", function () {
-          ["text-left", "text-center", "text-right"].forEach((id) =>
-            document.getElementById(id).classList.remove("active"),
-          );
-          this.classList.add("active");
-          applyTextSettingsToSelected();
-        });
-
-        document.getElementById("text-center").addEventListener("click", function () {
-          ["text-left", "text-center", "text-right"].forEach((id) =>
-            document.getElementById(id).classList.remove("active"),
-          );
-          this.classList.add("active");
-          applyTextSettingsToSelected();
-        });
-
-        document.getElementById("text-right").addEventListener("click", function () {
-          ["text-left", "text-center", "text-right"].forEach((id) =>
-            document.getElementById(id).classList.remove("active"),
-          );
-          this.classList.add("active");
-          applyTextSettingsToSelected();
-        });
-
         document.getElementById("text-bullet").addEventListener("click", function () {
           this.classList.toggle("active");
           document.getElementById("text-numbered").classList.remove("active");
@@ -16098,8 +16061,6 @@ const submissionIdValue = submission.id;
           this.classList.toggle("active");
           applyTextSettingsToSelected();
         });
-
-        document.getElementById("text-left").classList.add("active");
 
         document.getElementById("text-editor-save").addEventListener("click", function () {
           closeTextEditor(true);
