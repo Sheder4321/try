@@ -7703,7 +7703,6 @@
         document.getElementById("text-underline").classList.toggle("active", obj.underline || false);
         document.getElementById("text-strike").classList.toggle("active", obj.strike || false);
         document.getElementById("text-bg-toggle").classList.toggle("active", obj.hasBg || false);
-        document.getElementById("text-bullet").classList.toggle("active", obj.bullet || false);
       }
 
       function applyTextSettingsToSelected() {
@@ -7723,7 +7722,6 @@
             obj.underline = document.getElementById("text-underline").classList.contains("active");
             obj.strike = document.getElementById("text-strike").classList.contains("active");
             obj.hasBg = document.getElementById("text-bg-toggle").classList.contains("active");
-            obj.bullet = document.getElementById("text-bullet").classList.contains("active");
             updateTextDimensions(obj);
           }
         });
@@ -7895,8 +7893,6 @@
                 <button id="text-italic" title="Курсив"><i>I</i></button>
                 <button id="text-underline" title="Подчеркнутый"><u>U</u></button>
                 <button id="text-strike" title="Зачеркнутый"><s>S</s></button>
-                <div class="separator"></div>
-                <button id="text-bullet" title="Маркированный список">•</button>
                 <div class="separator"></div>
                 <input type="color" id="text-color-picker" value="#000000" style="width:30px;height:26px;border:none;padding:0;cursor:pointer">
                 <input type="color" id="text-bg-color-picker" value="#ffffff" style="width:30px;height:26px;border:none;padding:0;cursor:pointer">
@@ -16038,11 +16034,6 @@ const submissionIdValue = submission.id;
         });
 
         document.getElementById("text-strike").addEventListener("click", function () {
-          this.classList.toggle("active");
-          applyTextSettingsToSelected();
-        });
-
-        document.getElementById("text-bullet").addEventListener("click", function () {
           this.classList.toggle("active");
           applyTextSettingsToSelected();
         });
