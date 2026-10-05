@@ -47,9 +47,9 @@ if (smtpConfigured) {
 }
 
 if (UNIONE_API_KEY) {
-  console.log('✅ Почта: UniOne Web API (работает и на OnReza)');
+  console.log('Почта: UniOne Web API (работает и на OnReza)');
 } else if (smtpConfigured) {
-  console.log('✅ Почта: SMTP (проверка будет при первой отправке)');
+  console.log('Почта: SMTP (проверка будет при первой отправке)');
 } else {
   // без почтовых настроек тихо работаем (сброс пароля по email недоступен)
 }
@@ -111,7 +111,7 @@ async function sendPasswordResetEmail(to, resetToken) {
   }
 
   if (!smtpConfigured || !transporter) {
-    console.warn('⚠️ Почта не настроена — письмо сброса пароля пропущено для:', to);
+    console.warn('Почта не настроена — письмо сброса пароля пропущено для:', to);
     return { skipped: true };
   }
 

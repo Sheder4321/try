@@ -174,7 +174,7 @@
         
         <div id="already-member" class="hidden">
             <div class="status-box info">
-                ✅ Вы уже состоите в этом классе
+                Вы уже состоите в этом классе
             </div>
             <button class="btn btn-success" onclick="goToClass()">
                 Перейти к классу
@@ -212,12 +212,12 @@
             const statusEl = document.getElementById('status');
             
             try {
-                console.log('📥 Загрузка приглашения:', token);
+                console.log('Загрузка приглашения:', token);
                 const response = await fetch(`/api/invite/${token}`);
-                console.log('📥 Ответ:', response.status);
+                console.log('Ответ:', response.status);
                 
                 const data = await response.json();
-                console.log('📥 Данные:', data);
+                console.log('Данные:', data);
                 
                 if (!response.ok) {
                     throw new Error(data.error || 'Ошибка загрузки');
@@ -259,9 +259,9 @@
                 }
                 
             } catch (error) {
-                console.error('❌ Ошибка:', error);
+                console.error('Ошибка:', error);
                 statusEl.className = 'status-box error';
-                statusEl.textContent = '❌ ' + error.message;
+                statusEl.textContent = '' + error.message;
                 document.getElementById('info').classList.add('hidden');
                 document.getElementById('actions').classList.add('hidden');
                 document.getElementById('login-prompt').classList.add('hidden');
@@ -305,9 +305,9 @@
                 
             } catch (error) {
                 statusEl.className = 'status-box error';
-                statusEl.textContent = '❌ ' + error.message;
+                statusEl.textContent = '' + error.message;
                 btn.disabled = false;
-                btn.textContent = '🔗 Попробовать снова';
+                btn.textContent = 'Попробовать снова';
                 btn.className = 'btn btn-primary';
             }
         }

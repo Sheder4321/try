@@ -2256,7 +2256,7 @@
         }
 
         /* ============================================
-            ЛЕВАЯ ПАНЕЛЬ → ПРАВАЯ ВЕРТИКАЛЬНАЯ
+            ЛЕВАЯ ПАНЕЛЬ ПРАВАЯ ВЕРТИКАЛЬНАЯ
             ============================================ */
         #left-toolbar {
           position: fixed;
@@ -2311,7 +2311,7 @@
         #color-picker {
           position: fixed;
           left: 6px;
-          right: 200px; /* ← оставляем место для зума */
+          right: 200px; /* оставляем место для зума */
           bottom: 6px;
           bottom: calc(6px + env(safe-area-inset-bottom));
           transform: none;
@@ -2668,7 +2668,7 @@
           font-size: 15px;
         }
         #color-picker {
-          right: 170px; /* ← на очень узких экранах зум чуть меньше */
+          right: 170px; /* на очень узких экранах зум чуть меньше */
         }
         .header h1 {
           font-size: 12px;
@@ -3251,7 +3251,7 @@
             const msg = JSON.parse(event.data);
             handleWsMessage(msg);
           } catch (e) {
-            console.error("❌ Ошибка парсинга WS:", e);
+            console.error("Ошибка парсинга WS:", e);
           }
         };
 
@@ -3262,7 +3262,7 @@
         };
 
         ws.onerror = (err) => {
-          console.error("❌ WebSocket ошибка:", err);
+          console.error("WebSocket ошибка:", err);
         };
       }
 
@@ -3833,7 +3833,7 @@
             
           }
         } catch (error) {
-          console.error("❌ Ошибка загрузки голосовых комментариев:", error);
+          console.error("Ошибка загрузки голосовых комментариев:", error);
         }
       }
 
@@ -3929,9 +3929,9 @@
         });
 
         audio.addEventListener("error", function (e) {
-          console.error("❌ Ошибка воспроизведения:", e);
-          console.error("❌ Путь:", fullPath);
-          alert("❌ Ошибка воспроизведения аудио.\nПуть: " + fullPath);
+          console.error("Ошибка воспроизведения:", e);
+          console.error("Путь:", fullPath);
+          alert("Ошибка воспроизведения аудио.\nПуть: " + fullPath);
           btn.dataset.playing = "false";
           btn.textContent = "▶";
           btn.classList.remove("playing");
@@ -3939,8 +3939,8 @@
         });
 
         audio.play().catch((err) => {
-          console.error("❌ Ошибка воспроизведения:", err);
-          alert("❌ Не удалось воспроизвести аудио");
+          console.error("Ошибка воспроизведения:", err);
+          alert("Не удалось воспроизвести аудио");
           btn.dataset.playing = "false";
           btn.textContent = "▶";
           btn.classList.remove("playing");
@@ -3996,7 +3996,7 @@
 
         // Проверяем поддержку
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          alert("❌ Ваш браузер не поддерживает запись голоса");
+          alert("Ваш браузер не поддерживает запись голоса");
           return;
         }
 
@@ -4044,7 +4044,7 @@
           })
           .catch((err) => {
             console.error("Ошибка доступа к микрофону:", err);
-            alert("❌ Нет доступа к микрофону. Разрешите доступ в настройках браузера.");
+            alert("Нет доступа к микрофону. Разрешите доступ в настройках браузера.");
           });
       }
 
@@ -4083,7 +4083,7 @@
             throw new Error(err.error || "Ошибка сохранения");
           }
 
-          showHint("✅ Голосовой комментарий сохранён!");
+          showHint("Голосовой комментарий сохранён!");
 
           // ===== ОБНОВЛЯЕМ ВСЕ =====
           const container = document.querySelector(`.student-answer-container[data-subtask="${subtaskIndex}"]`);
@@ -4103,8 +4103,8 @@
             }
           }
         } catch (error) {
-          console.error("❌ Ошибка загрузки:", error);
-          alert("❌ Ошибка: " + error.message);
+          console.error("Ошибка загрузки:", error);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -4136,8 +4136,8 @@
             loadTextComments(submissionId, subtaskIndex, container);
           }
         } catch (error) {
-          console.error("❌ Ошибка удаления:", error);
-          alert("❌ Ошибка: " + error.message);
+          console.error("Ошибка удаления:", error);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -4585,7 +4585,7 @@
           });
 
           if (!response.ok) {
-            console.error("❌ Ошибка сохранения:", response.status);
+            console.error("Ошибка сохранения:", response.status);
           }
 
           // ===== ОТПРАВЛЯЕМ ПОЛНОЕ СОСТОЯНИЕ ТОЛЬКО В КОМНАТУ ЭТОЙ ДОСКИ =====
@@ -4593,7 +4593,7 @@
           // переключился на другую доску, не должны лить содержимое старой в новую.
           sendFullSyncToBoard(snapshotBoardId, snapshotObjects);
         } catch (e) {
-          console.error("❌ Ошибка сохранения:", e);
+          console.error("Ошибка сохранения:", e);
         }
       }
 
@@ -4651,7 +4651,7 @@
             snapshot.boardId !== getBoardId() ||
             snapshot.gen !== _selectBoardGen
           ) {
-            console.warn("⚠️ loadBoardFromServer: параметры доски изменились, игнорируем ответ");
+            console.warn("loadBoardFromServer: параметры доски изменились, игнорируем ответ");
             loadingBoardCount--;
             return;
           }
@@ -4688,7 +4688,7 @@
           loadingBoardCount--;
           requestRender();
         } catch (e) {
-          console.error("❌ Ошибка загрузки:", e);
+          console.error("Ошибка загрузки:", e);
           loadingBoardCount--;
           // ===== ПРОВЕРКА: не изменились ли параметры =====
           if (
@@ -4826,7 +4826,7 @@
           if (type === "shared") {
             boardName = "Общая доска с учеником";
           }
-          showHint(`✅ ${boardName} загружена`);
+          showHint(`${boardName} загружена`);
 
           // 7. Принудительный рендер + переподключение к WS-комнате
           requestRender();
@@ -5022,7 +5022,7 @@
           ctx.font = 14 * zoom + "px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("📝 Текст", x + w / 2, y + h / 2);
+          ctx.fillText("Текст", x + w / 2, y + h / 2);
           return;
         }
         if (mode === "image") {
@@ -5041,7 +5041,7 @@
           ctx.font = 14 * zoom + "px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("🖼️ Изображение", x + w / 2, y + h / 2);
+          ctx.fillText("Изображение", x + w / 2, y + h / 2);
           return;
         }
         if (mode === "sheet") {
@@ -5262,7 +5262,7 @@
             ctx.rect(cx - s2 / 2, g1y, s2, s2);
             ctx.stroke();
 
-            // ВЕРХНЯЯ грань: B→E→F→C — сплошная (видимая), ребро B→E тоже сплошное
+            // ВЕРХНЯЯ грань: BEFC — сплошная (видимая), ребро BE тоже сплошное
             ctx.beginPath();
             ctx.moveTo(cx - s2 / 2, g1y); // B
             ctx.lineTo(cx - s2 / 2 + off, g1y - off); // E
@@ -5270,7 +5270,7 @@
             ctx.lineTo(cx + s2 / 2, g1y); // C
             ctx.stroke();
 
-            // ПРАВАЯ грань: C→F→G→D, сплошная (видимая)
+            // ПРАВАЯ грань: CFGD, сплошная (видимая)
             ctx.beginPath();
             ctx.moveTo(cx + s2 / 2, g1y); // C
             ctx.lineTo(cx + s2 / 2 + off, g1y - off); // F
@@ -5282,19 +5282,19 @@
             // Паттерн зависит от толщины линии, чтобы пунктир был читаем при любой толщине.
             ctx.setLineDash(getDashPattern(thickness, 1));
 
-            // E→H (задняя вертикаль) — пунктир
+            // EH (задняя вертикаль) — пунктир
             ctx.beginPath();
             ctx.moveTo(cx - s2 / 2 + off, g1y - off); // E
             ctx.lineTo(cx - s2 / 2 + off, g1y + s2 - off); // H
             ctx.stroke();
 
-            // H→A (заднее нижнее левое ребро) — пунктир
+            // HA (заднее нижнее левое ребро) — пунктир
             ctx.beginPath();
             ctx.moveTo(cx - s2 / 2 + off, g1y + s2 - off); // H
             ctx.lineTo(cx - s2 / 2, g1y + s2); // A
             ctx.stroke();
 
-            // H→G (задняя нижняя горизонталь) — пунктир
+            // HG (задняя нижняя горизонталь) — пунктир
             ctx.beginPath();
             ctx.moveTo(cx - s2 / 2 + off, g1y + s2 - off); // H
             ctx.lineTo(cx + s2 / 2 + off, g1y + s2 - off); // G
@@ -5401,7 +5401,7 @@
               ctx.lineTo(lineEndX, lineEndY);
               ctx.stroke();
 
-              // ← ВЫКЛЮЧАЕМ ПУНКТИР ДЛЯ СТРЕЛКИ
+              // ВЫКЛЮЧАЕМ ПУНКТИР ДЛЯ СТРЕЛКИ
               ctx.setLineDash([]);
 
               ctx.beginPath();
@@ -5678,7 +5678,7 @@
           updateSheetToolbarFromSelection();
           saveBoardToServer();
         } else {
-          showStatus("❌ Нечего отменять");
+          showStatus("Нечего отменять");
         }
       }
 
@@ -5694,7 +5694,7 @@
           updateSheetToolbarFromSelection();
           saveBoardToServer();
         } else {
-          showStatus("❌ Нечего повторять");
+          showStatus("Нечего повторять");
         }
       }
 
@@ -5712,7 +5712,7 @@
         if (isSheetTextMode && editingSheet) {
           btn.style.display = "block";
           btn.classList.add("active");
-          btn.textContent = "✓ Готово";
+          btn.textContent = "Готово";
           return;
         }
 
@@ -5759,7 +5759,7 @@
         } else {
           btn.style.display = "block";
           btn.classList.add("active");
-          btn.textContent = "✓ Готово";
+          btn.textContent = "Готово";
         }
       }
 
@@ -6343,7 +6343,7 @@
         isSheetTextMode = true;
         focusTarget = "sheet";
 
-        btn.textContent = "✓ Готово";
+        btn.textContent = "Готово";
         btn.classList.add("active");
 
         const toolbar = document.getElementById("sheet-text-toolbar");
@@ -6550,7 +6550,7 @@
               const lineIdx = lines.length;
               lines.push({ line: currentLine, startX: 0, width: currentWidth, isParagraphEnd: false });
               lineToFlatStart.push(lineStartFlatIdx);
-              // Все символы этой строки → lineIdx
+              // Все символы этой строки lineIdx
               for (let j = 0; j < currentLine.length; j++) {
                 flatIndexToLine[lineStartFlatIdx + j] = lineIdx;
               }
@@ -6698,7 +6698,7 @@
         saveBoardHistory();
         saveBoardToServer();
         render();
-        showHint("✅ Текст сохранён");
+        showHint("Текст сохранён");
         setTimeout(updateSheetEditButton, 100);
       }
 
@@ -7231,7 +7231,7 @@
 
         saveBoardHistory();
         render(); // синхронный render вместо requestRender
-        showHint("🗑️ Удалено");
+        showHint("Удалено");
         saveBoardToServer();
       }
 
@@ -7654,7 +7654,7 @@
           saveBoardHistory();
           requestRender();
           saveBoardToServer();
-          showStatus("📝 Текст обновлён");
+          showStatus("Текст обновлён");
         } else if (editingTextObj && !save) {
           // ===== ОТМЕНА =====
           const original = window._textEditorOriginal;
@@ -7707,8 +7707,11 @@
       }
 
       function applyTextSettingsToSelected() {
-        if (selected.length === 0) return;
-        selected.forEach((id) => {
+        // Если текст сейчас редактируется, но не в selected — применяем к нему тоже
+        const ids = selected.length ? [...selected] : [];
+        if (editingTextObj && !ids.includes(editingTextObj.id)) ids.push(editingTextObj.id);
+        if (ids.length === 0) return;
+        ids.forEach((id) => {
           const obj = objects.find((o) => o.id === id);
           if (obj && obj.type === "text") {
             obj.font = document.getElementById("text-font").value;
@@ -7757,7 +7760,7 @@
 
         if (type === "lines") {
           content.innerHTML = `
-            <div class="sidebar-title">📏 Линии</div>
+            <div class="sidebar-title">Линии</div>
             <div style="font-size:10px;color:#999;padding:2px 10px 8px;"></div>
             <button class="sidebar-item ${currentLineType === "segment" ? "active" : ""}" onclick="selectLineType('segment')">
                 <span class="icon">─</span> Отрезок <span class="shortcut"></span>
@@ -7774,7 +7777,7 @@
             </button>
         `;
         } else if (type === "shapes") {
-          let html = `<div class="sidebar-title">⬜ Геометрические фигуры</div>`;
+          let html = `<div class="sidebar-title">Геометрические фигуры</div>`;
           html += `<div style="font-size:10px;color:#999;padding:2px 10px 8px;"></div>`;
           let currentGroup = "";
           SHAPE_LIST.forEach((shape) => {
@@ -7790,7 +7793,7 @@
           });
           content.innerHTML = html;
         } else if (type === "sheets") {
-          let html = `<div class="sidebar-title">📄 Форматы листов</div>`;
+          let html = `<div class="sidebar-title">Форматы листов</div>`;
           html += `<div style="font-size:10px;color:#999;padding:2px 10px 8px;"></div>`;
           SHEET_LIST.forEach((sheet) => {
             html += `
@@ -8005,7 +8008,7 @@
                 <div class="separator"></div>
                 <input type="color" id="sheet-text-color" value="#000000" style="width:30px;height:26px;border:none;padding:0;cursor:pointer">
                 <div class="separator"></div>
-                <button id="sheet-text-done" style="background:#34c759;color:white;padding:4px 16px;font-size:13px;">✓ Готово</button>
+                <button id="sheet-text-done" style="background:#34c759;color:white;padding:4px 16px;font-size:13px;">Готово</button>
             </div>
 
             <!-- ===== ВЫДЕЛЕНИЕ ===== -->
@@ -8086,7 +8089,7 @@
           .then((classes) => {
             // ===== ЗАЩИТА =====
             if (!Array.isArray(classes)) {
-              console.error("❌ classes не массив:", classes);
+              console.error("classes не массив:", classes);
               const c = document.getElementById("board-sidebar-content");
               if (c)
                 c.innerHTML = `<div style="color:#e53e3e;padding:8px;font-size:12px;">Ошибка загрузки классов</div>`;
@@ -8095,7 +8098,7 @@
 
             const container = document.getElementById("board-sidebar-content");
             if (!container || !document.body.contains(container)) {
-              console.warn("⚠️ container удалён из DOM");
+              console.warn("container удалён из DOM");
               return;
             }
 
@@ -8124,7 +8127,7 @@
                 html += `
                         <div class="sidebar-item ${isClassActive ? "active" : ""}" onclick="toggleClass(${c.id})" style="cursor:pointer;">
                             ${c.name}
-                            ${c.student_count ? `<span class="count">👥${c.student_count}</span>` : ""}
+                            ${c.student_count ? `<span class="count">${c.student_count}</span>` : ""}
                             ${currentUser?.role === "teacher" ? `<span class="count" style="cursor:pointer;color:#e53e3e;" onclick="event.stopPropagation();confirmDeleteClass(${c.id}, '${c.name}')">🗑️</span>` : ""}
                         </div>
                         <div id="class-details-${c.id}" style="${isExpanded ? "display:block;" : "display:none;"}padding-left:12px;margin-top:4px;">
@@ -8209,7 +8212,7 @@
                     .join("");
                 })
                 .catch((e) => {
-                  console.error("❌ students error:", e);
+                  console.error("students error:", e);
                   const containerEl = document.getElementById(`students-${c.id}`);
                   if (containerEl) {
                     containerEl.innerHTML = `<div style="color:#999;font-size:12px;padding:4px 8px;">Ошибка загрузки</div>`;
@@ -8224,11 +8227,11 @@
             });
           })
           .catch((e) => {
-            console.error("❌ loadBoardSidebarContent error:", e);
+            console.error("loadBoardSidebarContent error:", e);
             const c = document.getElementById("board-sidebar-content");
             if (c)
               c.innerHTML = `<div style="color:#e53e3e;padding:8px;font-size:11px;word-break:break-all;">
-                ❌ ${e.message}<br>
+                ${e.message}<br>
                 <span style="color:#999;font-size:10px;">${e.stack ? e.stack.split("\n")[0] : ""}</span>
             </div>`;
           });
@@ -8339,7 +8342,7 @@
             throw new Error(err.error || "Ошибка удаления");
           }
 
-          alert("✅ Класс удалён");
+          alert("Класс удалён");
 
           // Если текущий класс удалён — переключаемся на личную доску
           if (selectedClassId === classId) {
@@ -8353,7 +8356,7 @@
           if (currentPage === "classes") loadClassesPage();
           if (currentPage === "assignments") loadAssignmentsPage();
         } catch (error) {
-          alert("❌ Ошибка: " + error.message);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -8386,10 +8389,10 @@
             if (link) {
               const match = link.match(/\/join-class\/([a-zA-Z0-9_-]+)/);
               if (match) {
-                preview.innerHTML = `✅ Обнаружен токен: <strong>${match[1]}</strong>`;
+                preview.innerHTML = `Обнаружен токен: <strong>${match[1]}</strong>`;
                 preview.style.color = "#059669";
               } else {
-                preview.innerHTML = "⚠️ Неверный формат ссылки. Должна содержать /join-class/...";
+                preview.innerHTML = "Неверный формат ссылки. Должна содержать /join-class/...";
                 preview.style.color = "#d97706";
               }
             } else {
@@ -8411,7 +8414,7 @@
         // Извлекаем токен из ссылки
         const match = link.match(/\/join-class\/([a-zA-Z0-9_-]+)/);
         if (!match) {
-          alert("❌ Неверный формат ссылки. Убедитесь, что ссылка содержит /join-class/");
+          alert("Неверный формат ссылки. Убедитесь, что ссылка содержит /join-class/");
           return;
         }
 
@@ -8432,14 +8435,14 @@
           }
 
           closeModal();
-          alert("✅ " + data.message);
+          alert("" + data.message);
           // Обновляем интерфейс
           loadBoardSidebarContent();
           if (currentPage === "classes") loadClassesPage();
           if (currentPage === "assignments") loadAssignmentsPage();
-          showHint("✅ Вы присоединились к классу!");
+          showHint("Вы присоединились к классу!");
         } catch (error) {
-          alert("❌ " + error.message);
+          alert("" + error.message);
         }
       }
 
@@ -8549,7 +8552,7 @@
 
           // Показываем ссылку в модалке
           openModal(`
-            <h2>🔗 Пригласительная ссылка создана!</h2>
+            <h2>Пригласительная ссылка создана!</h2>
             <div style="background:#d1fae5;padding:12px;border-radius:8px;margin-bottom:12px;">
                 <div style="font-size:13px;color:#065f46;">
                     Ссылка скопирована в буфер обмена
@@ -8566,15 +8569,15 @@
                 ${maxUses === 999 ? " • Безлимитное количество" : ` • Осталось ${maxUses} использований`}
             </div>
             <div class="modal-actions">
-                <button class="btn-primary" onclick="copyInviteLink('${data.url}')" style="padding:8px 20px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">📋 Копировать ещё раз</button>
-                <button class="btn-secondary" onclick="closeModal()">✕ Закрыть</button>
+                <button class="btn-primary" onclick="copyInviteLink('${data.url}')" style="padding:8px 20px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">Копировать ещё раз</button>
+                <button class="btn-secondary" onclick="closeModal()">Закрыть</button>
             </div>
         `);
 
           // Обновляем список приглашений
           loadInvitesList(classId);
         } catch (error) {
-          alert("❌ Ошибка: " + error.message);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -8592,7 +8595,7 @@
           </div>
           
           <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-            <button class="btn-secondary" onclick="closeModal()">✕ Закрыть</button>
+            <button class="btn-secondary" onclick="closeModal()">Закрыть</button>
             <button class="btn-primary" onclick="copyInviteLink('${url}')" 
                     style="background:#667eea;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">
               Копировать
@@ -8615,7 +8618,7 @@
         if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
           try {
             await navigator.share(shareData);
-            showHint("✅ Ссылка отправлена!");
+            showHint("Ссылка отправлена!");
           } catch (err) {
             // Пользователь отменил — ничего не делаем
             if (err.name !== "AbortError") {
@@ -8631,7 +8634,7 @@
       // Копирование ссылки
       function copyInviteLink(url) {
         const onSuccess = () => {
-          showHint("✅ Ссылка скопирована!");
+          showHint("Ссылка скопирована!");
         };
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -8728,7 +8731,7 @@
               return `
                 <div style="display:flex;align-items:center;gap:4px;padding:4px 6px;border-bottom:1px solid #f0f0f0;font-size:10px;"
                     data-invite-token="${inv.token}">
-                  <span style="color:#34c759;flex-shrink:0;">🟢</span>
+                  <span style="color:#34c759;flex-shrink:0;">&#9679;</span>
                   <span style="flex-shrink:0;">${inv.used_count}/${inv.max_uses}</span>
                   <span style="font-size:9px;color:#999;flex-shrink:0;" title="Истекает: ${expires.toLocaleString()}">⏱ ${timeLeftText}</span>
                   
@@ -8766,10 +8769,10 @@
             throw new Error(err.error || "Ошибка");
           }
 
-          showHint("✅ Приглашение отключено");
+          showHint("Приглашение отключено");
           if (classId) loadInvitesList(classId);
         } catch (error) {
-          alert("❌ " + error.message);
+          alert("" + error.message);
         }
       }
 
@@ -8793,7 +8796,7 @@
           .then((classes) => {
             // ===== ЗАЩИТА =====
             if (!Array.isArray(classes)) {
-              console.error("❌ classes не массив:", classes);
+              console.error("classes не массив:", classes);
               area.innerHTML = `<div class="content-page"><div class="card"><div class="empty">Ошибка загрузки классов</div></div></div>`;
               return;
             }
@@ -8865,7 +8868,7 @@
                                 <span>${new Date(c.created_at).toLocaleDateString()}</span>
                             </div>
                             <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eef1f6;">
-                                <span style="font-size:11px;color:#667eea;font-weight:600;">➜ Перейти к доске</span>
+                                <span style="font-size:11px;color:#667eea;font-weight:600;">Перейти к доске</span>
                             </div>
                         </div>
                     `;
@@ -8878,12 +8881,12 @@
             area.innerHTML = html;
           })
           .catch((e) => {
-            console.error("❌ Ошибка загрузки классов:", e);
+            console.error("Ошибка загрузки классов:", e);
             area.innerHTML = `
                 <div class="content-page">
                     <div class="card">
                         <div class="empty" style="color:#e53e3e;">
-                            ❌ Ошибка загрузки классов: ${e.message}
+                            Ошибка загрузки классов: ${e.message}
                         </div>
                     </div>
                 </div>
@@ -8976,7 +8979,7 @@
         // Загружаем страницу доски — внутри loadBoardPage уже вызовется loadBoardFromServer
         loadPage("board");
 
-        // ❌ УБИРАЕМ setTimeout с повторным selectBoard — он создавал гонку
+        // УБИРАЕМ setTimeout с повторным selectBoard — он создавал гонку
       }
 
       function showCreateClass() {
@@ -9010,7 +9013,7 @@
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
           closeModal();
-           // alert("✅ Класс создан! Код: " + data.invite_code);
+           // alert("Класс создан! Код: " + data.invite_code);
           loadBoardSidebarContent();
           loadClassesPage();
         } catch (error) {
@@ -9137,7 +9140,7 @@
                     <button class="btn-secondary" onclick="loadAssignmentStudents(${a.id})" style="font-size:14px;padding:8px 20px;">
                         Список класса
                     </button>
-                    <button class="btn-secondary" onclick="closeModal()">✕ Закрыть</button>
+                    <button class="btn-secondary" onclick="closeModal()">Закрыть</button>
                 </div>
                 ${
                   Array.isArray(a.target_student_ids) && a.target_student_ids.length > 0
@@ -9172,7 +9175,7 @@
                               task.autoCheck
                                 ? `
                                 <div style="font-size:12px;color:#059669;margin-top:4px;">
-                                    ✅ Автопроверка: ${task.correctAnswer || "Нет ответа"}
+                                    Автопроверка: ${task.correctAnswer || "Нет ответа"}
                                 </div>
                             `
                                 : ""
@@ -9181,7 +9184,7 @@
                               task.teacherHint
                                 ? `
                                 <div style="margin-top:8px;border-top:1px dashed #667eea;padding-top:8px;">
-                                    <div style="font-size:12px;color:#667eea;">💡 Подсказка после проверки:</div>
+                                    <div style="font-size:12px;color:#667eea;">Подсказка после проверки:</div>
                                     ${task.teacherHint.text ? `<div style="font-size:13px;color:#333;margin-top:2px;">${task.teacherHint.text}</div>` : ""}
                                     ${
                                       task.teacherHint.image
@@ -9204,7 +9207,7 @@
             if (a.content?.assignmentHint) {
               html += `
                 <div style="margin-top:12px;border-top:2px solid #667eea;padding:8px;background:#f0f4ff;border-radius:4px;">
-                    <div style="font-weight:600;font-size:13px;color:#667eea;">💡 Общая подсказка/Комментарий после сдачи:</div>
+                    <div style="font-weight:600;font-size:13px;color:#667eea;">Общая подсказка/Комментарий после сдачи:</div>
                     ${
                       a.content.assignmentHint.text
                         ? `<div style="font-size:13px;color:#333;margin-top:4px;">${a.content.assignmentHint.text}</div>`
@@ -9265,13 +9268,13 @@
                                         : ""
                                     }
                                 </div>
-                                <span style="font-size:12px;padding:4px 12px;background:#059669;color:white;border-radius:10px;">${isAutoGraded ? "⚡ Автопроверка" : "Проверено"}</span>
+                                <span style="font-size:12px;padding:4px 12px;background:#059669;color:white;border-radius:10px;">${isAutoGraded ? "Автопроверка" : "Проверено"}</span>
                             </div>
                             ${
                               a.submission.teacher_comment
                                 ? `
                                 <div style="margin-top:8px;padding:8px 12px;background:white;border-radius:6px;font-size:13px;color:#333;border-left:3px solid #667eea;">
-                                    💬 <strong>Комментарий учителя:</strong> ${a.submission.teacher_comment}
+                                    <strong>Комментарий учителя:</strong> ${a.submission.teacher_comment}
                                 </div>
                             `
                                 : ""
@@ -9358,7 +9361,7 @@
                               isGraded && subResult && subResult.earned !== null && subResult.earned !== undefined
                                 ? `
                                 <div class="badge-auto ${subResult.correct ? "badge-correct" : "badge-wrong"}" style="margin-bottom:10px;">
-                                    ${subResult.correct ? "✅ Верно" : "❌ Неверно"} • ${subResult.earned}/${subResult.maxScore} балл.
+                                    ${subResult.correct ? "Верно" : "Неверно"} • ${subResult.earned}/${subResult.maxScore} балл.
                                 </div>
                             `
                                 : ""
@@ -9426,7 +9429,7 @@
                                             <div style="padding:3px 6px;margin-bottom:2px;background:white;border-radius:3px;font-size:12px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;">
                                                 <span>
                                                     <span style="background:#ffeb3b;padding:1px 4px;border-radius:2px;font-size:11px;">"${c.selected_text.substring(0, 50)}${c.selected_text.length > 50 ? "..." : ""}"</span>
-                                                    → ${c.comment}
+                                                    ${c.comment}
                                                 </span>
                                             </div>
                                         `,
@@ -9481,7 +9484,7 @@
                               (isSubmitted || isGraded) && task.teacherHint
                                 ? `
                                 <div style="margin-top:8px;border-top:2px solid #667eea;padding-top:8px;background:#f0f4ff;border-radius:4px;padding:8px;">
-                                    <div style="font-weight:600;font-size:13px;color:#667eea;">💡 Подсказка/Комментарий учителя:</div>
+                                    <div style="font-weight:600;font-size:13px;color:#667eea;">Подсказка/Комментарий учителя:</div>
                                     ${task.teacherHint.text ? `<div style="font-size:13px;color:#333;margin-top:4px;">${task.teacherHint.text}</div>` : ""}
                                     ${
                                       task.teacherHint.image
@@ -9553,7 +9556,7 @@
             } else if (isGraded) {
               html += `
                     <div style="margin-top:12px;text-align:center;color:#999;font-size:12px;padding:12px;background:#f8f9fa;border-radius:4px;">
-                        ✅ Работа проверена. Изменения невозможны.
+                        Работа проверена. Изменения невозможны.
                     </div>
                 `;
             }
@@ -9626,7 +9629,7 @@
               imageWrappers.forEach((wrapper) => {
                 const img = wrapper.querySelector("img");
                 if (!img) {
-                  console.warn("⚠️ В обёртке нет изображения");
+                  console.warn("В обёртке нет изображения");
                   return;
                 }
 
@@ -9635,7 +9638,7 @@
 
                 const container = document.getElementById(`ann-container-${idx}`);
                 if (!container) {
-                  console.warn(`⚠️ Контейнер ann-container-${idx} не найден`);
+                  console.warn(`Контейнер ann-container-${idx} не найден`);
                   return;
                 }
 
@@ -9694,7 +9697,7 @@
                     reader.readAsDataURL(this.files[0]);
                   }
                   autoSave(assignmentId);
-                  showAutoSaveStatus("📎 Фото прикреплено");
+                  showAutoSaveStatus("Фото прикреплено");
                 });
               });
 
@@ -9709,13 +9712,13 @@
                 const draft = loadDraft(a.id);
                 if (draft) {
                   const time = new Date(draft.timestamp);
-                  indicator.textContent = `💾 Черновик от ${time.toLocaleTimeString()}`;
+                  indicator.textContent = `Черновик от ${time.toLocaleTimeString()}`;
                 }
               }
             }, 300);
           }
         } catch (error) {
-          console.error("❌ Ошибка в showAssignment:", error);
+          console.error("Ошибка в showAssignment:", error);
           alert("Ошибка: " + error.message);
         }
       }
@@ -9795,7 +9798,7 @@
       function initTextHighlighting(container, submissionId) {
         
         if (!container) {
-          console.warn("⚠️ container не найден");
+          console.warn("container не найден");
           return;
         }
 
@@ -9812,7 +9815,7 @@
 
           const textEl = containerEl.querySelector(".student-answer-text");
           if (!textEl) {
-            console.warn("⚠️ student-answer-text не найден для задания", subtaskIndex);
+            console.warn("student-answer-text не найден для задания", subtaskIndex);
             return;
           }
 
@@ -9832,7 +9835,7 @@
           commentBtn.className = "text-comment-btn";
           commentBtn.dataset.subtask = subtaskIndex;
           commentBtn.dataset.submission = submissionId;
-          commentBtn.textContent = "💬 Добавить комментарий";
+          commentBtn.textContent = "Добавить комментарий";
           commentBtn.style.cssText = `
             display: none;
             margin-top: 8px;
@@ -9935,7 +9938,7 @@
             width: 90%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         ">
-            <h3 style="margin:0 0 12px 0;font-size:18px;color:#333;">💬 Комментарий к тексту</h3>
+            <h3 style="margin:0 0 12px 0;font-size:18px;color:#333;">Комментарий к тексту</h3>
             <div style="
                 background:#f0f4ff;
                 padding:10px 14px;
@@ -10044,7 +10047,7 @@
             width: 90%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         ">
-            <h3 style="margin:0 0 8px 0;font-size:18px;color:#333;">📝 Текстовый комментарий</h3>
+            <h3 style="margin:0 0 8px 0;font-size:18px;color:#333;">Текстовый комментарий</h3>
             <div style="
                 background:#f0f4ff;
                 padding:8px 12px;
@@ -10145,7 +10148,7 @@
           const overlay = btn.closest("div[style*='fixed']");
           if (overlay) overlay.remove();
 
-          showHint("✅ Текстовый комментарий сохранён!");
+          showHint("Текстовый комментарий сохранён!");
 
           // ===== ПЕРЕЗАГРУЖАЕМ КОММЕНТАРИИ =====
           const container = document.querySelector(`.student-answer-container[data-subtask="${subtaskIndex}"]`);
@@ -10154,8 +10157,8 @@
             loadTextComments(submissionId, subtaskIndex, container);
           }
         } catch (error) {
-          console.error("❌ Ошибка:", error);
-          alert("❌ Ошибка: " + error.message);
+          console.error("Ошибка:", error);
+          alert("Ошибка: " + error.message);
           btn.textContent = "Сохранить";
           btn.disabled = false;
         }
@@ -10164,7 +10167,7 @@
       function startVoiceCommentRecording(submissionId, subtaskIndex, selectedText) {
         // Проверяем поддержку
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          alert("❌ Ваш браузер не поддерживает запись голоса");
+          alert("Ваш браузер не поддерживает запись голоса");
           return;
         }
 
@@ -10318,8 +10321,8 @@
             });
           })
           .catch((err) => {
-            console.error("❌ Ошибка доступа к микрофону:", err);
-            alert("❌ Нет доступа к микрофону. Разрешите доступ в настройках браузера.");
+            console.error("Ошибка доступа к микрофону:", err);
+            alert("Нет доступа к микрофону. Разрешите доступ в настройках браузера.");
             overlay.remove();
             style.remove();
           });
@@ -10348,7 +10351,7 @@
             throw new Error(err.error || "Ошибка сохранения");
           }
 
-          showHint("✅ Голосовой комментарий сохранён!");
+          showHint("Голосовой комментарий сохранён!");
 
           // ===== ОБНОВЛЯЕМ ВСЕ =====
           const container = document.querySelector(`.student-answer-container[data-subtask="${subtaskIndex}"]`);
@@ -10360,8 +10363,8 @@
             loadTextComments(submissionId, subtaskIndex, container);
           }
         } catch (error) {
-          console.error("❌ Ошибка загрузки:", error);
-          alert("❌ Ошибка: " + error.message);
+          console.error("Ошибка загрузки:", error);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -10398,7 +10401,7 @@
 
         // Запрашиваем комментарий
         const comment = prompt(
-          `💬 Комментарий к выделенному тексту:\n\n"${selectedText.substring(0, 150)}${selectedText.length > 150 ? "..." : ""}"\n\nВведите комментарий:`,
+          `Комментарий к выделенному тексту:\n\n"${selectedText.substring(0, 150)}${selectedText.length > 150 ? "..." : ""}"\n\nВведите комментарий:`,
         );
 
         if (!comment || !comment.trim()) return;
@@ -10406,14 +10409,14 @@
         // Сохраняем комментарий
         saveTextComment(submissionId, subtaskIndex, selectedText, comment.trim())
           .then(() => {
-            showHint("✅ Комментарий сохранён");
+            showHint("Комментарий сохранён");
             // Перезагружаем комментарии
             loadTextComments(submissionId, subtaskIndex, container);
             // Подсвечиваем текст
             highlightText(textEl, selectedText);
           })
           .catch((err) => {
-            alert("❌ Ошибка: " + err.message);
+            alert("Ошибка: " + err.message);
           });
       }
 
@@ -10496,7 +10499,7 @@
                      onclick="scrollToTextComment(this, '${escapeHtml(c.selected_text)}', '${escapeHtml(c.comment)}')">
                     <div style="flex:1;margin-right:8px;">
                         <span style="background:#ffeb3b;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:500;">"${escapeHtml(c.selected_text.substring(0, 60))}${c.selected_text.length > 60 ? "..." : ""}"</span>
-                        <span style="color:#333;margin-left:6px;">→ ${escapeHtml(c.comment)}</span>
+                        <span style="color:#333;margin-left:6px;">${escapeHtml(c.comment)}</span>
                     </div>
                     ${
                       currentUser?.role === "teacher"
@@ -10534,7 +10537,7 @@
             }
           }
         } catch (error) {
-          console.error("❌ Ошибка загрузки комментариев:", error);
+          console.error("Ошибка загрузки комментариев:", error);
         }
       }
 
@@ -10573,7 +10576,7 @@
               element.style.boxShadow = "none";
             }, 1500);
 
-            alert('💬 Комментарии к тексту:\n\n"' + text + '"\n\n' + foundComments.join("\n"));
+            alert('Комментарии к тексту:\n\n"' + text + '"\n\n' + foundComments.join("\n"));
           }
         }
       }
@@ -10604,7 +10607,7 @@
             }, 1500);
 
             // Показываем комментарий
-            alert(`💬 ${comment}`);
+            alert(`${comment}`);
           }
         });
 
@@ -10630,7 +10633,7 @@
                   });
                 }
               }, 2000);
-              showHint(`💬 ${comment}`);
+              showHint(`${comment}`);
             }
           }
         }
@@ -10644,12 +10647,12 @@
 
         // Проверка ID
         if (!commentId) {
-          alert("❌ Ошибка: ID комментария не указан");
+          alert("Ошибка: ID комментария не указан");
           return;
         }
 
         if (!submissionId || submissionId === 0 || submissionId === "0") {
-          alert("❌ Ошибка: ID работы не указан. Пожалуйста, обновите страницу и попробуйте снова.");
+          alert("Ошибка: ID работы не указан. Пожалуйста, обновите страницу и попробуйте снова.");
           return;
         }
 
@@ -10658,7 +10661,7 @@
         try {
           const token = localStorage.getItem("token");
           if (!token) {
-            alert("❌ Ошибка: вы не авторизованы");
+            alert("Ошибка: вы не авторизованы");
             return;
           }
 
@@ -10670,7 +10673,7 @@
           });
 
           if (response.status === 403) {
-            alert("❌ Ошибка: у вас нет прав на удаление этого комментария");
+            alert("Ошибка: у вас нет прав на удаление этого комментария");
             return;
           }
 
@@ -10679,7 +10682,7 @@
             throw new Error(err.error || "Ошибка удаления (статус: " + response.status + ")");
           }
 
-          showHint("🗑️ Комментарий удалён");
+          showHint("Комментарий удалён");
 
           // Удаляем элемент из DOM сразу
           if (btn) {
@@ -10704,8 +10707,8 @@
             }
           }, 300);
         } catch (error) {
-          console.error("❌ Ошибка удаления:", error);
-          alert("❌ Ошибка: " + error.message);
+          console.error("Ошибка удаления:", error);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -10745,7 +10748,7 @@
                 listEl.style.display = "block";
                 listEl.innerHTML = `
                         <div style="font-size:12px;color:#667eea;font-weight:600;margin-bottom:6px;">
-                            💬 Комментарии к тексту (${comments.length}):
+                            Комментарии к тексту (${comments.length}):
                         </div>
                         ${comments
                           .map(
@@ -10753,7 +10756,7 @@
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 8px;margin-bottom:3px;background:white;border-radius:4px;border-bottom:1px solid #f0f0f0;font-size:13px;">
                                 <div style="flex:1;margin-right:8px;">
                                     <span style="background:#ffeb3b;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:500;">"${c.selected_text.substring(0, 60)}${c.selected_text.length > 60 ? "..." : ""}"</span>
-                                    <span style="color:#333;margin-left:6px;">→ ${c.comment}</span>
+                                    <span style="color:#333;margin-left:6px;">${c.comment}</span>
                                 </div>
                                 ${
                                   currentUser?.role === "teacher"
@@ -10788,13 +10791,13 @@
             }
           });
         } catch (error) {
-          console.error("❌ Ошибка обновления комментариев:", error);
+          console.error("Ошибка обновления комментариев:", error);
         }
       }
 
       function initAnnotationSystemForImage(imgElement, container, submissionId, isTeacher, existingAnnotations) {
         if (!imgElement || !container) {
-          console.warn("⚠️ Нет изображения или контейнера");
+          console.warn("Нет изображения или контейнера");
           return;
         }
 
@@ -10982,7 +10985,7 @@
           const textComments = data.annotations.filter((a) => !a.isVoice).length;
 
           if (data.annotations.length === 0) {
-            listEl.innerHTML = `<div style="color:#999;font-size:12px;text-align:center;padding:10px 0;">📝 Нет комментариев учителя</div>`;
+            listEl.innerHTML = `<div style="color:#999;font-size:12px;text-align:center;padding:10px 0;">Нет комментариев учителя</div>`;
             return;
           }
 
@@ -11084,10 +11087,10 @@
               const data = await response.json();
               ann.id = data.id;
               
-              showHint("✅ Комментарий сохранён");
+              showHint("Комментарий сохранён");
             }
           } catch (e) {
-            console.error("❌ Ошибка сохранения:", e);
+            console.error("Ошибка сохранения:", e);
           }
         }
 
@@ -11159,7 +11162,7 @@
           annH = Math.max(5, Math.min(scale.naturalHeight - annY, annH));
 
           if (type === "text") {
-            const comment = prompt("💬 Введите текстовый комментарий к выделенной области:");
+            const comment = prompt("Введите текстовый комментарий к выделенной области:");
             if (comment && comment.trim()) {
               const ann = {
                 x: annX,
@@ -11176,7 +11179,7 @@
               drawAnnotations();
               updateCommentList();
               saveAnnotation(ann);
-              showHint("✅ Текстовый комментарий добавлен");
+              showHint("Текстовый комментарий добавлен");
             }
           } else if (type === "voice") {
             startVoiceAnnotationRecording(id, annX, annY, annW, annH);
@@ -11186,7 +11189,7 @@
         // ===== ЗАПИСЬ ГОЛОСОВОГО КОММЕНТАРИЯ =====
         function startVoiceAnnotationRecording(instanceId, x, y, w, h) {
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert("❌ Ваш браузер не поддерживает запись голоса");
+            alert("Ваш браузер не поддерживает запись голоса");
             return;
           }
           const data = window._annotationInstances[instanceId];
@@ -11298,8 +11301,8 @@
               });
             })
             .catch((err) => {
-              console.error("❌ Ошибка доступа к микрофону:", err);
-              alert("❌ Нет доступа к микрофону. Разрешите доступ в настройках браузера.");
+              console.error("Ошибка доступа к микрофону:", err);
+              alert("Нет доступа к микрофону. Разрешите доступ в настройках браузера.");
               overlay.remove();
             });
         }
@@ -11357,15 +11360,15 @@
                 const audioData = await audioResponse.json();
                 ann.audioPath = audioData.audio_path || audioData.audioPath;
                 
-                showHint("✅ Голосовой комментарий сохранён!");
+                showHint("Голосовой комментарий сохранён!");
               } else {
-                console.error("❌ Ошибка сохранения аудио");
+                console.error("Ошибка сохранения аудио");
               }
             }
             updateCommentList();
           } catch (e) {
-            console.error("❌ Ошибка сохранения:", e);
-            alert("❌ Ошибка сохранения: " + e.message);
+            console.error("Ошибка сохранения:", e);
+            alert("Ошибка сохранения: " + e.message);
           }
         }
 
@@ -11376,7 +11379,7 @@
 
           const ann = data.annotations[index];
           if (!ann.audioPath) {
-            alert("❌ Аудио не найдено");
+            alert("Аудио не найдено");
             return;
           }
 
@@ -11402,8 +11405,8 @@
           });
 
           audio.play().catch((err) => {
-            console.error("❌ Ошибка воспроизведения:", err);
-            alert("❌ Не удалось воспроизвести аудио");
+            console.error("Ошибка воспроизведения:", err);
+            alert("Не удалось воспроизвести аудио");
             btns.forEach((btn) => {
               btn.textContent = "▶ Воспроизвести";
               btn.style.background = "#8e44ad";
@@ -11544,7 +11547,7 @@
           data.annotations.splice(index, 1);
           drawAnnotations();
           updateCommentList();
-          showHint("🗑️ Комментарий удалён");
+          showHint("Комментарий удалён");
         };
 
         window.clearAllAnnotations = async function (id) {
@@ -11618,7 +11621,7 @@
         commentsContainer.innerHTML = `
         <div style="font-weight:600;font-size:13px;color:#333;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;padding-bottom:6px;">
             <span class="teacher-comments-header-count">Комментарии учителя (${existingAnnotations?.length || 0})</span>
-            ${isTeacher ? `<button onclick="clearAllAnnotations('${instanceId}')" style="background:none;border:none;color:#e53e3e;cursor:pointer;font-size:11px;padding:2px 6px;">✕ Очистить все</button>` : ""}
+            ${isTeacher ? `<button onclick="clearAllAnnotations('${instanceId}')" style="background:none;border:none;color:#e53e3e;cursor:pointer;font-size:11px;padding:2px 6px;">Очистить все</button>` : ""}
         </div>
         <div class="teacher-comments-list" style="font-size:13px;">
             ${
@@ -11739,7 +11742,7 @@
               }
             }
           } catch (e) {
-            console.error("❌ Ошибка загрузки:", e);
+            console.error("Ошибка загрузки:", e);
           }
         }
         setTimeout(loadAnnotationsFromServer, 300);
@@ -12062,11 +12065,11 @@
           }
 
           closeModal();
-          alert("✅ Задание создано успешно!");
+          alert("Задание создано успешно!");
           loadAssignmentsPage();
         } catch (error) {
-          console.error("❌ Ошибка:", error);
-          alert("❌ Ошибка: " + error.message);
+          console.error("Ошибка:", error);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -12080,7 +12083,7 @@
         // Находим все поля ввода в текущей модалке
         const modalContent = document.getElementById("modal-content");
         if (!modalContent) {
-          console.error("❌ Модальное окно не найдено");
+          console.error("Модальное окно не найдено");
           alert("Ошибка: модальное окно не найдено");
           return;
         }
@@ -12164,7 +12167,7 @@
 
           // Успешно
           if (statusEl) {
-            statusEl.textContent = "✅ Ответы успешно отправлены!";
+            statusEl.textContent = "Ответы успешно отправлены!";
             statusEl.style.color = "#059669";
           }
 
@@ -12182,18 +12185,18 @@
             loadAssignmentsPage();
           }, 1500);
         } catch (error) {
-          console.error("❌ Ошибка:", error);
+          console.error("Ошибка:", error);
           if (statusEl) {
-            statusEl.textContent = "❌ " + error.message;
+            statusEl.textContent = "" + error.message;
             statusEl.style.color = "#dc2626";
           }
           if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = "📤 Попробовать снова";
+            submitBtn.textContent = "Попробовать снова";
             submitBtn.style.opacity = "1";
             submitBtn.style.cursor = "pointer";
           }
-          alert("❌ Ошибка: " + error.message);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -12251,7 +12254,7 @@
           };
           localStorage.setItem(key, JSON.stringify(data));
           
-          showAutoSaveStatus("💾 Черновик сохранён");
+          showAutoSaveStatus("Черновик сохранён");
         } catch (e) {
           console.error("Ошибка сохранения черновика:", e);
         }
@@ -12278,7 +12281,7 @@
           saveDraft(assignmentId, draft.answers || {}, images);
           const preview = document.querySelector(`.subtask-answer-file[data-index="${index}"]`)?.closest(".subtask-response")?.querySelector(".subtask-answer-preview");
           if (preview) preview.innerHTML = "";
-          showAutoSaveStatus("🗑 Фото удалено");
+          showAutoSaveStatus("Фото удалено");
         } catch (e) {
           console.error("Ошибка удаления фото из черновика:", e);
         }
@@ -12473,7 +12476,7 @@
             throw new Error(err.error || "Ошибка сохранения оценки");
           }
           closeModal();
-          alert("✅ Оценка сохранена");
+          alert("Оценка сохранена");
           loadAssignmentsPage();
         } catch (error) {
           alert("Ошибка: " + error.message);
@@ -12546,7 +12549,7 @@
             throw new Error(err.error || "Ошибка оценки");
           }
           closeModal();
-          alert("✅ Оценка сохранена!");
+          alert("Оценка сохранена!");
           loadAssignmentsPage();
         } catch (error) {
           alert("Ошибка: " + error.message);
@@ -12676,7 +12679,7 @@
 
       function openImageViewer(imagePath) {
         if (!imagePath) {
-          showHint("❌ Путь к изображению не указан");
+          showHint("Путь к изображению не указан");
           return;
         }
 
@@ -12703,7 +12706,7 @@
                 <img id="viewer-img" 
                      src="${fullPath}" 
                      style="max-width:100%;max-height:70vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:block;margin:0 auto;" 
-                     onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3E❌ Изображение не найдено%3C/text%3E%3C/svg%3E';">
+                     onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3EИзображение не найдено%3C/text%3E%3C/svg%3E';">
                 <div id="image-loader" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;color:#999;">Загрузка...</div>
             </div>
             ${
@@ -12712,12 +12715,12 @@
                 : `<div style="font-size:12px;color:#999;margin-bottom:12px;word-break:break-all;">${fullPath}</div>`
             }
             <div class="modal-actions" style="justify-content:center;gap:10px;">
-                <button class="btn-secondary" onclick="closeImageViewer()">✕ Закрыть</button>
-                <button class="btn-primary" onclick="downloadImage('${fullPath}')" style="background:#34c759;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">📥 Скачать</button>
+                <button class="btn-secondary" onclick="closeImageViewer()">Закрыть</button>
+                <button class="btn-primary" onclick="downloadImage('${fullPath}')" style="background:#34c759;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">Скачать</button>
                 ${
                   String(imagePath).startsWith("data:")
                     ? ""
-                    : `<button class="btn-primary" onclick="window.open('${fullPath}', '_blank')" style="background:#667eea;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">🔗 Открыть</button>`
+                    : `<button class="btn-primary" onclick="window.open('${fullPath}', '_blank')" style="background:#667eea;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">Открыть</button>`
                 }
             </div>
         </div>
@@ -12735,7 +12738,7 @@
               };
               img.onerror = function () {
                 if (loader) {
-                  loader.textContent = "❌ Ошибка загрузки";
+                  loader.textContent = "Ошибка загрузки";
                   loader.style.color = "#e53e3e";
                 }
               };
@@ -12800,7 +12803,7 @@
         // Находим изображение ученика
         const img = document.getElementById(`student-image-${subtaskIndex}`);
         if (!img) {
-          showHint("❌ Изображение не найдено");
+          showHint("Изображение не найдено");
           return;
         }
 
@@ -12809,7 +12812,7 @@
         if (!wrapper) return;
 
         // Показываем подсказку с координатами
-        showHint(`🔍 Комментарий к области на фото (x: ${Math.round(x)}, y: ${Math.round(y)})`);
+        showHint(`Комментарий к области на фото (x: ${Math.round(x)}, y: ${Math.round(y)})`);
 
         // Подсвечиваем область на фото (если есть canvas)
         const canvas = wrapper.querySelector("canvas");
@@ -13033,14 +13036,14 @@
                 <img id="viewer-img" 
                      src="${imageUrl}" 
                      style="max-width:100%;max-height:70vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:block;margin:0 auto;" 
-                     onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3E❌ Изображение не найдено%3C/text%3E%3C/svg%3E';">
+                     onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22300%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3EИзображение не найдено%3C/text%3E%3C/svg%3E';">
                 <div id="image-loader" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;color:#999;">Загрузка...</div>
             </div>
             <div style="font-size:12px;color:#999;margin-bottom:12px;word-break:break-all;">${imageUrl}</div>
             <div class="modal-actions" style="justify-content:center;gap:10px;">
-                <button class="btn-secondary" onclick="closeModal()">✕ Закрыть</button>
-                <button class="btn-primary" onclick="downloadImage('${imageUrl}')" style="background:#34c759;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">📥 Скачать</button>
-                <button class="btn-primary" onclick="window.open('${imageUrl}', '_blank')" style="background:#667eea;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">🔗 Открыть</button>
+                <button class="btn-secondary" onclick="closeModal()">Закрыть</button>
+                <button class="btn-primary" onclick="downloadImage('${imageUrl}')" style="background:#34c759;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">Скачать</button>
+                <button class="btn-primary" onclick="window.open('${imageUrl}', '_blank')" style="background:#667eea;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;">Открыть</button>
             </div>
         </div>
     `);
@@ -13057,7 +13060,7 @@
               };
               img.onerror = function () {
                 if (loader) {
-                  loader.textContent = "❌ Ошибка загрузки";
+                  loader.textContent = "Ошибка загрузки";
                   loader.style.color = "#e53e3e";
                 }
               };
@@ -13068,7 +13071,7 @@
 
       function openImageInNewTab(imageUrl) {
         window.open(imageUrl, "_blank");
-        showHint("📷 Изображение открыто в новой вкладке");
+        showHint("Изображение открыто в новой вкладке");
       }
 
       function downloadImage(imageUrl) {
@@ -13078,7 +13081,7 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        showHint("📥 Скачивание начато");
+        showHint("Скачивание начато");
       }
 
       // ============================================================
@@ -13261,7 +13264,7 @@
       function addSubtask() {
         const container = document.getElementById("subtasks-container");
         if (!container) {
-          console.warn("⚠️ subtasks-container не найден");
+          console.warn("subtasks-container не найден");
           return;
         }
 
@@ -13449,8 +13452,8 @@
                   const status = a.submission?.status || "pending";
                   const statusLabels = {
                     pending: "⏳ Не сдано",
-                    submitted: "📤 На проверке",
-                    graded: "✅ Проверено",
+                    submitted: "На проверке",
+                    graded: "Проверено",
                   };
                   const statusColors = {
                     pending: "#fef3c7",
@@ -13495,13 +13498,13 @@
                       teacherStatusBg = "#fef3c7";
                       borderColor = "#fef3c7";
                     } else if (stats.submitted === stats.graded) {
-                      teacherStatusText = "✅ Все проверены";
+                      teacherStatusText = "Все проверены";
                       teacherStatusColor = "#059669";
                       teacherStatusBg = "#d1fae5";
                       borderColor = "#059669";
                     } else {
                       const pendingGrading = stats.submitted - stats.graded;
-                      teacherStatusText = `📤 ${pendingGrading} на проверке`;
+                      teacherStatusText = `${pendingGrading} на проверке`;
                       teacherStatusColor = "#2563eb";
                       teacherStatusBg = "#dbeafe";
                       borderColor = "#2563eb";
@@ -13515,9 +13518,9 @@
 
                     statsHtml = `
                             <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;font-size:11px;color:#666;">
-                                <span title="Всего учеников">👥 ${stats.totalStudents}</span>
-                                <span title="Сдано" style="color:#2563eb;">📤 ${stats.submitted} (${submittedPercent}%)</span>
-                                <span title="Проверено" style="color:#059669;">✅ ${stats.graded} (${gradedPercent}%)</span>
+                                <span title="Всего учеников">${stats.totalStudents}</span>
+                                <span title="Сдано" style="color:#2563eb;">${stats.submitted} (${submittedPercent}%)</span>
+                                <span title="Проверено" style="color:#059669;">${stats.graded} (${gradedPercent}%)</span>
                                 ${notSubmitted > 0 ? `<span title="Не сдано" style="color:#d97706;">⏳ ${notSubmitted}</span>` : ""}
                             </div>
                         `;
@@ -13546,7 +13549,7 @@
                             <span>${new Date(a.created_at).toLocaleDateString()}</span>
                             ${subtaskCount > 0 ? `<span>${subtaskCount} заданий</span>` : ""}
                             ${hasScore ? `<span class="score">${fmtScore(a.submission.score, a.max_score)}</span>` : ""}
-                            ${!isTeacher ? (hasSubmission ? `<span style="font-size:11px;color:#059669;">✅ Сдано</span>` : `<span style="font-size:11px;color:#d97706;">⏳ Ожидает</span>`) : ""}
+                            ${!isTeacher ? (hasSubmission ? `<span style="font-size:11px;color:#059669;">Сдано</span>` : `<span style="font-size:11px;color:#d97706;">⏳ Ожидает</span>`) : ""}
                         </div>
                         ${statsHtml}
                     </div>`;
@@ -13582,7 +13585,7 @@
             area.innerHTML = html;
           })
           .catch((e) => {
-            console.error("❌ Ошибка загрузки заданий:", e);
+            console.error("Ошибка загрузки заданий:", e);
             area.innerHTML = `<div class="content-page"><div class="card"><div class="empty">Ошибка загрузки: ${e.message}</div></div></div>`;
           });
       }
@@ -13623,7 +13626,7 @@
           if (submissions.length === 0) {
             container.innerHTML = `
                 <div style="text-align:center;padding:30px;background:#f8f9fa;border-radius:8px;color:#999;">
-                    📭 Нет сданных работ
+                    Нет сданных работ
                 </div>
             `;
             return;
@@ -13631,7 +13634,7 @@
 
           let html = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <h3 style="font-size:16px;">📋 Сданные работы (${submissions.length})</h3>
+                <h3 style="font-size:16px;">Сданные работы (${submissions.length})</h3>
             </div>
             <div style="display:flex;flex-direction:column;gap:10px;">
         `;
@@ -13644,8 +13647,8 @@
             };
             const statusTexts = {
               pending: "⏳ Ожидает",
-              submitted: "📤 На проверке",
-              graded: "✅ Проверено",
+              submitted: "На проверке",
+              graded: "Проверено",
             };
 
             html += `
@@ -13658,7 +13661,7 @@
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;">
                             <span style="font-size:12px;color:#999;">
-                                ${sub.submitted_at ? "📅 " + new Date(sub.submitted_at).toLocaleDateString() : "—"}
+                                ${sub.submitted_at ? "" + new Date(sub.submitted_at).toLocaleDateString() : "—"}
                             </span>
                             ${
                               sub.score !== null && sub.score !== undefined
@@ -13670,8 +13673,8 @@
                             </span>
                         </div>
                     </div>
-                    ${sub.teacher_comment ? `<div style="font-size:12px;color:#666;margin-top:4px;">💬 ${sub.teacher_comment}</div>` : ""}
-                    ${sub.files && sub.files.length > 0 ? `<div style="font-size:11px;color:#999;margin-top:4px;">📎 ${sub.files.length} файлов</div>` : ""}
+                    ${sub.teacher_comment ? `<div style="font-size:12px;color:#666;margin-top:4px;">${sub.teacher_comment}</div>` : ""}
+                    ${sub.files && sub.files.length > 0 ? `<div style="font-size:11px;color:#999;margin-top:4px;">${sub.files.length} файлов</div>` : ""}
                 </div>
             `;
           });
@@ -13682,7 +13685,7 @@
           console.error("Ошибка:", error);
           container.innerHTML = `
             <div style="text-align:center;padding:20px;color:#e53e3e;">
-                ❌ ${error.message || "Ошибка загрузки работ"}
+                ${error.message || "Ошибка загрузки работ"}
             </div>
         `;
         }
@@ -13728,8 +13731,8 @@
               };
               const statusTexts = {
                 pending: "⏳ Не сдано",
-                submitted: "📤 На проверке",
-                graded: "✅ Проверено",
+                submitted: "На проверке",
+                graded: "Проверено",
               };
 
               html += `
@@ -13764,7 +13767,7 @@
           console.error("Ошибка:", error);
           container.innerHTML = `
             <div style="text-align:center;padding:20px;color:#e53e3e;">
-                ❌ ${error.message || "Ошибка загрузки"}
+                ${error.message || "Ошибка загрузки"}
             </div>
         `;
         }
@@ -13851,9 +13854,9 @@ const submissionIdValue = submission.id;
           let html = `
             <div style="position:relative;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-                    <h2>📄 Работа: ${submission.full_name || submission.username}</h2>
+                    <h2>Работа: ${submission.full_name || submission.username}</h2>
                     <span style="padding:2px 12px;border-radius:10px;font-size:12px;background:${submission.status === "graded" ? "#d1fae5" : "#dbeafe"};color:${submission.status === "graded" ? "#065f46" : "#2563eb"};">
-                        ${submission.status === "graded" ? "✅ Проверено" : "📤 На проверке"}
+                        ${submission.status === "graded" ? "Проверено" : "На проверке"}
                     </span>
                 </div>
                 
@@ -13863,7 +13866,7 @@ const submissionIdValue = submission.id;
                 </div>
                 
                 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
-                    <button class="btn-secondary" onclick="closeModal();showAssignment(${assignmentId})">⬅ Назад к заданию</button>
+                    <button class="btn-secondary" onclick="closeModal();showAssignment(${assignmentId})">Назад к заданию</button>
                     ${
                       isTeacher
                         ? `
@@ -13917,7 +13920,7 @@ const submissionIdValue = submission.id;
                           subResult && subResult.earned !== null && subResult.earned !== undefined
                             ? `
                             <div class="badge-auto ${subResult.correct ? "badge-correct" : "badge-wrong"}" style="margin-bottom:10px;">
-                                ${subResult.correct ? "✅ Верно" : "❌ Неверно"} • ${subResult.earned}/${subResult.maxScore} балл. (авто)
+                                ${subResult.correct ? "Верно" : "Неверно"} • ${subResult.earned}/${subResult.maxScore} балл. (авто)
                             </div>
                         `
                             : ""
@@ -13929,7 +13932,7 @@ const submissionIdValue = submission.id;
                                 <label style="font-size:12px;color:#6b7280;font-weight:500;">Баллы за задание:</label>
                                 <input type="number" class="grade-subtask-score" data-index="${idx}" data-max="${gradeMax}" min="0" step="0.5" value="${gradeEarned}" placeholder="${gradeMax}">
                                 <span style="font-size:12px;color:#9ca3af;">из ${gradeMax}</span>
-                                <span style="font-size:11px;color:#9ca3af;margin-left:auto;">💬 выделите кусок ответа, чтобы добавить комментарий</span>
+                                <span style="font-size:11px;color:#9ca3af;margin-left:auto;">выделите кусок ответа, чтобы добавить комментарий</span>
                             </div>
                         `
                             : ""
@@ -13948,7 +13951,7 @@ const submissionIdValue = submission.id;
                           task.teacherHint
                             ? `
                             <div style="margin-top:8px;border-top:2px solid #667eea;padding:8px;background:#f0f4ff;border-radius:4px;">
-                                <div style="font-weight:600;font-size:13px;color:#667eea;">💡 Подсказка/Комментарий учителя:</div>
+                                <div style="font-weight:600;font-size:13px;color:#667eea;">Подсказка/Комментарий учителя:</div>
                                 ${task.teacherHint.text ? `<div style="font-size:13px;color:#333;margin-top:4px;">${task.teacherHint.text}</div>` : ""}
                                 ${
                                   task.teacherHint.image
@@ -13985,7 +13988,7 @@ const submissionIdValue = submission.id;
                                   hasTextComments
                                     ? `
                                     <div style="font-size:12px;color:#667eea;font-weight:600;margin-bottom:6px;">
-                                        💬 Текстовые комментарии (${subtaskTextComments.length}):
+                                        Текстовые комментарии (${subtaskTextComments.length}):
                                     </div>
                                     ${subtaskTextComments
                                       .map(
@@ -13994,7 +13997,7 @@ const submissionIdValue = submission.id;
                                              style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:3px;background:white;border-radius:4px;border-bottom:1px solid #f0f0f0;font-size:13px;">
                                             <span>
                                                 <span style="background:#ffeb3b;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:500;">"${escapeHtml(c.selected_text.substring(0, 50))}${c.selected_text.length > 50 ? "..." : ""}"</span>
-                                                <span style="color:#333;margin-left:6px;">→ ${escapeHtml(c.comment)}</span>
+                                                <span style="color:#333;margin-left:6px;">${escapeHtml(c.comment)}</span>
                                             </span>
                                             ${
                                               isTeacher
@@ -14084,7 +14087,7 @@ const submissionIdValue = submission.id;
                             </div>
                         `
                             : `
-                            <div style="color:#999;font-size:12px;margin-top:4px;">📎 Фото не прикреплено</div>
+                            <div style="color:#999;font-size:12px;margin-top:4px;">Фото не прикреплено</div>
                         `
                         }
                     </div>
@@ -14161,7 +14164,7 @@ const submissionIdValue = submission.id;
             }
           }, 400);
         } catch (error) {
-          console.error("❌ Ошибка в viewSubmission:", error);
+          console.error("Ошибка в viewSubmission:", error);
           alert("Ошибка: " + error.message);
         }
       }
@@ -14281,7 +14284,7 @@ const submissionIdValue = submission.id;
         const idx = parseInt(wrapper.id.replace("student-image-wrapper-", ""));
         const container = document.getElementById(`ann-container-${idx}`);
         if (!container) {
-          console.warn(`⚠️ Контейнер ann-container-${idx} не найден`);
+          console.warn(`Контейнер ann-container-${idx} не найден`);
           return;
         }
 
@@ -14534,12 +14537,12 @@ const submissionIdValue = submission.id;
 
         // Проверка ID
         if (!commentId) {
-          alert("❌ Ошибка: ID комментария не указан");
+          alert("Ошибка: ID комментария не указан");
           return;
         }
 
         if (!submissionId || submissionId === 0 || submissionId === "0") {
-          alert("❌ Ошибка: ID работы не указан. Пожалуйста, обновите страницу и попробуйте снова.");
+          alert("Ошибка: ID работы не указан. Пожалуйста, обновите страницу и попробуйте снова.");
           return;
         }
 
@@ -14548,7 +14551,7 @@ const submissionIdValue = submission.id;
         try {
           const token = localStorage.getItem("token");
           if (!token) {
-            alert("❌ Ошибка: вы не авторизованы");
+            alert("Ошибка: вы не авторизованы");
             return;
           }
 
@@ -14560,7 +14563,7 @@ const submissionIdValue = submission.id;
           });
 
           if (response.status === 403) {
-            alert("❌ Ошибка: у вас нет прав на удаление этого комментария");
+            alert("Ошибка: у вас нет прав на удаление этого комментария");
             return;
           }
 
@@ -14569,7 +14572,7 @@ const submissionIdValue = submission.id;
             throw new Error(err.error || "Ошибка удаления (статус: " + response.status + ")");
           }
 
-          showHint("🗑️ Комментарий удалён");
+          showHint("Комментарий удалён");
 
           // Удаляем элемент из DOM сразу
           if (btn) {
@@ -14594,8 +14597,8 @@ const submissionIdValue = submission.id;
             }
           }, 300);
         } catch (error) {
-          console.error("❌ Ошибка удаления:", error);
-          alert("❌ Ошибка: " + error.message);
+          console.error("Ошибка удаления:", error);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -14635,7 +14638,7 @@ const submissionIdValue = submission.id;
                 listEl.style.display = "block";
                 listEl.innerHTML = `
                         <div style="font-size:12px;color:#667eea;font-weight:600;margin-bottom:6px;">
-                            💬 Комментарии к тексту (${comments.length}):
+                            Комментарии к тексту (${comments.length}):
                         </div>
                         ${comments
                           .map(
@@ -14643,7 +14646,7 @@ const submissionIdValue = submission.id;
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:4px 8px;margin-bottom:3px;background:white;border-radius:4px;border-bottom:1px solid #f0f0f0;font-size:13px;">
                                 <div style="flex:1;margin-right:8px;">
                                     <span style="background:#ffeb3b;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:500;">"${c.selected_text.substring(0, 60)}${c.selected_text.length > 60 ? "..." : ""}"</span>
-                                    <span style="color:#333;margin-left:6px;">→ ${c.comment}</span>
+                                    <span style="color:#333;margin-left:6px;">${c.comment}</span>
                                 </div>
                                 ${
                                   currentUser?.role === "teacher"
@@ -14678,13 +14681,13 @@ const submissionIdValue = submission.id;
             }
           });
         } catch (error) {
-          console.error("❌ Ошибка обновления комментариев:", error);
+          console.error("Ошибка обновления комментариев:", error);
         }
       }
 
       function openGradeForm(submissionId, assignmentId) {
         openModal(`
-        <h2>📝 Оценка работы</h2>
+        <h2>Оценка работы</h2>
         <div style="margin-bottom:12px;">
             <label style="font-size:14px;font-weight:500;">Оценка (баллы):</label>
             <input type="number" id="grade-score-input" placeholder="Введите оценку..." style="width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:6px;font-size:16px;margin-top:4px;">
@@ -14834,11 +14837,11 @@ const submissionIdValue = submission.id;
           }
 
           closeModal();
-          alert("✅ Оценка сохранена!");
+          alert("Оценка сохранена!");
           // Перезагружаем просмотр работы
           viewSubmission(submissionId, assignmentId);
         } catch (error) {
-          alert("❌ Ошибка: " + error.message);
+          alert("Ошибка: " + error.message);
         }
       }
 
@@ -15018,7 +15021,7 @@ const submissionIdValue = submission.id;
           status.style.color = "#059669";
           setTimeout(() => closeModal(), 3000);
         } catch (error) {
-          status.textContent = "❌ Ошибка: " + error.message;
+          status.textContent = "Ошибка: " + error.message;
           status.style.color = "#e53e3e";
         }
       }
@@ -15059,9 +15062,9 @@ const submissionIdValue = submission.id;
         if (!valid) {
           resetContainer.innerHTML = `
             <div class="auth-box">
-                <h2>❌ Ссылка недействительна</h2>
+                <h2>Ссылка недействительна</h2>
                 <p style="color:#666;margin-bottom:16px;">${errorMsg}</p>
-                <button class="auth-btn" onclick="goToLogin()">← Вернуться ко входу</button>
+                <button class="auth-btn" onclick="goToLogin()">Вернуться ко входу</button>
             </div>
         `;
           return;
@@ -15087,12 +15090,12 @@ const submissionIdValue = submission.id;
         const status = document.getElementById("reset-status");
 
         if (!pwd1 || pwd1.length < 6) {
-          status.textContent = "❌ Пароль должен быть не менее 6 символов";
+          status.textContent = "Пароль должен быть не менее 6 символов";
           status.style.color = "#e53e3e";
           return;
         }
         if (pwd1 !== pwd2) {
-          status.textContent = "❌ Пароли не совпадают";
+          status.textContent = "Пароли не совпадают";
           status.style.color = "#e53e3e";
           return;
         }
@@ -15109,7 +15112,7 @@ const submissionIdValue = submission.id;
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || "Ошибка сохранения");
 
-          status.textContent = "✅ Пароль изменён! Перенаправление...";
+          status.textContent = "Пароль изменён! Перенаправление...";
           status.style.color = "#059669";
 
           setTimeout(() => {
@@ -15117,7 +15120,7 @@ const submissionIdValue = submission.id;
             goToLogin();
           }, 1500);
         } catch (error) {
-          status.textContent = "❌ " + error.message;
+          status.textContent = "" + error.message;
           status.style.color = "#e53e3e";
         }
       }
@@ -15204,14 +15207,14 @@ const submissionIdValue = submission.id;
         try {
           checkResetToken();
         } catch (e) {
-          console.error("❌ checkResetToken:", e);
+          console.error("checkResetToken:", e);
         }
       });
       if (document.readyState !== "loading") {
         try {
           checkResetToken();
         } catch (e) {
-          console.error("❌ checkResetToken:", e);
+          console.error("checkResetToken:", e);
         }
       }
 
@@ -15247,7 +15250,7 @@ const submissionIdValue = submission.id;
           }
         });
       } else {
-        console.error("❌ register-form не найден!");
+        console.error("register-form не найден!");
       }
 
       const loginForm = document.getElementById("login-form");
@@ -15270,7 +15273,7 @@ const submissionIdValue = submission.id;
           }
         });
       } else {
-        console.error("❌ login-form не найден!");
+        console.error("login-form не найден!");
       }
 
       function loginSuccess(data) {
@@ -15393,7 +15396,7 @@ const submissionIdValue = submission.id;
         selected = [];
         saveBoardHistory();
         requestRender();
-        showHint("🗑️ Удалено");
+        showHint("Удалено");
         saveBoardToServer();
       }
 
@@ -15548,9 +15551,9 @@ const submissionIdValue = submission.id;
           objects = JSON.parse(JSON.stringify(hist.history[hist.index]));
           selected = [];
           requestRender();
-          showStatus("↩️ Отменено");
+          showStatus("Отменено");
           saveBoardToServer();
-        } else showStatus("❌ Нечего отменять");
+        } else showStatus("Нечего отменять");
       }
 
       function redo() {
@@ -15560,9 +15563,9 @@ const submissionIdValue = submission.id;
           objects = JSON.parse(JSON.stringify(hist.history[hist.index]));
           selected = [];
           requestRender();
-          showStatus("↪️ Повторено");
+          showStatus("Повторено");
           saveBoardToServer();
-        } else showStatus("❌ Нечего повторять");
+        } else showStatus("Нечего повторять");
       }
 
       addGlobalKeyListeners();
@@ -15582,7 +15585,7 @@ const submissionIdValue = submission.id;
       function initAllEventListeners() {
         if (!canvas) return;
 
-        // ЕДИНЫЙ СЛОЙ TOUCH → MOUSE + PINCH-TO-ZOOM (ИСПРАВЛЕННЫЙ)
+        // ЕДИНЫЙ СЛОЙ TOUCH MOUSE + PINCH-TO-ZOOM (ИСПРАВЛЕННЫЙ)
         // ============================================================
         (function enableTouchSupport() {
           if (!canvas) return;
@@ -15988,10 +15991,10 @@ const submissionIdValue = submission.id;
                 btn.style.color = "";
                 btn.disabled = false;
               }, 1500);
-              showHint("❌ Нет данных для вставки");
+              showHint("Нет данных для вставки");
             }
           } catch (error) {
-            console.error("❌ Ошибка:", error);
+            console.error("Ошибка:", error);
             btn.innerHTML = "❌";
             btn.style.color = "#e53e3e";
             setTimeout(() => {
@@ -16085,7 +16088,11 @@ const submissionIdValue = submission.id;
         });
 
         document.getElementById("text-color-picker").addEventListener("input", applyTextSettingsToSelected);
-        document.getElementById("text-bg-color-picker").addEventListener("input", applyTextSettingsToSelected);
+        // Выбор цвета фона сразу включает фон (иначе цвет применяется, но не виден)
+        document.getElementById("text-bg-color-picker").addEventListener("input", function () {
+          document.getElementById("text-bg-toggle").classList.add("active");
+          applyTextSettingsToSelected();
+        });
 
         document.getElementById("text-bg-toggle").addEventListener("click", function () {
           this.classList.toggle("active");
@@ -16160,7 +16167,7 @@ const submissionIdValue = submission.id;
                   if (loaded === files.length) {
                     saveBoardHistory();
                     render();
-                    showHint(`🖼️ Загружено: ${files.length} изображений`);
+                    showHint(`Загружено: ${files.length} изображений`);
                     saveBoardToServer();
                   } else render();
                 };
@@ -16449,7 +16456,7 @@ const submissionIdValue = submission.id;
 
             if (!e.shiftKey) {
               selected = [];
-              forceHideSheetEditButton(); // ← ДОБАВИТЬ
+              forceHideSheetEditButton(); // ДОБАВИТЬ
               render();
               isSelecting = true;
               selectionStart = { x: coords.x, y: coords.y };
@@ -16467,7 +16474,7 @@ const submissionIdValue = submission.id;
             isDrawing = true;
             drawPoints = [{ x: coords.x, y: coords.y }];
             currentDrawObj = {
-              id: generateUniqueId(),          // ← вместо nextId++
+              id: generateUniqueId(),          // вместо nextId++
               type: "free-line",
               points: [...drawPoints],
               color: currentColor,
@@ -16483,7 +16490,7 @@ const submissionIdValue = submission.id;
                 type: "draw",
                 data: {
                   objId: currentDrawObj.id,
-                  userId: getCurrentUserId(),        // ← добавили
+                  userId: getCurrentUserId(),        // добавили
                   point: { x: coords.x, y: coords.y },
                   color: currentDrawObj.color,
                   thickness: currentDrawObj.thickness,
@@ -17046,10 +17053,10 @@ const submissionIdValue = submission.id;
                   type: "draw",
                   data: {
                     objId: currentDrawObj.id,
-                    userId: getCurrentUserId(),           // ← добавили
+                    userId: getCurrentUserId(),           // добавили
                     point: { x: coords.x, y: coords.y },
-                    color: currentDrawObj.color,          // ← передаём цвет
-                    thickness: currentDrawObj.thickness,  // ← передаём толщину
+                    color: currentDrawObj.color,          // передаём цвет
+                    thickness: currentDrawObj.thickness,  // передаём толщину
                     isStart: false,
                   },
                 }));
@@ -17142,7 +17149,7 @@ const submissionIdValue = submission.id;
                 type: "draw",
                 data: {
                   objId: currentDrawObj.id,
-                  userId: getCurrentUserId(),   // ← добавили
+                  userId: getCurrentUserId(),   // добавили
                   isEnd: true,
                 },
               }));
@@ -17527,7 +17534,7 @@ const submissionIdValue = submission.id;
         // ============================================================
         document.getElementById("save-board-btn").addEventListener("click", function () {
           saveBoardToServer();
-          showHint("💾 Сохранено!");
+          showHint("Сохранено!");
         });
       }
 
@@ -17585,7 +17592,7 @@ const submissionIdValue = submission.id;
 
             render();
             saveBoardToServer();
-            showHint("🧹 Стерто!");
+            showHint("Стерто!");
 
             setTimeout(() => {
               lastErasedId = null;
@@ -17601,7 +17608,7 @@ const submissionIdValue = submission.id;
       // Функция для вставки изображения из data URL
       function insertImageFromDataUrl(dataUrl) {
         if (!canvas) {
-          console.warn("⚠️ Canvas не инициализирован");
+          console.warn("Canvas не инициализирован");
           return;
         }
 
@@ -17643,19 +17650,19 @@ const submissionIdValue = submission.id;
 
           saveBoardHistory();
           render();
-          showHint("🖼️ Изображение вставлено из буфера обмена");
+          showHint("Изображение вставлено из буфера обмена");
           saveBoardToServer();
         };
         img.onerror = function () {
-          console.error("❌ Ошибка загрузки изображения");
-          showHint("❌ Не удалось вставить изображение");
+          console.error("Ошибка загрузки изображения");
+          showHint("Не удалось вставить изображение");
         };
         img.src = dataUrl;
       }
 
       function insertTextOnBoard(text) {
         if (!canvas) {
-          console.warn("⚠️ Canvas не инициализирован");
+          console.warn("Canvas не инициализирован");
           return;
         }
 
@@ -17684,13 +17691,13 @@ const submissionIdValue = submission.id;
 
         saveBoardHistory();
         render();
-        showHint("📝 Текст вставлен из буфера обмена");
+        showHint("Текст вставлен из буфера обмена");
         saveBoardToServer();
       }
 
       // ============================================================
       // ЕДИНЫЙ ОБРАБОТЧИК ВСТАВКИ (Ctrl+V)
-      // Приоритет: 1) внутренний буфер доски → 2) глобальный буфер
+      // Приоритет: 1) внутренний буфер доски 2) глобальный буфер
       // ============================================================
       document.addEventListener(
         "paste",
@@ -17759,7 +17766,7 @@ const submissionIdValue = submission.id;
             updateSheetToolbarFromSelection();
             saveBoardHistory();
             saveBoardToServer();
-            showHint("📋 Текст вставлен в лист");
+            showHint("Текст вставлен в лист");
             return;
           }
 
@@ -17774,7 +17781,7 @@ const submissionIdValue = submission.id;
           if (clipboard.length > 0) {
             
             pasteObjects();
-            showHint(`📋 Вставлено из буфера доски: ${clipboard.length} объектов`);
+            showHint(`Вставлено из буфера доски: ${clipboard.length} объектов`);
             return;
           }
 
@@ -17813,7 +17820,7 @@ const submissionIdValue = submission.id;
                 
                 clipboard = parsed;
                 pasteObjects();
-                showHint("📋 Объекты вставлены из глобального буфера");
+                showHint("Объекты вставлены из глобального буфера");
                 return;
               }
             } catch (err) {}
@@ -17824,7 +17831,7 @@ const submissionIdValue = submission.id;
             return;
           }
 
-          showHint("❌ Нет данных для вставки");
+          showHint("Нет данных для вставки");
         },
         true,
       );
@@ -17837,7 +17844,7 @@ const submissionIdValue = submission.id;
           const range = getSheetSelectionRange();
           const chars = flattenSegments(editingSheet.richText);
 
-          // Есть выделение → копируем только фрагмент
+          // Есть выделение копируем только фрагмент
           let textToCopy = "";
           if (range.start !== range.end) {
             textToCopy = chars
@@ -17845,21 +17852,21 @@ const submissionIdValue = submission.id;
               .map((c) => c.char)
               .join("");
           } else {
-            // Нет выделения → копируем весь текст листа
+            // Нет выделения копируем весь текст листа
             textToCopy = segmentsToText(editingSheet.richText);
           }
 
           if (!textToCopy || textToCopy.length === 0) {
-            showHint("❌ На листе нет текста");
+            showHint("На листе нет текста");
             return;
           }
 
           try {
             await navigator.clipboard.writeText(textToCopy);
             if (range.start !== range.end) {
-              showHint(`📝 Скопирован фрагмент (${textToCopy.length} симв.)`);
+              showHint(`Скопирован фрагмент (${textToCopy.length} симв.)`);
             } else {
-              showHint(`📝 Скопирован весь текст листа (${textToCopy.length} симв.)`);
+              showHint(`Скопирован весь текст листа (${textToCopy.length} симв.)`);
             }
           } catch (e) {
             // Fallback для старых браузеров
@@ -17871,7 +17878,7 @@ const submissionIdValue = submission.id;
             ta.select();
             document.execCommand("copy");
             document.body.removeChild(ta);
-            showHint(`📝 Скопирован текст (${textToCopy.length} симв.)`);
+            showHint(`Скопирован текст (${textToCopy.length} симв.)`);
           }
           return;
         }
@@ -17917,12 +17924,12 @@ const submissionIdValue = submission.id;
         });
 
         // ============================================================
-        // СЛУЧАЙ A: ТОЛЬКО ТЕКСТОВЫЕ ОБЪЕКТЫ → копируем текст
+        // СЛУЧАЙ A: ТОЛЬКО ТЕКСТОВЫЕ ОБЪЕКТЫ копируем текст
         // ============================================================
         if (allText && hasText && selectedObjects.length > 0) {
           try {
             await navigator.clipboard.writeText(textContent);
-            showHint(`📝 Текст скопирован (${selectedObjects.length} блок.)`);
+            showHint(`Текст скопирован (${selectedObjects.length} блок.)`);
             return;
           } catch (e) {
             const ta = document.createElement("textarea");
@@ -17933,13 +17940,13 @@ const submissionIdValue = submission.id;
             ta.select();
             document.execCommand("copy");
             document.body.removeChild(ta);
-            showHint("📝 Текст скопирован");
+            showHint("Текст скопирован");
             return;
           }
         }
 
         // ============================================================
-        // СЛУЧАЙ B: ТОЛЬКО КАРТИНКИ → копируем PNG
+        // СЛУЧАЙ B: ТОЛЬКО КАРТИНКИ копируем PNG
         // ============================================================
         if (allImages && hasImages && selectedObjects.length > 0) {
           try {
@@ -17948,7 +17955,7 @@ const submissionIdValue = submission.id;
               const response = await fetch(img.imgData);
               const blob = await response.blob();
               await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-              showHint("🖼️ Изображение скопировано");
+              showHint("Изображение скопировано");
               return;
             }
           } catch (e) {
@@ -17958,7 +17965,7 @@ const submissionIdValue = submission.id;
         }
 
         // ============================================================
-        // СЛУЧАЙ C: СМЕШАННОЕ / ФИГУРЫ / ЛИСТ → рендерим всё в PNG
+        // СЛУЧАЙ C: СМЕШАННОЕ / ФИГУРЫ / ЛИСТ рендерим всё в PNG
         // ============================================================
         try {
           // Определяем границы всех выделенных объектов
@@ -18040,7 +18047,7 @@ const submissionIdValue = submission.id;
           });
 
           if (!hasValidBounds) {
-            showHint("❌ Не удалось определить область");
+            showHint("Не удалось определить область");
             return;
           }
 
@@ -18053,7 +18060,7 @@ const submissionIdValue = submission.id;
           const height = maxY - minY;
 
           if (width < 1 || height < 1) {
-            showHint("❌ Область слишком маленькая");
+            showHint("Область слишком маленькая");
             return;
           }
 
@@ -18451,9 +18458,9 @@ case "hexagon": {
           // Копируем в глобальный буфер
           try {
             await navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]);
-            showHint("🖼️ Изображение скопировано в буфер обмена");
+            showHint("Изображение скопировано в буфер обмена");
           } catch (e) {
-            console.error("❌ Clipboard API error:", e);
+            console.error("Clipboard API error:", e);
             // Fallback — скачивание
             const url = URL.createObjectURL(pngBlob);
             const link = document.createElement("a");
@@ -18463,11 +18470,11 @@ case "hexagon": {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            showHint("⚠️ Clipboard API недоступен, файл скачан");
+            showHint("Clipboard API недоступен, файл скачан");
           }
         } catch (error) {
-          console.error("❌ Ошибка копирования:", error);
-          showHint("❌ Ошибка: " + error.message);
+          console.error("Ошибка копирования:", error);
+          showHint("Ошибка: " + error.message);
         }
       };
 
@@ -18523,7 +18530,7 @@ case "hexagon": {
 
       function insertImageFromDataUrl(dataUrl) {
         if (!canvas) {
-          console.warn("⚠️ Canvas не инициализирован");
+          console.warn("Canvas не инициализирован");
           return;
         }
 
@@ -18565,12 +18572,12 @@ case "hexagon": {
 
           saveBoardHistory();
           render();
-          showHint("🖼️ Изображение вставлено из буфера обмена");
+          showHint("Изображение вставлено из буфера обмена");
           saveBoardToServer();
         };
         img.onerror = function () {
-          console.error("❌ Ошибка загрузки изображения");
-          showHint("❌ Не удалось вставить изображение");
+          console.error("Ошибка загрузки изображения");
+          showHint("Не удалось вставить изображение");
         };
         img.src = dataUrl;
       }
@@ -18581,7 +18588,7 @@ case "hexagon": {
 
       function insertTextOnBoard(text) {
         if (!canvas) {
-          console.warn("⚠️ Canvas не инициализирован");
+          console.warn("Canvas не инициализирован");
           return;
         }
 
@@ -18609,7 +18616,7 @@ case "hexagon": {
 
         saveBoardHistory();
         render();
-        showHint("📝 Текст вставлен из буфера обмена");
+        showHint("Текст вставлен из буфера обмена");
         saveBoardToServer();
       }
 
