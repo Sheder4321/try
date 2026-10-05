@@ -7697,7 +7697,6 @@
         document.getElementById("text-strike").classList.toggle("active", obj.strike || false);
         document.getElementById("text-bg-toggle").classList.toggle("active", obj.hasBg || false);
         document.getElementById("text-bullet").classList.toggle("active", obj.bullet || false);
-        document.getElementById("text-numbered").classList.toggle("active", obj.numbered || false);
       }
 
       function applyTextSettingsToSelected() {
@@ -7718,7 +7717,6 @@
             obj.strike = document.getElementById("text-strike").classList.contains("active");
             obj.hasBg = document.getElementById("text-bg-toggle").classList.contains("active");
             obj.bullet = document.getElementById("text-bullet").classList.contains("active");
-            obj.numbered = document.getElementById("text-numbered").classList.contains("active");
             updateTextDimensions(obj);
           }
         });
@@ -7892,7 +7890,6 @@
                 <button id="text-strike" title="Зачеркнутый"><s>S</s></button>
                 <div class="separator"></div>
                 <button id="text-bullet" title="Маркированный список">•</button>
-                <button id="text-numbered" title="Нумерованный список">1.</button>
                 <div class="separator"></div>
                 <input type="color" id="text-color-picker" value="#000000" style="width:30px;height:26px;border:none;padding:0;cursor:pointer">
                 <input type="color" id="text-bg-color-picker" value="#ffffff" style="width:30px;height:26px;border:none;padding:0;cursor:pointer">
@@ -16040,13 +16037,6 @@ const submissionIdValue = submission.id;
 
         document.getElementById("text-bullet").addEventListener("click", function () {
           this.classList.toggle("active");
-          document.getElementById("text-numbered").classList.remove("active");
-          applyTextSettingsToSelected();
-        });
-
-        document.getElementById("text-numbered").addEventListener("click", function () {
-          this.classList.toggle("active");
-          document.getElementById("text-bullet").classList.remove("active");
           applyTextSettingsToSelected();
         });
 
