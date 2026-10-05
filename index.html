@@ -4207,7 +4207,7 @@
           const font = obj.font || "Arial";
           const style = (obj.bold ? "bold " : "") + (obj.italic ? "italic " : "") + fontSize + "px " + font;
           tempCtx.font = style;
-          const lines = (obj.text || "").split("\n");
+          const lines = getTextDisplayLines(obj);
           let maxWidth = 0;
           lines.forEach((line) => {
             const w = tempCtx.measureText(line).width;
@@ -5428,6 +5428,13 @@
         ctx.setLineDash([]);
       }
 
+      // Строки текста с учётом маркированного списка (• добавляется при отрисовке, в тексте не хранится)
+      function getTextDisplayLines(obj) {
+        const lines = (obj.text || "").split("\n");
+        if (!obj.bullet) return lines;
+        return lines.map((l) => (/^•\s/.test(l) ? l : "• " + l));
+      }
+
       function drawTextObject(ctx, obj) {
         if (!obj || obj.type !== "text") return;
         const p = worldToScreen(obj.x || 0, obj.y || 0);
@@ -5455,7 +5462,7 @@
 
         if (obj.hasBg && obj.bgColor) {
           ctx.fillStyle = obj.bgColor;
-          const lines = obj.text.split("\n");
+          const lines = getTextDisplayLines(obj);
           let maxWidth = 0;
           lines.forEach((line) => {
             const w = ctx.measureText(line).width;
@@ -5474,7 +5481,7 @@
 
         ctx.fillStyle = obj.color || "#000000";
         ctx.textAlign = obj.align || "left";
-        const lines = obj.text.split("\n");
+        const lines = getTextDisplayLines(obj);
         const lineHeight = fontSize * 1.4;
         let yOffset = 0;
         const decoColor = obj.color || "#000";
@@ -7246,7 +7253,7 @@
         const font = obj.font || "Arial";
         const style = (obj.bold ? "bold " : "") + (obj.italic ? "italic " : "") + fontSize + "px " + font;
         tempCtx.font = style;
-        const lines = (obj.text || "").split("\n");
+        const lines = getTextDisplayLines(obj);
         let maxWidth = 0;
         lines.forEach((line) => {
           const w = tempCtx.measureText(line).width;
@@ -17935,7 +17942,7 @@ const submissionIdValue = submission.id;
               const fontSize = obj.size || 24;
               const font = obj.font || "Arial";
               tempCtx.font = (obj.bold ? "bold " : "") + (obj.italic ? "italic " : "") + fontSize + "px " + font;
-              const lines = (obj.text || "").split("\n");
+              const lines = getTextDisplayLines(obj);
               let maxWidth = 0;
               lines.forEach((line) => {
                 const w = tempCtx.measureText(line).width;
@@ -18117,7 +18124,7 @@ const submissionIdValue = submission.id;
               tempCtx.fillStyle = obj.color || "#000000";
               tempCtx.textAlign = obj.align || "left";
 
-              const lines = (obj.text || "").split("\n");
+              const lines = getTextDisplayLines(obj);
               const lineHeight = fontSize * 1.4;
               let yOffset = 0;
               lines.forEach((line) => {
