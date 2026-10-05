@@ -94,6 +94,9 @@ ALTER TABLE submissions ADD COLUMN IF NOT EXISTS subtask_scores JSONB;
 -- Колонка для целевых учеников: если пусто/null — задание для всего класса
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS target_student_ids JSONB;
 
+-- Флаг «сменить пароль при входе»: ставится при сбросе пароля учителем
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT FALSE;
+
 CREATE TABLE IF NOT EXISTS submission_files (
     id SERIAL PRIMARY KEY,
     submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,

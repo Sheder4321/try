@@ -270,6 +270,7 @@ app.post("/api/login", async (req, res) => {
         role: user.role,
         fullName: user.full_name,
         email: user.email,
+        mustChangePassword: !!user.must_change_password,
       },
     });
   } catch (error) {
@@ -351,7 +352,7 @@ app.post("/api/reset-password", async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      await client.query("UPDATE users SET password_hash = $1 WHERE id = $2", [passwordHash, tokenRecord.user_id]);
+      await client.query("UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2", [passwordHash, tokenRecord.user_id]);
       await client.query("UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1", [tokenRecord.id]);
       await client.query("COMMIT");
     } catch (e) {
@@ -623,7 +624,35 @@ app.delete("/api/invite/:token", authenticateToken, requireTeacher, async (req, 
 // ============================================================
 app.use("/api", authenticateToken);
 
+// Смена пароля из своей сессии (в т.ч. обязательная после входа по временному паролю)
+app.post("/api/change-password", async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
 
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Недостаточно данных" });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
+  }
+
+  try {
+    const result = await pool.query("SELECT password_hash FROM users WHERE id = $1", [req.user.id]);
+    const user = result.rows[0];
+    if (!user || !(await bcrypt.compare(currentPassword, user.password_hash))) {
+      return res.status(400).json({ error: "Неверный текущий пароль" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      "UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2",
+      [passwordHash, req.user.id],
+    );
+    res.json({ message: "Пароль изменён" });
+  } catch (error) {
+    console.error("❌ Ошибка смены пароля:", error);
+    res.status(500).json({ error: "Ошибка смены пароля" });
+  }
+});
 
 app.post("/api/classes", requireTeacher, async (req, res) => {
   const { name, description } = req.body;
@@ -799,7 +828,10 @@ app.post("/api/classes/:classId/students/:studentId/reset-password", requireTeac
       .map((b) => alphabet[b % alphabet.length])
       .join("");
     const passwordHash = await bcrypt.hash(tempPassword, 10);
-    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [passwordHash, studentId]);
+    await pool.query("UPDATE users SET password_hash = $1, must_change_password = TRUE WHERE id = $2", [
+      passwordHash,
+      studentId,
+    ]);
 
     // Одноразовая ссылка — ученик сам задаст новый пароль (действует 1 час).
     await pool.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [studentId]);

@@ -15130,6 +15130,76 @@ const submissionIdValue = submission.id;
         document.getElementById("app").style.display = "none";
       }
 
+      // Предложение сменить пароль после входа по временному паролю
+      function showForcedPasswordChange() {
+        openModal(`
+        <h2>Смените пароль</h2>
+        <p style="color:#666;font-size:13px;margin-bottom:10px;">
+            Вы вошли по временному паролю. Задайте свой постоянный пароль.
+        </p>
+        <input type="password" id="chg-current" placeholder="Текущий (временный) пароль"
+               style="width:100%;padding:10px;margin-bottom:8px;border:2px solid #e0e0e0;border-radius:6px;font-size:14px;">
+        <input type="password" id="chg-new1" placeholder="Новый пароль (мин. 6 символов)"
+               style="width:100%;padding:10px;margin-bottom:8px;border:2px solid #e0e0e0;border-radius:6px;font-size:14px;">
+        <input type="password" id="chg-new2" placeholder="Повторите новый пароль"
+               style="width:100%;padding:10px;margin-bottom:8px;border:2px solid #e0e0e0;border-radius:6px;font-size:14px;">
+        <div id="chg-status" style="font-size:13px;min-height:20px;"></div>
+        <div class="modal-actions" style="margin-top:8px;">
+            <button class="btn-secondary" onclick="closeModal()">Позже</button>
+            <button class="btn-primary" onclick="submitChangePassword()">Сменить пароль</button>
+        </div>
+    `);
+      }
+
+      async function submitChangePassword() {
+        const cur = document.getElementById("chg-current").value;
+        const pwd1 = document.getElementById("chg-new1").value;
+        const pwd2 = document.getElementById("chg-new2").value;
+        const status = document.getElementById("chg-status");
+
+        if (!cur || !pwd1) {
+          status.textContent = "Заполните все поля";
+          status.style.color = "#e53e3e";
+          return;
+        }
+        if (pwd1.length < 6) {
+          status.textContent = "Новый пароль должен быть не менее 6 символов";
+          status.style.color = "#e53e3e";
+          return;
+        }
+        if (pwd1 !== pwd2) {
+          status.textContent = "Пароли не совпадают";
+          status.style.color = "#e53e3e";
+          return;
+        }
+
+        status.textContent = "Сохранение...";
+        status.style.color = "#667eea";
+
+        try {
+          const response = await fetch("/api/change-password", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({ currentPassword: cur, newPassword: pwd1 }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Ошибка смены пароля");
+
+          if (currentUser) {
+            currentUser.mustChangePassword = false;
+            localStorage.setItem("user", JSON.stringify(currentUser));
+          }
+          closeModal();
+          showHint("Пароль успешно изменён");
+        } catch (error) {
+          status.textContent = error.message;
+          status.style.color = "#e53e3e";
+        }
+      }
+
       window.addEventListener("DOMContentLoaded", function () {
         try {
           checkResetToken();
@@ -15215,6 +15285,7 @@ const submissionIdValue = submission.id;
         loadBoardSidebarContent();
         loadPage("board");
         initWebSocket();
+        if (currentUser.mustChangePassword) setTimeout(showForcedPasswordChange, 400);
       }
 
       function logout() {
@@ -15262,6 +15333,7 @@ const submissionIdValue = submission.id;
             loadBoardSidebarContent();
             loadPage("board");
             initWebSocket();
+            if (currentUser.mustChangePassword) setTimeout(showForcedPasswordChange, 400);
             return;
           } catch (e) {
             console.error("Auth error:", e);
