@@ -1,10 +1,26 @@
 const nodemailer = require('nodemailer');
 
-// SMTP полностью опционален: если переменные не заданы (например, на Render),
-// не создаём transporter и не ругаемся — письма просто пропускаются.
-// Для облачных хостингов (Render/OnReza) классические почтовые SMTP (yandex/mail.ru)
-// часто недоступны из-за исходящей блокировки — тогда используйте транзакционный
-// SMTP-провайдер (например UniOne), который явно разрешает облачный исходящий трафик.
+// Отправка почты: два независимых канала.
+//
+// 1) UniOne Web API (HTTPS, порт 443) — приоритетный.
+//    На OnReza исходящие SMTP-порты (25/465/587/2525) заблокированы на всех
+//    тарифах, поэтому классический SMTP там не работает — письма уходят по
+//    таймауту. HTTPS API доступен везде.
+//    Нужны переменные: UNIONE_API_KEY и MAIL_FROM (верифицированный
+//    отправитель в кабинете UniOne).
+//
+// 2) Классический SMTP — фолбэк для локальной разработки и хостингов,
+//    где SMTP-порты открыты. Переменные SMTP_HOST/PORT/SECURE/USER/PASS.
+//
+// Если не настроен ни один канал — письма пропускаются, сервер работает дальше.
+
+const UNIONE_API_KEY = process.env.UNIONE_API_KEY;
+const UNIONE_API_URL =
+  process.env.UNIONE_API_URL ||
+  'https://api.unione.io/en/transactional/api/v1/email/send.json';
+const MAIL_FROM = process.env.MAIL_FROM || process.env.SMTP_USER;
+const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Образовательная платформа';
+
 const smtpConfigured = !!(
   process.env.SMTP_HOST &&
   process.env.SMTP_USER &&
@@ -22,30 +38,24 @@ if (smtpConfigured) {
       pass: process.env.SMTP_PASS,
     },
     // Не блокировать старт приложения ожиданием SMTP:
-    // при недоступном/невраженном SMTP отправка просто упадёт по таймауту,
+    // при недоступном SMTP отправка просто упадёт по таймауту,
     // а сервер поднимется мгновенно.
     connectionTimeout: 5000,
     socketTimeout: 5000,
     greetingTimeout: 5000,
   });
-  console.log('✅ SMTP настроен (проверка будет при первой отправке)');
-} else {
-  // без SMTP тихо работаем (сброс пароля по email на проде недоступен до настройки)
 }
 
-async function sendPasswordResetEmail(to, resetToken) {
-  if (!smtpConfigured || !transporter) {
-    console.warn('⚠️ SMTP не настроен — письмо сброса пароля пропущено для:', to);
-    return { skipped: true };
-  }
+if (UNIONE_API_KEY) {
+  console.log('✅ Почта: UniOne Web API (работает и на OnReza)');
+} else if (smtpConfigured) {
+  console.log('✅ Почта: SMTP (проверка будет при первой отправке)');
+} else {
+  // без почтовых настроек тихо работаем (сброс пароля по email недоступен)
+}
 
-  const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-
-  const mailOptions = {
-    from: `"Образовательная платформа" <${process.env.SMTP_USER}>`,
-    to: to,
-    subject: 'Сброс пароля',
-    html: `
+function buildResetHtml(resetLink) {
+  return `
             <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
                 <h2 style="color: #333;">Сброс пароля</h2>
                 <p>Вы запросили сброс пароля для вашего аккаунта.</p>
@@ -59,11 +69,59 @@ async function sendPasswordResetEmail(to, resetToken) {
                 <p style="color: #666; font-size: 13px;">Ссылка действительна в течение 1 часа.</p>
                 <p style="color: #999; font-size: 12px;">Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
             </div>
-        `,
-  };
+        `;
+}
 
-  const info = await transporter.sendMail(mailOptions);
-  console.log('Письмо отправлено:', info.messageId);
+async function sendViaUniOne(to, html) {
+  const response = await fetch(UNIONE_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'X-API-KEY': UNIONE_API_KEY,
+    },
+    body: JSON.stringify({
+      message: {
+        recipients: [{ email: to }],
+        body: { html },
+        subject: 'Сброс пароля',
+        from_email: MAIL_FROM,
+        from_name: MAIL_FROM_NAME,
+      },
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.status !== 'success') {
+    throw new Error(
+      `UniOne API: HTTP ${response.status} ${JSON.stringify(data)}`,
+    );
+  }
+  console.log('Письмо отправлено (UniOne):', data.job_id);
+  return data;
+}
+
+async function sendPasswordResetEmail(to, resetToken) {
+  const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+  const html = buildResetHtml(resetLink);
+
+  if (UNIONE_API_KEY) {
+    return sendViaUniOne(to, html);
+  }
+
+  if (!smtpConfigured || !transporter) {
+    console.warn('⚠️ Почта не настроена — письмо сброса пароля пропущено для:', to);
+    return { skipped: true };
+  }
+
+  const info = await transporter.sendMail({
+    from: `"${MAIL_FROM_NAME}" <${MAIL_FROM}>`,
+    to: to,
+    subject: 'Сброс пароля',
+    html,
+  });
+  console.log('Письмо отправлено (SMTP):', info.messageId);
   return info;
 }
 

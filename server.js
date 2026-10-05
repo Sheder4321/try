@@ -2,6 +2,7 @@
 // МОНОЛИТНЫЙ СЕРВЕР (собран build_monolith.js из src/)
 // ============================================================
 const express = require("express");
+const compression = require("compression");
 const cors = require("cors");
 const path = require("path");
 const http = require("http");
@@ -18,11 +19,14 @@ const { sendPasswordResetEmail } = require("./mailer");
 const app = express();
 const port = process.env.PORT || 3000;
 
+// gzip/deflate для всех ответов: index.html ~760 КБ ужимается до ~150 КБ.
+app.use(compression());
+
 // ============================================================
 // ПОДКЛЮЧЕНИЕ К БД
 // ============================================================
-const pool = new Pool(
-  process.env.DATABASE_URL
+const pool = new Pool({
+  ...(process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
         ssl: process.env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
@@ -33,8 +37,12 @@ const pool = new Pool(
         host: process.env.DB_HOST,
         port: process.env.DB_PORT,
         database: process.env.DB_DATABASE,
-      },
-);
+      }),
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  keepAlive: true,
+});
 
 pool.on("error", (err) => {
   console.error("Ошибка пула БД (соединение разорвано):", err.message);
@@ -167,7 +175,8 @@ app.get("/health", (req, res) => res.status(200).send("ok"));
 app.use(cors());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.static("public"));
-app.use("/uploads", express.static("uploads"));
+// Имена файлов уникальны (timestamp+random) — можно кэшировать надолго.
+app.use("/uploads", express.static("uploads", { maxAge: "7d", immutable: true }));
 
 // ============================================================
 // API /api (auth)
@@ -800,6 +809,56 @@ app.delete("/api/classes/:classId/students/:studentId", requireTeacher, async (r
   } catch (error) {
     console.error("❌ Ошибка удаления ученика из класса:", error);
     res.status(500).json({ error: "Ошибка удаления ученика: " + error.message });
+  }
+});
+
+// Сброс пароля ученика учителем — без почты (на OnReza SMTP недоступен).
+// Возвращает временный пароль и одноразовую ссылку для смены пароля.
+app.post("/api/classes/:classId/students/:studentId/reset-password", requireTeacher, async (req, res) => {
+  const { classId, studentId } = req.params;
+  try {
+    if (!/^\d+$/.test(classId) || !/^\d+$/.test(studentId)) {
+      return res.status(400).json({ error: "Некорректный id" });
+    }
+
+    const ownerCheck = await pool.query("SELECT id FROM classes WHERE id = $1 AND teacher_id = $2", [
+      classId,
+      req.user.id,
+    ]);
+    if (ownerCheck.rows.length === 0) {
+      return res.status(403).json({ error: "Нет доступа к этому классу" });
+    }
+
+    const studentCheck = await pool.query(
+      "SELECT student_id FROM class_students WHERE class_id = $1 AND student_id = $2",
+      [classId, studentId],
+    );
+    if (studentCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Ученик не в этом классе" });
+    }
+
+    // Читаемый временный пароль из 8 символов (без неоднозначных 0/O, 1/l).
+    const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+    const tempPassword = Array.from(crypto.randomBytes(8))
+      .map((b) => alphabet[b % alphabet.length])
+      .join("");
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [passwordHash, studentId]);
+
+    // Одноразовая ссылка — ученик сам задаст новый пароль (действует 1 час).
+    await pool.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [studentId]);
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await pool.query(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+      [studentId, tokenHash, expiresAt],
+    );
+
+    res.json({ tempPassword, resetToken: rawToken });
+  } catch (error) {
+    console.error("❌ Ошибка сброса пароля ученика:", error);
+    res.status(500).json({ error: "Ошибка сброса пароля: " + error.message });
   }
 });
 
@@ -2237,52 +2296,59 @@ app.delete("/api/text-comments/:id", requireTeacher, async (req, res) => {
 // WEBSOCKET (комнаты досок)
 // ============================================================
 const rooms = new Map();
+
+// Рассылка сообщения всем клиентам комнаты, кроме отправителя.
+function broadcastToRoom(roomId, exclude, payload) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  const msg = JSON.stringify(payload);
+  for (const client of room) {
+    if (client !== exclude && client.readyState === WebSocket.OPEN) client.send(msg);
+  }
+}
+
+function removeFromRoom(ws) {
+  const room = rooms.get(ws.roomId);
+  if (!room) return;
+  room.delete(ws);
+  if (room.size === 0) rooms.delete(ws.roomId);
+}
+
 function setupBoardSocket(wss) {
-  wss.on("connection", (ws, req) => {
+  wss.on("connection", (ws) => {
     ws.on("message", (message) => {
       try {
         const data = JSON.parse(message);
         switch (data.type) {
           case "sync_request":
-            if (ws.roomId && rooms.has(ws.roomId)) {
-              rooms.get(ws.roomId).forEach((client) => { if (client !== ws && client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "sync_request", boardId: ws.roomId, userId: ws.userId })); });
-            }
+            broadcastToRoom(ws.roomId, ws, { type: "sync_request", boardId: ws.roomId, userId: ws.userId });
             break;
           case "undo":
           case "redo":
-            if (ws.roomId && rooms.has(ws.roomId)) {
-              rooms.get(ws.roomId).forEach((client) => { if (client !== ws && client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: data.type, boardId: ws.roomId, data: data.data, userId: ws.userId, userName: ws.userName || "Пользователь" })); });
-            }
+            broadcastToRoom(ws.roomId, ws, { type: data.type, boardId: ws.roomId, data: data.data, userId: ws.userId, userName: ws.userName || "Пользователь" });
             break;
           case "join":
-            const roomId = data.roomId;
-            ws.roomId = roomId; ws.userId = data.userId; ws.role = data.role;
+            ws.roomId = data.roomId; ws.userId = data.userId; ws.role = data.role;
             rooms.forEach((clients, rId) => { clients.delete(ws); if (clients.size === 0) rooms.delete(rId); });
-            if (!rooms.has(roomId)) rooms.set(roomId, new Set());
-            rooms.get(roomId).add(ws);
+            if (!rooms.has(ws.roomId)) rooms.set(ws.roomId, new Set());
+            rooms.get(ws.roomId).add(ws);
             break;
           case "draw":
-            if (ws.roomId && rooms.has(ws.roomId)) {
-              rooms.get(ws.roomId).forEach((client) => { if (client !== ws && client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "draw", boardId: ws.roomId, data: { ...data.data, userId: ws.userId } })); });
-            }
+            broadcastToRoom(ws.roomId, ws, { type: "draw", boardId: ws.roomId, data: { ...data.data, userId: ws.userId } });
             break;
           case "clear":
-            if (ws.roomId && rooms.has(ws.roomId)) {
-              rooms.get(ws.roomId).forEach((client) => { if (client !== ws && client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "clear", boardId: ws.roomId })); });
-            }
+            broadcastToRoom(ws.roomId, ws, { type: "clear", boardId: ws.roomId });
             break;
           case "sync":
-            if (ws.roomId && rooms.has(ws.roomId)) {
-              rooms.get(ws.roomId).forEach((client) => { if (client !== ws && client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "sync", boardId: ws.roomId, data: data.data })); });
-            }
+            broadcastToRoom(ws.roomId, ws, { type: "sync", boardId: ws.roomId, data: data.data });
             break;
           case "leave":
-            if (ws.roomId && rooms.has(ws.roomId)) { rooms.get(ws.roomId).delete(ws); if (rooms.get(ws.roomId).size === 0) rooms.delete(ws.roomId); }
+            removeFromRoom(ws);
             break;
         }
       } catch (error) { console.error("Ошибка WebSocket:", error); }
     });
-    ws.on("close", () => { if (ws.roomId && rooms.has(ws.roomId)) { rooms.get(ws.roomId).delete(ws); if (rooms.get(ws.roomId).size === 0) rooms.delete(ws.roomId); } });
+    ws.on("close", () => removeFromRoom(ws));
   });
 }
 

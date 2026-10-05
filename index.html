@@ -8199,7 +8199,8 @@
                                     ${s.full_name || s.username}
                                     ${
                                       currentUser?.role === "teacher"
-                                        ? `<button class="student-remove" onclick="event.stopPropagation();removeStudentFromClass(${c.id}, ${s.id})" title="Удалить из класса">✕</button>`
+                                        ? `<button class="student-remove" onclick="event.stopPropagation();resetStudentPassword(${c.id}, ${s.id}, decodeURIComponent('${encodeURIComponent(s.full_name || s.username)}'))" title="Сбросить пароль">🔑</button>
+                                           <button class="student-remove" onclick="event.stopPropagation();removeStudentFromClass(${c.id}, ${s.id})" title="Удалить из класса">✕</button>`
                                         : ""
                                     }
                                 </div>
@@ -8274,6 +8275,35 @@
           )
         ) {
           deleteClass(classId);
+        }
+      }
+
+      // Сброс пароля ученика учителем: сервер выдаёт временный пароль
+      // и одноразовую ссылку — почта не нужна.
+      async function resetStudentPassword(classId, studentId, name) {
+        if (!confirm(`Сбросить пароль ученика "${name}"?`)) return;
+        try {
+          const res = await fetch(`/api/classes/${classId}/students/${studentId}/reset-password`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Ошибка сброса");
+
+          const link = `${location.origin}/reset-password?token=${data.resetToken}`;
+          openModal(`
+            <h2>Пароль сброшен</h2>
+            <p style="color:#666;font-size:13px;">Передайте ученику <b>${name}</b> временный пароль — после входа пусть сменит его в настройках:</p>
+            <div style="font-size:26px;font-weight:700;letter-spacing:3px;text-align:center;padding:12px;background:#f5f5f5;border-radius:8px;margin:10px 0;user-select:all;">${data.tempPassword}</div>
+            <p style="font-size:13px;color:#666;">Или отправьте одноразовую ссылку (действует 1 час) — ученик сам задаст новый пароль:</p>
+            <div style="font-size:12px;word-break:break-all;background:#f5f5f5;padding:8px;border-radius:6px;margin-bottom:4px;">${link}</div>
+            <div class="modal-actions" style="margin-top:12px;">
+                <button class="btn-secondary" onclick="navigator.clipboard.writeText('${link}');this.textContent='Скопировано!'">Копировать ссылку</button>
+                <button class="btn-primary" onclick="closeModal()">Готово</button>
+            </div>
+          `);
+        } catch (e) {
+          alert("Ошибка: " + e.message);
         }
       }
 
@@ -14942,8 +14972,12 @@ const submissionIdValue = submission.id;
       function showForgotPassword() {
         openModal(`
         <h2>Сброс пароля</h2>
-        <p style="color:#666;margin-bottom:12px;">
-            Введите email, указанный при регистрации. Мы отправим ссылку для сброса пароля.
+        <p style="color:#666;font-size:13px;margin-bottom:8px;">
+            <b>Ученик:</b> попросите учителя — он сбросит пароль в списке учеников класса и выдаст временный.<br>
+            <b>Учитель:</b> напишите администратору платформы.
+        </p>
+        <p style="color:#666;margin-bottom:12px;font-size:13px;">
+            Или введите email, указанный при регистрации — если почта настроена, придёт ссылка для сброса.
         </p>
         <input type="email" id="forgot-email" placeholder="your@email.com" 
                style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:6px;font-size:14px;">

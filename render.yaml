@@ -13,6 +13,12 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: UNIONE_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: APP_URL
+        sync: false
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
