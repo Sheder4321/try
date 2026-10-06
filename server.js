@@ -1995,23 +1995,71 @@ app.post("/api/annotations", requireTeacher, async (req, res) => {
 
     const columnCheck = await pool.query(`
             SELECT EXISTS (
-                SELECT FROM information_schema.columns 
+                SELECT FROM information_schema.columns
                 WHERE table_name = 'annotation_comments' AND column_name = 'subtask_index'
             );
         `);
 
     if (!columnCheck.rows[0].exists) {
       await pool.query(`
-                ALTER TABLE annotation_comments 
+                ALTER TABLE annotation_comments
                 ADD COLUMN subtask_index INTEGER DEFAULT 0
             `);
     }
 
+    // Рисунок учителя на фото: kind='stroke' + точки ломаной в points (JSONB)
+    const kindCols = [
+      ["kind", "ALTER TABLE annotation_comments ADD COLUMN kind TEXT DEFAULT 'rect'"],
+      ["points", "ALTER TABLE annotation_comments ADD COLUMN points JSONB"],
+      ["stroke_width", "ALTER TABLE annotation_comments ADD COLUMN stroke_width REAL DEFAULT 3"],
+    ];
+    for (const [col, ddl] of kindCols) {
+      const cc = await pool.query(
+        `SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'annotation_comments' AND column_name = $1)`,
+        [col],
+      );
+      if (!cc.rows[0].exists) await pool.query(ddl);
+    }
+
+    // Нормализация: kind только rect|stroke; points — плоский массив чисел [x,y,x,y...]
+    const kind = req.body.kind === "stroke" ? "stroke" : "rect";
+    let points = null;
+    if (kind === "stroke") {
+      let raw = req.body.points;
+      if (raw && !Array.isArray(raw)) raw = null;
+      if (raw && raw.length && typeof raw[0] === "object") {
+        raw = raw.flatMap((p) => (p && Number.isFinite(p.x) && Number.isFinite(p.y) ? [p.x, p.y] : []));
+      }
+      if (Array.isArray(raw)) {
+        points = raw.filter((v) => Number.isFinite(v)).map((v) => Math.round(v * 10) / 10).slice(0, 4000);
+        if (points.length < 6 || points.length % 2 !== 0) points = null;
+      }
+      if (!points) {
+        return res.status(400).json({ error: "Рисунок должен содержать хотя бы 3 точки" });
+      }
+    }
+    const strokeWidth = Number.isFinite(req.body.stroke_width)
+      ? Math.min(24, Math.max(1, req.body.stroke_width))
+      : 3;
+
     const result = await pool.query(
-      `INSERT INTO annotation_comments (submission_id, teacher_id, x, y, width, height, comment, color, subtask_index, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+      `INSERT INTO annotation_comments (submission_id, teacher_id, x, y, width, height, comment, color, subtask_index, kind, points, stroke_width, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
             RETURNING id`,
-      [submissionId, teacherId, x, y, width, height, comment, color || "#ff3b30", subtaskIndex || 0],
+      [
+        submissionId,
+        teacherId,
+        x,
+        y,
+        width,
+        height,
+        comment,
+        color || "#ff3b30",
+        subtaskIndex || 0,
+        kind,
+        points ? JSON.stringify(points) : null,
+        strokeWidth,
+      ],
     );
 
     res.json({ id: result.rows[0].id });

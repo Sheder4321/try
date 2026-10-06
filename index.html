@@ -174,7 +174,8 @@
       }
 
       /* ===== КНОПКА 3D ===== */
-      #view3d-btn {
+      #view3d-btn,
+      #view-graph-btn {
         position: absolute;
         z-index: 100000;
         display: none;
@@ -190,6 +191,10 @@
         transition: all 0.2s ease;
         pointer-events: auto;
         white-space: nowrap;
+      }
+      #view-graph-btn {
+        background: #34c759;
+        box-shadow: 0 4px 16px rgba(52, 199, 89, 0.4);
       }
       #view3d-btn:hover {
         background: #4a48d4;
@@ -319,6 +324,185 @@
         background: #fff;
       }
       #vp3d-hint {
+        font-size: 11px;
+        color: #8a8a95;
+        text-align: center;
+      }
+
+      /* ===== ПАЛИТРА СТИКЕРОВ ===== */
+      .sticker-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        padding: 0 10px 8px;
+      }
+      .sticker-cell {
+        font-size: 22px;
+        line-height: 1;
+        padding: 6px 0;
+        background: #fff;
+        border: 1px solid #e4e4ea;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Arial, sans-serif;
+      }
+      .sticker-cell:hover {
+        background: #f3f3f8;
+        transform: scale(1.08);
+      }
+      .sticker-cell.active {
+        background: #e8ecff;
+        border-color: #5e5ce6;
+        box-shadow: 0 0 0 2px rgba(94, 92, 230, 0.25);
+      }
+
+      /* ===== РЕДАКТОР ГРАФИКА ===== */
+      #graph-editor-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 300000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(20, 20, 40, 0.55);
+      }
+      #graph-editor-panel {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        padding: 12px 14px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      #ge-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      #ge-title {
+        font-weight: 600;
+        font-size: 15px;
+      }
+      #ge-close {
+        border: none;
+        background: #f0f0f3;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      #ge-close:hover { background: #e4e4ea; }
+      #ge-canvas {
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #e4e4ea;
+        cursor: grab;
+        touch-action: none;
+      }
+      #ge-canvas:active { cursor: grabbing; }
+      #ge-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      #ge-funcs {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+      .ge-func-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .ge-func-row.off .ge-func-expr { opacity: 0.5; }
+      .ge-func-swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .ge-func-expr {
+        flex: 1;
+        min-width: 120px;
+        padding: 5px 8px;
+        border: 1px solid #dcdce4;
+        border-radius: 7px;
+        font-size: 13px;
+        font-family: Consolas, "Courier New", monospace;
+      }
+      .ge-func-expr:focus {
+        outline: none;
+        border-color: #34c759;
+      }
+      .ge-func-err {
+        font-size: 11px;
+        color: #c0392b;
+        max-width: 170px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .ge-mini {
+        border: 1px solid #dcdce4;
+        background: #fff;
+        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        font-size: 13px;
+        padding: 0;
+        flex-shrink: 0;
+      }
+      .ge-mini:hover { background: #f3f3f8; }
+      .ge-del:hover { background: #fdecea; border-color: #ff3b30; }
+      .ge-toolbar-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .ge-toolbar-row button {
+        padding: 6px 12px;
+        border: 1px solid #dcdce4;
+        background: #fff;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .ge-toolbar-row button:hover { background: #f3f3f8; }
+      .ge-toolbar-row button:disabled { opacity: 0.45; cursor: default; }
+      .ge-toolbar-row button.active {
+        background: #e8f8ee;
+        border-color: #34c759;
+        color: #1e7e34;
+      }
+      .ge-win-inputs {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #555;
+      }
+      .ge-win-inputs input {
+        width: 62px;
+        padding: 4px 6px;
+        border: 1px solid #dcdce4;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+      #ge-info {
+        min-height: 16px;
+        font-size: 12px;
+        color: #1e7e34;
+        text-align: center;
+      }
+      #ge-hint {
         font-size: 11px;
         color: #8a8a95;
         text-align: center;
@@ -1952,6 +2136,79 @@
         margin-left: auto;
       }
 
+      /* Панель рисования на фото домашки (учитель) */
+      .ann-draw-toolbar {
+        display: flex;
+        gap: 6px;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 6px 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+      .ann-draw-toolbar .ann-mode-btn {
+        padding: 4px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: 0.2s;
+        background: white;
+      }
+      .ann-draw-toolbar .ann-mode-btn:hover {
+        background: #f0f0f0;
+      }
+      .ann-draw-toolbar .ann-mode-btn.active {
+        background: #007aff;
+        color: white;
+        border-color: #007aff;
+      }
+      .ann-draw-toolbar .ann-sw-group {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .ann-draw-toolbar .ann-sw {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+        cursor: pointer;
+        padding: 0;
+        transition: 0.15s;
+      }
+      .ann-draw-toolbar .ann-sw:hover {
+        transform: scale(1.15);
+      }
+      .ann-draw-toolbar .ann-sw.active {
+        border-color: #007aff;
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+      }
+      .ann-draw-toolbar .ann-width {
+        padding: 3px 6px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 12px;
+        background: white;
+        cursor: pointer;
+      }
+      .ann-draw-toolbar .ann-clear-draw {
+        padding: 4px 12px;
+        border: 1px solid #f5c2c2;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        background: white;
+        color: #e53e3e;
+        margin-left: auto;
+      }
+      .ann-draw-toolbar .ann-clear-draw:hover {
+        background: #fff0f0;
+      }
+
       /* Комментарий к аннотации */
       .ann-comment-popup {
         position: absolute;
@@ -2245,6 +2502,21 @@
         background: #eef0f4;
         color: #374151;
         border: 1px solid #e3e8ef;
+      }
+      .btn-danger {
+        background: #fdecea;
+        color: #c0392b;
+        border: 1px solid #f5c6c0;
+        border-radius: 8px;
+        padding: 7px 18px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-danger:hover {
+        background: #ff3b30;
+        color: #fff;
+        border-color: #ff3b30;
       }
       .btn-secondary:hover {
         background: #e2e6ee;
@@ -3357,6 +3629,7 @@
         { id: "cube", label: "Куб (проекция)", icon: "⬜", group: "Стереометрия" },
         { id: "cylinder", label: "Цилиндр", icon: "⬤", group: "Стереометрия" },
         { id: "sphere", label: "Сфера", icon: "●", group: "Стереометрия" },
+        { id: "angle", label: "Угол (с градусами)", icon: "∠", group: "Измерения" },
       ];
 
       const SHEET_LIST = [
@@ -3521,6 +3794,7 @@
                 boardLoaded = true;
                 requestRender();
                 vp3dRefreshFromBoard();
+                geRefreshFromBoard();
               }
             }
             break;
@@ -3537,6 +3811,7 @@
               objects = msg.data;
               requestRender();
               vp3dRefreshFromBoard();
+              geRefreshFromBoard();
             }
             break;
 
@@ -3544,6 +3819,7 @@
             objects = [];
             requestRender();
             vp3dRefreshFromBoard();
+            geRefreshFromBoard();
             break;
         }
       }
@@ -4451,6 +4727,9 @@
           };
         } else if (obj.type === "image") {
           return { minX: obj.x, maxX: obj.x + obj.width, minY: obj.y, maxY: obj.y + obj.height };
+        } else if (obj.type === "sticker") {
+          const size = Math.max(10, obj.size || 48);
+          return { minX: obj.x, maxX: obj.x + size, minY: obj.y, maxY: obj.y + size };
         } else if (obj.type === "circle") {
           const cx = (obj.x1 + obj.x2) / 2;
           const cy = (obj.y1 + obj.y2) / 2;
@@ -4562,6 +4841,7 @@
           lineType: currentLineType || "segment",
           shapeType: currentShapeType || "rect",
           sheetType: currentSheetType || "a4",
+          sticker: currentSticker || "😀",
           color: currentColor,
           thickness: currentThickness,
           isDashed: isDashed,
@@ -4581,9 +4861,12 @@
             currentLineType = settings.lineType || "segment";
             currentShapeType = settings.shapeType || "rect";
             currentSheetType = settings.sheetType || "a4";
+            currentSticker = settings.sticker || "😀";
             currentColor = settings.color || "#0055ff";
             currentThickness = settings.thickness || 3;
             isDashed = settings.isDashed || false;
+            const sb = document.getElementById("sticker-badge");
+            if (sb) sb.textContent = currentSticker;
 
             // Применяем цвет
             document.querySelectorAll(".color-btn").forEach((b) => {
@@ -4620,8 +4903,8 @@
         for (let i = objects.length - 1; i >= 0; i--) {
           const obj = objects[i];
 
-          // Текст и изображения
-          if (obj.type === "text" || obj.type === "image") {
+          // Текст, изображения и стикеры
+          if (obj.type === "text" || obj.type === "image" || obj.type === "sticker") {
             const b = getObjectBounds(obj);
             if (b && wx >= b.minX && wx <= b.maxX && wy >= b.minY && wy <= b.maxY) {
               return obj;
@@ -4629,11 +4912,35 @@
             continue;
           }
 
-          // Листы и 3D-пространства
-          if (obj.type === "sheet" || obj.type === "space3d") {
+          // Листы, 3D-пространства и графики
+          if (obj.type === "sheet" || obj.type === "space3d" || obj.type === "graph") {
             const b = getObjectBounds(obj);
             if (b && wx >= b.minX && wx <= b.maxX && wy >= b.minY && wy <= b.maxY) {
               return obj;
+            }
+            continue;
+          }
+
+          // Угол: попадание рядом с одним из лучей (вершина→конец)
+          if (obj.type === "angle") {
+            const verts = getShapeVertices(obj);
+            if (verts.length === 3) {
+              for (let ri = 1; ri <= 2; ri++) {
+                const p1 = verts[0];
+                const p2 = verts[ri];
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const len2 = dx * dx + dy * dy;
+                if (len2 === 0) continue;
+                const t = Math.max(0, Math.min(1.18, ((wx - p1.x) * dx + (wy - p1.y) * dy) / len2));
+                const cx = p1.x + t * dx;
+                const cy = p1.y + t * dy;
+                const dist2 = (wx - cx) ** 2 + (wy - cy) ** 2;
+                if (dist2 < bestDist && dist2 < radius ** 2) {
+                  bestDist = dist2;
+                  bestMatch = obj;
+                }
+              }
             }
             continue;
           }
@@ -4910,6 +5217,7 @@
           loadingBoardCount--;
           requestRender();
           vp3dRefreshFromBoard();
+          geRefreshFromBoard();
         } catch (e) {
           console.error("❌ Ошибка загрузки:", e);
           loadingBoardCount--;
@@ -5103,9 +5411,11 @@
         drawGrid();
         drawObjects();
         drawTempShape();
+        drawAngleDraft(); // превью угла при вводе трёх точек
         updateSelectionFrame();
         updateSelectionBox();
         vp3dRefreshFromBoard(); // если открытое 3D-пространство удалили/синхронизировали
+        geRefreshFromBoard(); // то же для редактора графика
         updateStatus();
       }
 
@@ -5165,12 +5475,20 @@
             drawTextObject(ctx, obj);
             return;
           }
+          if (obj.type === "sticker") {
+            drawStickerObject(ctx, obj);
+            return;
+          }
           if (obj.type === "sheet") {
             drawSheet(ctx, obj);
             return;
           }
           if (obj.type === "space3d") {
             drawSpace3d(ctx, obj);
+            return;
+          }
+          if (obj.type === "graph") {
+            drawGraphObject(ctx, obj);
             return;
           }
 
@@ -5197,6 +5515,9 @@
 
           if (obj.type !== "free-line") {
             const isLine = obj.type === "segment" || obj.type === "ray" || obj.type === "line";
+            // Фигуры с вершинной моделью: при битых/пустых vertices материализуем
+            // лениво из рамки — угол и геометрия не пропадают со старых досок.
+            if (isVertexShape(obj) && !hasOwnVertices(obj)) ensureShapeVertices(obj);
             if (hasOwnVertices(obj)) {
               drawShapeFromVertices(ctx, obj, worldToScreen, obj.color || currentColor, worldThickness);
             } else {
@@ -5338,6 +5659,25 @@
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("🧊 3D-пространство", x + w / 2, y + h / 2);
+          return;
+        }
+        if (mode === "graph") {
+          const x = Math.min(p1.x, p2.x);
+          const y = Math.min(p1.y, p2.y);
+          const w = Math.abs(p2.x - p1.x);
+          const h = Math.abs(p2.y - p1.y);
+          ctx.fillStyle = "rgba(52,199,89,0.08)";
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = "#34c759";
+          ctx.lineWidth = 2 * zoom;
+          ctx.setLineDash(getDashPattern(currentThickness, zoom));
+          ctx.strokeRect(x, y, w, h);
+          ctx.setLineDash([]);
+          ctx.fillStyle = "#34c759";
+          ctx.font = 14 * zoom + "px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("📈 График функций", x + w / 2, y + h / 2);
           return;
         }
         if (mode === "segment" || mode === "ray" || mode === "line") {
@@ -5693,11 +6033,11 @@
       // задний = передний + вектор глубины o (E,F,G,H)].
       const VERTEX_SHAPES = [
         "triangle", "triangle_eq", "triangle_right", "square", "rect",
-        "parallelogram", "rhombus", "trapezoid", "hexagon", "cube",
+        "parallelogram", "rhombus", "trapezoid", "hexagon", "cube", "angle",
       ];
       const VERTEX_COUNT = {
         triangle: 3, triangle_eq: 3, triangle_right: 3, square: 4, rect: 4,
-        parallelogram: 4, rhombus: 4, trapezoid: 4, hexagon: 6, cube: 8,
+        parallelogram: 4, rhombus: 4, trapezoid: 4, hexagon: 6, cube: 8, angle: 3,
       };
       const VERTEX_HIT_MOUSE = 22; // радиус захвата вершины, px canvas (мышь)
       const VERTEX_HIT_TOUCH = 36; // то же для пальца
@@ -5786,6 +6126,15 @@
             const off = s2 * 0.35;
             return cubeVertices(cx - s2 / 2, cy - s2 / 2 + off, s2, off, -off);
           }
+          case "angle": {
+            // запасной вариант для угла без сохранённых вершин:
+            // вершина внизу центра, лучи в противоположные углы рамки
+            return [
+              { x: cx, y: maxY },
+              { x: minX, y: minY },
+              { x: maxX, y: minY },
+            ];
+          }
         }
         return [];
       }
@@ -5824,6 +6173,10 @@
         ctx.lineWidth = thickness || 2;
         ctx.setLineDash([]);
         ctx.beginPath();
+        if (obj.type === "angle") {
+          drawAngleFromVertices(ctx, obj, toScreen, color, thickness);
+          return;
+        }
         if (obj.type === "cube") {
           const path = (ids, close) => {
             ctx.beginPath();
@@ -6001,6 +6354,596 @@
           el.style.top = p.y - el.offsetHeight / 2 + "px";
           el.classList.toggle("hot", i === active);
         }
+      }
+
+      // ============================================================
+      // СТИКЕРЫ-ЭМОДЗИ: объекты доски как текст ({ x, y, size })
+      // ============================================================
+      // obj: { id, type:"sticker", emoji:"😀", x, y, size, userId }
+      const EMOJI_FONT = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Twemoji Mozilla",Arial,sans-serif';
+      const STICKER_SETS = [
+        {
+          name: "Смайлы",
+          list: ["😀", "😄", "😁", "🙂", "😉", "😊", "😍", "🤩", "🤔", "😭", "😡", "😱", "😴", "🥳", "🤗", "😎"],
+        },
+        { name: "Жесты", list: ["👍", "👎", "👌", "✌️", "🤝", "👏", "🙌", "💪", "🤞", "🫶", "👋", "🤟"] },
+        { name: "Учёба", list: ["✏️", "📝", "📚", "📖", "🎓", "🏆", "🥇", "🧮", "🔬", "🧪", "📐", "📏", "🖍️", "🧠", "⏰", "🔔"] },
+        { name: "Метки", list: ["❤️", "⭐", "🔥", "✅", "❌", "⚠️", "❓", "❗", "💡", "🎯", "📌", "🎖️"] },
+        { name: "Разное", list: ["🧊", "🔮", "🎈", "🎁", "💰", "🍕", "⚽", "🎵", "☕", "🌈", "☀️", "🌙"] },
+      ];
+      let currentSticker = "😀";
+
+      function drawStickerObject(ctx, obj) {
+        const s = worldToScreen(obj.x, obj.y);
+        const size = Math.max(10, (obj.size || 48) * zoom);
+        ctx.font = Math.round(size) + "px " + EMOJI_FONT;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        // Округляем экранные координаты — эмодзи остаётся чётким при любом зуме
+        ctx.fillText(obj.emoji || "😀", Math.round(s.x), Math.round(s.y));
+      }
+
+      function selectSticker(emoji) {
+        currentSticker = emoji;
+        saveToolSettings();
+        const badge = document.getElementById("sticker-badge");
+        if (badge) badge.textContent = emoji;
+        if (currentToolSidebar === "stickers") showToolSidebar("stickers");
+      }
+
+      // ============================================================
+      // УГОЛ: вершина + два луча, значение в градусах
+      // ============================================================
+      // obj: { id, type:"angle", x1..y2 (bbox-кэш), color, thickness,
+      //        dashed, userId, vertices:[V, A, B] } — геометрия только
+      //        в vertices, поэтому перетаскивание точек, ресайз, копирование
+      //        и история работают через общий стек вершин (Часть 1)
+      function angleDegreesOf(verts) {
+        const V = verts[0], A = verts[1], B = verts[2];
+        const a1 = Math.atan2(A.y - V.y, A.x - V.x);
+        const a2 = Math.atan2(B.y - V.y, B.x - V.x);
+        let d = Math.abs(a1 - a2) * (180 / Math.PI);
+        if (d > 180) d = 360 - d;
+        return d;
+      }
+
+      // Рисуем угол по вершинам: лучи (продлены за концы), дуга, градусы
+      function drawAngleFromVertices(ctx, obj, toScreen, color, thickness) {
+        const v = obj.vertices;
+        const p = v.map((pt) => toScreen(pt.x, pt.y));
+        const V = p[0], A = p[1], B = p[2];
+        const ext = 1.18; // луч немного длиннее отрезка V—A / V—B
+        const ray = (P) => {
+          const dx = P.x - V.x, dy = P.y - V.y;
+          const len = Math.hypot(dx, dy) || 1;
+          ctx.beginPath();
+          ctx.moveTo(V.x, V.y);
+          ctx.lineTo(V.x + (dx / len) * len * ext, V.y + (dy / len) * len * ext);
+          ctx.stroke();
+        };
+        ctx.strokeStyle = color || "#000";
+        ctx.lineWidth = Math.max(1, thickness || 2);
+        ctx.setLineDash(obj.dashed ? getDashPattern(thickness || 2, 1) : []);
+        ray(A);
+        ray(B);
+        ctx.setLineDash([]);
+
+        // Дуга между лучами
+        const a1 = Math.atan2(A.y - V.y, A.x - V.x);
+        const a2 = Math.atan2(B.y - V.y, B.x - V.x);
+        let d = Math.abs(a1 - a2) * (180 / Math.PI);
+        if (d > 180) d = 360 - d;
+        // короткий обход дуги: направление от a1 к a2
+        let sweep = a2 - a1;
+        while (sweep <= -Math.PI) sweep += Math.PI * 2;
+        while (sweep > Math.PI) sweep -= Math.PI * 2;
+        const r = Math.min(Math.hypot(A.x - V.x, A.y - V.y), Math.hypot(B.x - V.x, B.y - V.y)) * 0.34;
+        if (r > 4) {
+          ctx.beginPath();
+          ctx.arc(V.x, V.y, r, a1, a1 + sweep, sweep < 0);
+          ctx.stroke();
+        }
+
+        // Значение в градусах — у биссектрисы, чуть дальше дуги
+        const bis = a1 + sweep / 2;
+        const deg = Math.round(d);
+        const lx = V.x + Math.cos(bis) * (r + 22);
+        const ly = V.y + Math.sin(bis) * (r + 22);
+        ctx.font = "bold " + Math.max(12, Math.round(13 + thickness * 0.6)) + "px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        // белая подложка, чтобы цифры читались поверх линий
+        const label = deg + "°";
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.fillRect(lx - tw / 2 - 3, ly - 10, tw + 6, 20);
+        ctx.fillStyle = color || "#000";
+        ctx.fillText(label, lx, ly);
+      }
+
+      // Ввод угла: три клика — вершина, конец первого луча, конец второго
+      let angleDraft = null; // { pts:[{x,y}...], mouse:{x,y} }
+
+      function drawAngleDraft() {
+        if (!angleDraft) return;
+        const fake = {
+          type: "angle",
+          vertices: [...angleDraft.pts, angleDraft.mouse].slice(0, 3),
+          dashed: isDashed,
+        };
+        while (fake.vertices.length < 3) fake.vertices.push(angleDraft.mouse);
+        drawAngleFromVertices(ctx, fake, worldToScreen, currentColor, currentThickness);
+      }
+
+      // ============================================================
+      // ГРАФИК ФУНКЦИЙ: отдельный объект доски (как лист/3D)
+      // ============================================================
+      // obj: { id, type:"graph", x1..y2, color, thickness, userId,
+      //        graph: { v:1, funcs:[{expr,color,on}], win:{xmin..ymax}, showPts } }
+      //   funcs — до 8 функций y=f(x); win — окно просмотра; showPts —
+      //   показывать нули и точки пересечения. Всё хранится в JSONB доски.
+      const GRAPH_COLORS = ["#5e5ce6", "#ff9500", "#34c759", "#ff3b30", "#007aff", "#af52de", "#00c7be", "#ff2d55"];
+      const gphNormCache = new WeakMap();
+      let ge = null; // состояние открытого редактора графика
+
+      function gphDefault() {
+        return {
+          v: 1,
+          funcs: [
+            { expr: "x", color: GRAPH_COLORS[0], on: true },
+            { expr: "sin(x)", color: GRAPH_COLORS[1], on: true },
+          ],
+          win: { xmin: -10, xmax: 10, ymin: -6.5, ymax: 6.5 },
+          showPts: false,
+        };
+      }
+
+      // Парсер выражений y=f(x): рекурсивный спуск, без eval.
+      // Поддержка: + - * / ^ ( ), числа, x, e, pi, функции sin cos tan asin
+      // acos atan sqrt abs ln log exp floor ceil round; неявное умножение
+      // (2x, 3sin(x), x(x+1)). Ошибки — текстом на русском.
+      const GPH_FUNCS = {
+        sin: Math.sin,
+        cos: Math.cos,
+        tan: Math.tan,
+        asin: Math.asin,
+        acos: Math.acos,
+        atan: Math.atan,
+        sqrt: Math.sqrt,
+        abs: Math.abs,
+        ln: Math.log,
+        log: (v) => Math.log(v) / Math.LN10,
+        exp: Math.exp,
+        floor: Math.floor,
+        ceil: Math.ceil,
+        round: Math.round,
+      };
+
+      function gphCompile(expr) {
+        const src = String(expr || "").trim();
+        if (!src) return { err: "Пустое выражение" };
+        if (src.length > 200) return { err: "Слишком длинное выражение (максимум 200 символов)" };
+        const toks = [];
+        let i = 0;
+        const isDigit = (c) => c >= "0" && c <= "9";
+        const isAlpha = (c) => /[a-zA-Z]/.test(c);
+        while (i < src.length) {
+          const c = src[i];
+          if (c === " " || c === "\t") {
+            i++;
+            continue;
+          }
+          if (isDigit(c) || (c === "." && isDigit(src[i + 1]))) {
+            let j = i;
+            while (j < src.length && (isDigit(src[j]) || src[j] === ".")) j++;
+            const num = parseFloat(src.slice(i, j));
+            if (!Number.isFinite(num)) return { err: "Некорректное число: «" + src.slice(i, j) + "»" };
+            toks.push({ t: "num", v: num });
+            i = j;
+            continue;
+          }
+          if (isAlpha(c)) {
+            let j = i;
+            while (j < src.length && isAlpha(src[j])) j++;
+            const name = src.slice(i, j).toLowerCase();
+            i = j;
+            if (GPH_FUNCS[name]) toks.push({ t: "func", v: name });
+            else if (name === "x") toks.push({ t: "var" });
+            else if (name === "e") toks.push({ t: "num", v: Math.E });
+            else if (name === "pi") toks.push({ t: "num", v: Math.PI });
+            else return { err: "Неизвестное имя: «" + name + "»" };
+            continue;
+          }
+          if ("+-*/^(),.".indexOf(c) >= 0) {
+            toks.push({ t: c });
+            i++;
+            continue;
+          }
+          return { err: "Недопустимый символ: «" + c + "»" };
+        }
+        if (!toks.length) return { err: "Пустое выражение" };
+
+        // Неявное умножение: 2x, 3sin(x), x(x+1), (x+1)(x-2), 2(x)
+        const needMul = (tk) => tk && (tk.t === "num" || tk.t === "var" || tk.t === "func" || tk.t === ")");
+        const startsVal = (tk) => tk && (tk.t === "num" || tk.t === "var" || tk.t === "func" || tk.t === "(");
+        const fixed = [];
+        for (let k = 0; k < toks.length; k++) {
+          const tk = toks[k];
+          const prev = fixed[fixed.length - 1];
+          // имя функции перед «(» — это вызов, а не умножение (sin(x), не sin*(x))
+          const isCall = prev && prev.t === "func" && tk.t === "(";
+          if (!isCall && prev && needMul(prev) && startsVal(tk)) fixed.push({ t: "*" });
+          fixed.push(tk);
+        }
+
+        let pos = 0;
+        const peek = () => fixed[pos];
+        const next = () => fixed[pos++];
+        const err = (m) => ({ err: m });
+
+        function parseExpr() {
+          let node = parseTerm();
+          if (node.err) return node;
+          while (peek() && (peek().t === "+" || peek().t === "-")) {
+            const op = next().t;
+            const rhs = parseTerm();
+            if (rhs.err) return rhs;
+            const L = node, R = rhs;
+            node = op === "+" ? (x) => L(x) + R(x) : (x) => L(x) - R(x);
+          }
+          return node;
+        }
+        function parseTerm() {
+          let node = parseUnary();
+          if (node.err) return node;
+          while (peek() && (peek().t === "*" || peek().t === "/")) {
+            const op = next().t;
+            const rhs = parseUnary();
+            if (rhs.err) return rhs;
+            const L = node, R = rhs;
+            node = op === "*" ? (x) => L(x) * R(x) : (x) => L(x) / R(x);
+          }
+          return node;
+        }
+        function parseUnary() {
+          if (peek() && peek().t === "-") {
+            next();
+            const node = parseUnary();
+            if (node.err) return node;
+            return (x) => -node(x);
+          }
+          if (peek() && peek().t === "+") {
+            next();
+            return parseUnary();
+          }
+          return parsePower();
+        }
+        function parsePower() {
+          let base = parseAtom();
+          if (base.err) return base;
+          if (peek() && peek().t === "^") {
+            next();
+            const exp = parseUnary(); // правая ассоциативность: 2^3^2
+            if (exp.err) return exp;
+            const B = base, E = exp;
+            base = (x) => Math.pow(B(x), E(x));
+          }
+          return base;
+        }
+        function parseAtom() {
+          const tk = peek();
+          if (!tk) return err("Выражение обрывается — ожидалось число или x");
+          if (tk.t === "num") {
+            next();
+            const v = tk.v;
+            return () => v;
+          }
+          if (tk.t === "var") {
+            next();
+            return (x) => x;
+          }
+          if (tk.t === "func") {
+            next();
+            if (!peek() || peek().t !== "(") return err("После «" + tk.v + "» нужна скобка: " + tk.v + "(…)");
+            next();
+            const arg = parseExpr();
+            if (arg.err) return arg;
+            if (!peek() || peek().t !== ")") return err("Не закрыта скобка после «" + tk.v + "(»");
+            next();
+            const fn = GPH_FUNCS[tk.v];
+            const A = arg;
+            return (x) => fn(A(x));
+          }
+          if (tk.t === "(") {
+            next();
+            const inner = parseExpr();
+            if (inner.err) return inner;
+            if (!peek() || peek().t !== ")") return err("Не закрыта скобка");
+            next();
+            return inner;
+          }
+          return err("Неожидаемый символ «" + (tk.t === "num" || tk.t === "var" ? tk.v || tk.t : tk.t) + "»");
+        }
+
+        const root = parseExpr();
+        if (root.err) return root;
+        if (pos < fixed.length) return err("Лишний символ в конце выражения");
+        try {
+          const probe = root(1);
+          if (!Number.isFinite(probe) && !Number.isNaN(probe)) return err("Выражение не возвращает число");
+        } catch (_) {}
+        return { fn: root };
+      }
+
+      // Приведение любых (старых/чужих) данных графика к корректной модели
+      function gphNormalize(raw) {
+        if (!raw || typeof raw !== "object") return gphDefault();
+        const num = (x, d) => (Number.isFinite(x) ? x : d);
+        let win = raw.win || {};
+        let xmin = num(win.xmin, -10), xmax = num(win.xmax, 10);
+        let ymin = num(win.ymin, -6.5), ymax = num(win.ymax, 6.5);
+        if (xmax - xmin < 1) xmax = xmin + 1;
+        if (ymax - ymin < 1) ymax = ymin + 1;
+        const W = 1e6;
+        if (xmax - xmin > W) xmax = xmin + W;
+        if (ymax - ymin > W) ymax = ymin + W;
+        const funcs = (Array.isArray(raw.funcs) ? raw.funcs : [])
+          .slice(0, 8)
+          .map((f, i) => ({
+            expr: typeof f === "object" && typeof f.expr === "string" ? f.expr.slice(0, 200) : String(f || "").slice(0, 200),
+            color: typeof f === "object" && /^#[0-9a-f]{6}$/i.test(f.color || "") ? f.color : GRAPH_COLORS[i % GRAPH_COLORS.length],
+            on: typeof f === "object" ? f.on !== false : true,
+          }))
+          .filter((f) => f.expr.trim() !== "");
+        return {
+          v: 1,
+          funcs: funcs.length ? funcs : gphDefault().funcs,
+          win: { xmin, xmax, ymin, ymax },
+          showPts: !!raw.showPts,
+        };
+      }
+
+      function gphGet(obj) {
+        const raw = obj.graph;
+        if (raw && typeof raw === "object" && gphNormCache.has(raw)) return gphNormCache.get(raw);
+        const n = gphNormalize(raw);
+        if (raw && typeof raw === "object") {
+          gphNormCache.set(raw, n);
+        } else {
+          obj.graph = n;
+          gphNormCache.set(n, n);
+        }
+        return n;
+      }
+
+      // «Красивый» шаг сетки 1-2-5 для диапазона
+      function gphNiceStep(range) {
+        const raw = range / 8;
+        const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+        for (const m of [1, 2, 5, 10]) {
+          if (raw <= m * pow) return m * pow;
+        }
+        return 10 * pow;
+      }
+
+      function gphFmt(v) {
+        if (Math.abs(v) >= 1e5 || (Math.abs(v) < 1e-4 && v !== 0)) return v.toExponential(1);
+        const s = String(Math.round(v * 1e6) / 1e6);
+        return s === "-0" ? "0" : s;
+      }
+
+      // Общий рендер графика в прямоугольник W×H (доска / редактор / PNG)
+      function graphRender(ctx, W, H, g) {
+        const { xmin, xmax, ymin, ymax } = g.win;
+        const sx = W / (xmax - xmin);
+        const sy = H / (ymax - ymin);
+        const X = (x) => (x - xmin) * sx;
+        const Y = (y) => H - (y - ymin) * sy;
+
+        ctx.save();
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, W, H);
+
+        // Сетка
+        const stepX = gphNiceStep(xmax - xmin);
+        const stepY = gphNiceStep(ymax - ymin);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#e8eaf2";
+        ctx.beginPath();
+        for (let gx = Math.ceil(xmin / stepX) * stepX; gx <= xmax; gx += stepX) {
+          ctx.moveTo(X(gx), 0);
+          ctx.lineTo(X(gx), H);
+        }
+        for (let gy = Math.ceil(ymin / stepY) * stepY; gy <= ymax; gy += stepY) {
+          ctx.moveTo(0, Y(gy));
+          ctx.lineTo(W, Y(gy));
+        }
+        ctx.stroke();
+
+        // Оси со стрелками и подписями
+        ctx.strokeStyle = "#9aa0b5";
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        if (ymin <= 0 && ymax >= 0) {
+          ctx.moveTo(0, Y(0));
+          ctx.lineTo(W, Y(0));
+        }
+        if (xmin <= 0 && xmax >= 0) {
+          ctx.moveTo(X(0), 0);
+          ctx.lineTo(X(0), H);
+        }
+        ctx.stroke();
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "10px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        const lab = Math.max(4, Math.min(14, Math.floor(W / 70)));
+        let shown = 0;
+        for (let gx = Math.ceil(xmin / stepX) * stepX; gx <= xmax && shown < lab; gx += stepX) {
+          const px = X(gx);
+          if (px < 18 || px > W - 18) continue;
+          if (Math.abs(gx) < stepX / 1e6) continue;
+          ctx.fillText(gphFmt(gx), px, Math.min(Math.max(Y(0) + 3, 2), H - 14));
+          shown++;
+        }
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        shown = 0;
+        for (let gy = Math.ceil(ymin / stepY) * stepY; gy <= ymax && shown < lab; gy += stepY) {
+          const py = Y(gy);
+          if (py < 10 || py > H - 10) continue;
+          if (Math.abs(gy) < stepY / 1e6) continue;
+          ctx.fillText(gphFmt(gy), Math.min(Math.max(X(0) - 4, 22), W - 4), py);
+          shown++;
+        }
+
+        // Кривые: сэмпл каждые ~2px, разрыв на NaN/∞/скачках
+        const ySpan = ymax - ymin;
+        g.funcs.forEach((f) => {
+          if (!f.on) return;
+          const c = gphCompile(f.expr);
+          if (!c.fn) return;
+          ctx.strokeStyle = f.color;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          let pen = false;
+          const N = Math.max(40, Math.min(1400, Math.floor(W / 2)));
+          let prevY = null;
+          for (let k = 0; k <= N; k++) {
+            const x = xmin + ((xmax - xmin) * k) / N;
+            let y;
+            try {
+              y = c.fn(x);
+            } catch (_) {
+              y = NaN;
+            }
+            if (!Number.isFinite(y)) {
+              pen = false;
+              prevY = null;
+              continue;
+            }
+            const jump = prevY !== null && Math.abs(y - prevY) > ySpan * 4;
+            const py = Y(y);
+            if (!pen || jump) {
+              ctx.moveTo(X(x), py);
+              pen = true;
+            } else {
+              ctx.lineTo(X(x), py);
+            }
+            prevY = y;
+          }
+          ctx.stroke();
+        });
+
+        // Ключевые точки: нули функций и попарные пересечения
+        if (g.showPts) {
+          const dots = [];
+          const evals = g.funcs
+            .filter((f) => f.on)
+            .map((f) => ({ f, c: gphCompile(f.expr) }))
+            .filter((e) => e.c.fn);
+          const refine = (fn, a, b) => {
+            let fa = fn(a);
+            for (let it = 0; it < 40; it++) {
+              const m = (a + b) / 2;
+              const fm = fn(m);
+              if (!Number.isFinite(fm)) return null;
+              if (Math.abs(fm) < 1e-9 || b - a < 1e-9) return m;
+              if (fa * fm <= 0) b = m;
+              else {
+                a = m;
+                fa = fm;
+              }
+            }
+            return (a + b) / 2;
+          };
+          evals.forEach((e, i) => {
+            const fn = e.c.fn;
+            const N = 400;
+            const step = (xmax - xmin) / N;
+            let prev = safe(fn, xmin);
+            for (let k = 1; k <= N; k++) {
+              const x = xmin + k * step;
+              const cur = safe(fn, x);
+              if (prev !== null && cur !== null && Number.isFinite(prev) && Number.isFinite(cur) && prev * cur < 0 && Math.abs(cur - prev) < ySpan * 4) {
+                const z = refine(fn, x - step, x);
+                if (z !== null) dots.push({ x: z, y: 0, color: e.f.color });
+              }
+              prev = cur;
+            }
+            // пересечения с остальными
+            for (let j = i + 1; j < evals.length; j++) {
+              const fn2 = evals[j].c.fn;
+              const diff = (x) => fn(x) - fn2(x);
+              let p = safe(diff, xmin);
+              for (let k = 1; k <= N; k++) {
+                const x = xmin + k * step;
+                const c2 = safe(diff, x);
+                if (p !== null && c2 !== null && Number.isFinite(p) && Number.isFinite(c2) && p * c2 < 0) {
+                  const xi = refine(diff, x - step, x);
+                  if (xi !== null) {
+                    const yi = safe(fn, xi);
+                    if (yi !== null && Number.isFinite(yi)) dots.push({ x: xi, y: yi, color: "#333" });
+                  }
+                }
+                p = c2;
+              }
+            }
+          });
+          dots.slice(0, 40).forEach((d) => {
+            const px = X(d.x), py = Y(d.y);
+            if (px < 2 || px > W - 2 || py < 2 || py > H - 2) return;
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = d.color;
+            ctx.stroke();
+            ctx.fillStyle = "#333";
+            ctx.font = "10px Arial";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "bottom";
+            ctx.fillText("(" + gphFmt(d.x) + "; " + gphFmt(d.y) + ")", px + 6, py - 4);
+          });
+        }
+        ctx.restore();
+      }
+
+      function safe(fn, x) {
+        try {
+          const v = fn(x);
+          return Number.isFinite(v) ? v : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      // Объект графика на доске: рамка + клип + общий рендер
+      function drawGraphObject(ctx, obj) {
+        const a = worldToScreen(Math.min(obj.x1, obj.x2), Math.min(obj.y1, obj.y2));
+        const b = worldToScreen(Math.max(obj.x1, obj.x2), Math.max(obj.y1, obj.y2));
+        const w = b.x - a.x, h = b.y - a.y;
+        if (w < 2 || h < 2) return;
+        ctx.save();
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(a.x, a.y, w, h);
+        ctx.beginPath();
+        ctx.rect(a.x, a.y, w, h);
+        ctx.clip();
+        ctx.translate(a.x, a.y);
+        graphRender(ctx, w, h, gphGet(obj));
+        ctx.restore();
+        ctx.strokeStyle = obj.color || "#34c759";
+        ctx.lineWidth = Math.max(1, (obj.thickness || 2) * zoom * 0.8);
+        ctx.strokeRect(a.x, a.y, w, h);
+        ctx.fillStyle = "#34c759";
+        ctx.font = Math.max(10, 12 * zoom) + "px Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("📈 График", a.x + 8 * zoom + 2, a.y + 6 * zoom + 2);
       }
 
       // ============================================================
@@ -7639,6 +8582,298 @@
         }
       }
 
+      // ============================================================
+      // РЕДАКТОР ГРАФИКА ФУНКЦИЙ (модальное окно, как окно 3D)
+      // ============================================================
+      // ge: { objId, g (рабочая копия graph), canvas, ctx, W, H, dpr,
+      //       pan (drag), commitTimer, _stamp }
+      function openGraphEditor(obj) {
+        if (!obj || obj.type !== "graph") return;
+        const overlay = document.getElementById("graph-editor-overlay");
+        const cv = document.getElementById("ge-canvas");
+        if (!overlay || !cv) return;
+        overlay.style.display = "flex";
+        ge = {
+          objId: obj.id,
+          g: JSON.parse(JSON.stringify(gphGet(obj))),
+          canvas: cv,
+          ctx: cv.getContext("2d"),
+          W: 640, H: 440, dpr: 1,
+          pan: null,
+          commitTimer: null,
+        };
+        ge._stamp = JSON.stringify(ge.g);
+        geResize();
+        geSyncUI();
+        geRender();
+      }
+
+      function closeGraphEditor() {
+        if (!ge) return;
+        if (ge.commitTimer) {
+          clearTimeout(ge.commitTimer);
+          geCommit();
+        }
+        const overlay = document.getElementById("graph-editor-overlay");
+        if (overlay) overlay.style.display = "none";
+        ge = null;
+      }
+
+      function geResize() {
+        if (!ge) return;
+        const W = Math.max(320, Math.min(860, window.innerWidth - 48));
+        const H = Math.max(260, Math.min(560, window.innerHeight - 300, Math.round(W * 0.6)));
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        ge.canvas.width = Math.round(W * dpr);
+        ge.canvas.height = Math.round(H * dpr);
+        ge.canvas.style.width = W + "px";
+        ge.canvas.style.height = H + "px";
+        ge.W = W; ge.H = H; ge.dpr = dpr;
+        geRender();
+      }
+
+      // Каждое изменение графика: запись в объект + история + сохранение + sync
+      function geCommit() {
+        if (!ge) return;
+        clearTimeout(ge.commitTimer);
+        ge.commitTimer = null;
+        const obj = objects.find((o) => o.id === ge.objId && o.type === "graph");
+        if (!obj) return;
+        ge.g = gphNormalize(ge.g);
+        ge._stamp = JSON.stringify(ge.g);
+        obj.graph = JSON.parse(JSON.stringify(ge.g));
+        gphNormCache.set(obj.graph, ge.g);
+        saveBoardHistory();
+        render();
+        saveBoardToServer();
+      }
+
+      function geCommitDebounced() {
+        if (!ge) return;
+        clearTimeout(ge.commitTimer);
+        ge.commitTimer = setTimeout(geCommit, 450);
+      }
+
+      function geRender() {
+        if (!ge) return;
+        const g = ge.ctx;
+        g.setTransform(ge.dpr, 0, 0, ge.dpr, 0, 0);
+        graphRender(g, ge.W, ge.H, ge.g);
+        const info = document.getElementById("ge-info");
+        if (info) {
+          const bad = ge.g.funcs.find((f) => f.expr.trim() && !gphCompile(f.expr).fn);
+          if (bad) info.textContent = "⚠️ " + (gphCompile(bad.expr).err || "Ошибка в выражении");
+          else
+            info.textContent =
+              "Функций: " +
+              ge.g.funcs.filter((f) => f.on).length +
+              " · x∈[" + gphFmt(ge.g.win.xmin) + "; " + gphFmt(ge.g.win.xmax) +
+              "], y∈[" + gphFmt(ge.g.win.ymin) + "; " + gphFmt(ge.g.win.ymax) + "]";
+        }
+      }
+
+      // Список функций в редакторе: ввод + цвет + видимость + удаление
+      function geSyncUI() {
+        if (!ge) return;
+        const list = document.getElementById("ge-funcs");
+        if (!list) return;
+        list.innerHTML = "";
+        ge.g.funcs.forEach((f, i) => {
+          const compiled = gphCompile(f.expr);
+          const row = document.createElement("div");
+          row.className = "ge-func-row" + (f.on ? "" : " off");
+          row.innerHTML =
+            `<span class="ge-func-swatch" style="background:${f.color}" title="Цвет линии"></span>` +
+            `<input type="text" class="ge-func-expr" value="${escapeHtml(f.expr)}" placeholder="y = f(x), например x^2 - 3">` +
+            `<span class="ge-func-err">${compiled.fn ? "" : escapeHtml(compiled.err || "Ошибка")}</span>` +
+            `<button class="ge-mini" title="${f.on ? "Скрыть кривую" : "Показать кривую"}">${f.on ? "👁" : "🚫"}</button>` +
+            `<button class="ge-mini ge-del" title="Удалить функцию">🗑</button>`;
+          const exprInput = row.querySelector(".ge-func-expr");
+          exprInput.addEventListener("input", function () {
+            f.expr = this.value.slice(0, 200);
+            const c = gphCompile(f.expr);
+            row.querySelector(".ge-func-err").textContent = c.fn ? "" : c.err || "Ошибка";
+            geRender();
+            geCommitDebounced();
+          });
+          const btns = row.querySelectorAll(".ge-mini");
+          btns[0].addEventListener("click", function () {
+            f.on = !f.on;
+            geSyncUI();
+            geRender();
+            geCommit();
+          });
+          btns[1].addEventListener("click", function () {
+            ge.g.funcs.splice(i, 1);
+            if (!ge.g.funcs.length) ge.g.funcs.push({ expr: "", color: GRAPH_COLORS[0], on: true });
+            geSyncUI();
+            geRender();
+            geCommit();
+          });
+          list.appendChild(row);
+        });
+        const win = ge.g.win;
+        const vals = { "ge-xmin": win.xmin, "ge-xmax": win.xmax, "ge-ymin": win.ymin, "ge-ymax": win.ymax };
+        Object.keys(vals).forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = String(Math.round(vals[id] * 100) / 100);
+        });
+        const ptsBtn = document.getElementById("ge-pts");
+        if (ptsBtn) ptsBtn.classList.toggle("active", !!ge.g.showPts);
+        const addBtn = document.getElementById("ge-add-func");
+        if (addBtn) addBtn.disabled = ge.g.funcs.length >= 8;
+      }
+
+      function geSetWin() {
+        if (!ge) return;
+        const num = (id) => parseFloat(document.getElementById(id).value);
+        const n = gphNormalize({
+          funcs: ge.g.funcs,
+          win: { xmin: num("ge-xmin"), xmax: num("ge-xmax"), ymin: num("ge-ymin"), ymax: num("ge-ymax") },
+          showPts: ge.g.showPts,
+        });
+        ge.g.win = n.win;
+        geSyncUI();
+        geRender();
+        geCommitDebounced();
+      }
+
+      function geResetWin() {
+        if (!ge) return;
+        ge.g.win = gphDefault().win;
+        geSyncUI();
+        geRender();
+        geCommit();
+      }
+
+      function geAddFunc() {
+        if (!ge || ge.g.funcs.length >= 8) return;
+        ge.g.funcs.push({ expr: "", color: GRAPH_COLORS[ge.g.funcs.length % GRAPH_COLORS.length], on: true });
+        geSyncUI();
+        geCommit();
+        const rows = document.querySelectorAll("#ge-funcs .ge-func-expr");
+        if (rows.length) rows[rows.length - 1].focus();
+      }
+
+      // Доска изменилась снаружи (чужой sync, undo/redo, загрузка) — перечитываем
+      function geRefreshFromBoard() {
+        if (!ge || ge.pan || ge.commitTimer) return;
+        const obj = objects.find((o) => o.id === ge.objId && o.type === "graph");
+        if (!obj) {
+          closeGraphEditor();
+          return;
+        }
+        const fresh = gphGet(obj);
+        const stamp = JSON.stringify(fresh);
+        if (stamp === ge._stamp) return;
+        ge._stamp = stamp;
+        ge.g = JSON.parse(JSON.stringify(fresh));
+        geSyncUI();
+        geRender();
+      }
+
+      // Биндинги окна редактора — один раз при старте
+      let _geWindowBound = false;
+      function initGraphEditor() {
+        const $ = (id) => document.getElementById(id);
+        const on = (id, ev, fn) => {
+          const el = $(id);
+          if (el) el.addEventListener(ev, fn);
+        };
+        const btn = $("view-graph-btn");
+        if (btn) {
+          ["mousedown", "mouseup", "touchstart", "touchend"].forEach((ev) =>
+            btn.addEventListener(ev, function (e) {
+              e.stopPropagation();
+            }),
+          );
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            const obj = selected.length === 1 ? objects.find((o) => o.id === selected[0]) : null;
+            if (obj && obj.type === "graph") openGraphEditor(obj);
+          });
+        }
+        on("ge-close", "click", closeGraphEditor);
+        const overlay = $("graph-editor-overlay");
+        if (overlay) {
+          overlay.addEventListener("mousedown", function (e) {
+            if (e.target === overlay) closeGraphEditor();
+          });
+        }
+        on("ge-add-func", "click", geAddFunc);
+        on("ge-pts", "click", function () {
+          if (!ge) return;
+          ge.g.showPts = !ge.g.showPts;
+          geSyncUI();
+          geRender();
+          geCommit();
+        });
+        on("ge-reset-win", "click", geResetWin);
+        ["ge-xmin", "ge-xmax", "ge-ymin", "ge-ymax"].forEach((id) => on(id, "change", geSetWin));
+
+        const cv = $("ge-canvas");
+        if (cv) {
+          cv.addEventListener("pointerdown", function (e) {
+            if (!ge) return;
+            e.preventDefault();
+            try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+            const r = cv.getBoundingClientRect();
+            ge.pan = { x: e.clientX - r.left, y: e.clientY - r.top, win: { ...ge.g.win }, changed: false };
+          });
+          cv.addEventListener("pointermove", function (e) {
+            if (!ge || !ge.pan) return;
+            const r = cv.getBoundingClientRect();
+            const dx = e.clientX - r.left - ge.pan.x;
+            const dy = e.clientY - r.top - ge.pan.y;
+            const w = ge.g.win;
+            const kx = (ge.pan.win.xmax - ge.pan.win.xmin) / ge.W;
+            const ky = (ge.pan.win.ymax - ge.pan.win.ymin) / ge.H;
+            w.xmin = ge.pan.win.xmin - dx * kx;
+            w.xmax = ge.pan.win.xmax - dx * kx;
+            w.ymin = ge.pan.win.ymin + dy * ky;
+            w.ymax = ge.pan.win.ymax + dy * ky;
+            ge.pan.changed = true;
+            geSyncUI();
+            geRender();
+          });
+          const up = function () {
+            if (!ge) return;
+            if (ge.pan && ge.pan.changed) geCommitDebounced();
+            ge.pan = null;
+          };
+          cv.addEventListener("pointerup", up);
+          cv.addEventListener("pointercancel", up);
+          cv.addEventListener("wheel", function (e) {
+            if (!ge) return;
+            e.preventDefault();
+            const r = cv.getBoundingClientRect();
+            const mx = e.clientX - r.left;
+            const my = e.clientY - r.top;
+            // зум к точке курсора
+            const k = Math.exp(e.deltaY * 0.0012);
+            const w = ge.g.win;
+            const cx = w.xmin + ((w.xmax - w.xmin) * mx) / ge.W;
+            const cy = w.ymin + ((w.ymax - w.ymin) * (1 - my / ge.H));
+            w.xmin = cx - (cx - w.xmin) * k;
+            w.xmax = cx + (w.xmax - cx) * k;
+            w.ymin = cy - (cy - w.ymin) * k;
+            w.ymax = cy + (w.ymax - cy) * k;
+            geSyncUI();
+            geRender();
+            geCommitDebounced();
+          }, { passive: false });
+        }
+        if (!_geWindowBound) {
+          _geWindowBound = true;
+          window.addEventListener("resize", geResize);
+          window.addEventListener("keydown", function (e) {
+            if (!ge) return;
+            if (e.key === "Escape") closeGraphEditor();
+          });
+        }
+      }
+
       // Строки текста с учётом маркированного списка (• добавляется при отрисовке, в тексте не хранится)
       function getTextDisplayLines(obj) {
         const lines = (obj.text || "").split("\n");
@@ -7812,6 +9047,7 @@
         const handles = document.getElementById("resize-handles");
         const vhint = document.getElementById("vertex-hint");
         const btn3d = document.getElementById("view3d-btn");
+        const btnGraph = document.getElementById("view-graph-btn");
         if (!frame || !handles) return;
         if (selected.length > 0 && !_blockSheetEditBtn) {
           updateSheetEditButton();
@@ -7824,6 +9060,7 @@
           handles.style.display = "none";
           if (vhint) vhint.style.display = "none";
           if (btn3d) btn3d.style.display = "none";
+          if (btnGraph) btnGraph.style.display = "none";
           const vbox = document.getElementById("vertex-handles");
           if (vbox) vbox.style.display = "none";
           return;
@@ -7886,6 +9123,15 @@
             btn3d.style.display = "block";
           } else {
             btn3d.style.display = "none";
+          }
+        }
+        if (btnGraph) {
+          if (mode === "select" && singleObj && singleObj.type === "graph") {
+            btnGraph.style.left = p2.x + 12 + "px";
+            btnGraph.style.top = p1.y + 34 + "px";
+            btnGraph.style.display = "block";
+          } else {
+            btnGraph.style.display = "none";
           }
         }
         updateVertexHandles();
@@ -9388,6 +10634,16 @@
         if (mode === "space3d") {
           showHint("🧊 Нарисуйте область или просто кликните — на доске появится 3D-пространство");
         }
+        if (mode === "graph") {
+          showHint("📈 Нарисуйте область или кликните — появится график функций");
+        }
+        if (mode === "sticker") {
+          showHint("😀 Кликайте по доске — стикеры ставятся в точку клика");
+        }
+        if (mode === "angle") {
+          angleDraft = null;
+          showHint("∠ Три клика: вершина → конец первого луча → конец второго луча");
+        }
 
         updateActiveButtons();
       }
@@ -9428,7 +10684,7 @@
 
           const offsetX = 30,
             offsetY = 30;
-          if (newObj.type === "text" || newObj.type === "image") {
+          if (newObj.type === "text" || newObj.type === "image" || newObj.type === "sticker") {
             newObj.x += offsetX;
             newObj.y += offsetY;
           } else if (
@@ -9740,11 +10996,11 @@
           const obj = objects.find((o) => o.id === id);
           if (!obj) return;
           if (obj.type === "coords") return;
-          if (obj.type === "text") {
+          if (obj.type === "text" || obj.type === "image" || obj.type === "sticker") {
             obj.x = ax + (obj.x - ax) * finalScaleX;
             obj.y = ay + (obj.y - ay) * finalScaleY;
             obj.size = Math.max(8, obj.size * Math.min(finalScaleX, finalScaleY));
-            updateTextDimensions(obj);
+            if (obj.type === "text") updateTextDimensions(obj);
           } else if (obj.type === "image") {
             obj.x = ax + (obj.x - ax) * finalScaleX;
             obj.y = ay + (obj.y - ay) * finalScaleY;
@@ -9782,7 +11038,7 @@
           const obj = objects.find((o) => o.id === id);
           if (!obj || obj.type === "coords") return;
           const base = { id: obj.id };
-          if (obj.type === "text" || obj.type === "image") {
+          if (obj.type === "text" || obj.type === "image" || obj.type === "sticker") {
             base.x = obj.x;
             base.y = obj.y;
           } else if (obj.type === "segment" || obj.type === "ray" || obj.type === "line" || obj.type !== "free-line") {
@@ -9810,7 +11066,7 @@
         groupBasePositions.forEach((base) => {
           const obj = objects.find((o) => o.id === base.id);
           if (!obj || obj.type === "coords") return;
-          if (obj.type === "text" || obj.type === "image") {
+          if (obj.type === "text" || obj.type === "image" || obj.type === "sticker") {
             obj.x = base.x + dx;
             obj.y = base.y + dy;
           } else if (obj.type === "segment" || obj.type === "ray" || obj.type === "line" || obj.type !== "free-line") {
@@ -10050,6 +11306,17 @@
             `;
           });
           content.innerHTML = html;
+        } else if (type === "stickers") {
+          let html = `<div class="sidebar-title">😀 Стикеры</div>`;
+          html += `<div style="font-size:10px;color:#999;padding:2px 10px 8px;">Выберите эмодзи и кликните по доске</div>`;
+          STICKER_SETS.forEach((set) => {
+            html += `<div class="sidebar-subtitle">${set.name}</div><div class="sticker-grid">`;
+            set.list.forEach((em) => {
+              html += `<button class="sticker-cell ${currentSticker === em ? "active" : ""}" title="${em}" onclick="selectSticker('${em}')">${em}</button>`;
+            });
+            html += `</div>`;
+          });
+          content.innerHTML = html;
         } else if (type === "sheets") {
           let html = `<div class="sidebar-title">📄 Форматы листов</div>`;
           html += `<div style="font-size:10px;color:#999;padding:2px 10px 8px;"></div>`;
@@ -10122,7 +11389,10 @@
               </div>
               ${
                 isTeacher
-                  ? `<button class="btn-secondary" style="margin-top:10px;font-size:12px;" onclick="event.stopPropagation();openClassManage(${c.id})">⚙ Управление</button>`
+                  ? `<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                      <button class="btn-secondary" style="font-size:12px;" onclick="event.stopPropagation();openClassManage(${c.id})">⚙ Управление</button>
+                      <button class="btn-danger" style="font-size:12px;" title="Удалить класс" onclick="event.stopPropagation();deleteClassFromProfile(${c.id}, '${escapeHtml(String(c.name)).replace(/'/g, "\\'")}')">🗑 Удалить класс</button>
+                    </div>`
                   : ""
               }
             </div>`,
@@ -10196,6 +11466,36 @@
       // СТРАНИЦА УПРАВЛЕНИЯ КЛАССОМ (ученики + приглашения)
       // ============================================================
       let manageClassId = null;
+
+      // Удаление класса из профиля учителя (с подтверждением).
+      // Каскад (задания, работы, комментарии, доски класса) — на стороне БД.
+      async function deleteClassFromProfile(classId, name) {
+        if (!confirm(
+          "🗑 Удалить класс «" + name + "»?\n\n" +
+          "Будут безвозвратно удалены: все задания класса, отправленные работы, " +
+          "комментарии и доски класса. Ученики не удаляются.",
+        )) return;
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch("/api/classes/" + classId, {
+            method: "DELETE",
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert("❌ " + (err.error || "Не удалось удалить класс"));
+            return;
+          }
+          showHint("🗑 Класс «" + name + "» удалён");
+          if (selectedClassId === classId) {
+            selectedClassId = null;
+            currentStudentId = null;
+          }
+          loadProfilePage();
+        } catch (e) {
+          alert("❌ Ошибка сети: " + e.message);
+        }
+      }
 
       function openClassManage(classId) {
         manageClassId = classId;
@@ -10344,11 +11644,13 @@
                 <button class="left-tool-btn image-btn" id="btn-image" title="Изображение"><span class="tool-icon">
                     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
                 </span><span class="type-badge" id="image-badge">🖼</span><span class="tooltip">Изображение (I)</span></button>
+                <button class="left-tool-btn sticker-btn" id="btn-stickers" title="Стикеры"><span class="tool-icon">😀</span><span class="type-badge" id="sticker-badge">😀</span><span class="tooltip">Стикеры (K)</span></button>
                 <div class="left-tool-divider"></div>
                 <button class="left-tool-btn sheets-btn" id="btn-sheets" title="Листы"><span class="tool-icon">
                     <svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
                 </span><span class="type-badge" id="sheet-badge">A4</span><span class="tooltip">Листы (S)</span></button>
                 <button class="left-tool-btn" id="btn-space3d" title="3D-пространство"><span class="tool-icon">🧊</span><span class="type-badge">3D</span><span class="tooltip">3D-пространство</span></button>
+                <button class="left-tool-btn" id="btn-graph" title="График функций"><span class="tool-icon">📈</span><span class="type-badge">y=f</span><span class="tooltip">График функций (G)</span></button>
                 <div class="left-tool-divider"></div>
                 <button class="left-tool-btn" data-mode="draw" id="btn-draw" title="Рисовать"><span class="tool-icon">
                     <svg viewBox="0 0 24 24"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
@@ -10464,6 +11766,8 @@
 
             <!-- ===== КНОПКА ОТКРЫТИЯ 3D-ПРОСТРАНСТВА ===== -->
             <button id="view3d-btn" title="Открыть 3D-пространство">🧊 Открыть 3D</button>
+            <!-- ===== КНОПКА ОТКРЫТИЯ РЕДАКТОРА ГРАФИКА ===== -->
+            <button id="view-graph-btn" title="Открыть редактор графика">📈 Открыть график</button>
 
             <!-- ===== ОКНО 3D-ПРОСТРАНСТВА (orbit/pan/zoom, фигуры, сечение) ===== -->
             <div id="viewport3d-overlay">
@@ -10510,6 +11814,31 @@
                     </div>
                     <div id="vp3d-info"></div>
                     <div id="vp3d-hint">Тяни пустое место — вращение · колесо — масштаб · Shift / средняя кнопка — сдвиг · фигуру — переместить · «📍 Точки» — отметить точки сечения (вершины, рёбра, грани), затем «✂ Сечение»</div>
+                </div>
+            </div>
+
+            <!-- ===== ОКНО РЕДАКТОРА ГРАФИКА ФУНКЦИЙ ===== -->
+            <div id="graph-editor-overlay">
+                <div id="graph-editor-panel">
+                    <div id="ge-header">
+                        <span id="ge-title">📈 График функций</span>
+                        <button id="ge-close" title="Закрыть (Esc)">✕</button>
+                    </div>
+                    <canvas id="ge-canvas" width="640" height="400"></canvas>
+                    <div id="ge-controls">
+                        <div id="ge-funcs"></div>
+                        <div class="ge-toolbar-row">
+                            <button id="ge-add-func" title="Добавить функцию (до 8)">➕ Функция</button>
+                            <button id="ge-pts" title="Показать нули и пересечения">🎯 Точки</button>
+                            <button id="ge-reset-win" title="Сбросить окно просмотра">↺ Окно</button>
+                            <span class="ge-win-inputs" title="Окно просмотра">
+                                x: <input type="number" id="ge-xmin" step="1"> … <input type="number" id="ge-xmax" step="1">
+                                y: <input type="number" id="ge-ymin" step="1"> … <input type="number" id="ge-ymax" step="1">
+                            </span>
+                        </div>
+                    </div>
+                    <div id="ge-info"></div>
+                    <div id="ge-hint">Тяни полотно — сдвиг окна · колесо — масштаб к курсору · функции: sin, cos, tan, sqrt, abs, ln, log, exp, x^2, 2x, pi, e</div>
                 </div>
             </div>
 
@@ -11498,6 +12827,10 @@
           document.getElementById("btn-sheets").classList.add("active");
         } else if (mode === "space3d") {
           document.getElementById("btn-space3d").classList.add("active");
+        } else if (mode === "graph") {
+          document.getElementById("btn-graph").classList.add("active");
+        } else if (mode === "sticker") {
+          document.getElementById("btn-stickers").classList.add("active");
         } else if (mode === "text") {
           document.getElementById("btn-text").classList.add("active");
         } else if (mode === "image") {
@@ -13396,8 +14729,8 @@
         left: 0;
         width: 100%;
         height: 100%;
-        cursor: ${isTeacher ? "crosshair" : "default"};
-        pointer-events: ${isTeacher ? "auto" : "none"};
+        cursor: ${isTeacher ? "crosshair" : "pointer"};
+        pointer-events: auto;
         z-index: 10;
         background: transparent !important;
     `;
@@ -13440,6 +14773,10 @@
                 isVoice: a.isVoice || false,
                 audioPath: a.audioPath || null,
                 duration: a.duration || 0,
+                // Рисунок учителя: ломаная в натуральных координатах фото
+                kind: a.kind === "stroke" ? "stroke" : "rect",
+                points: Array.isArray(a.points) ? a.points : null,
+                strokeWidth: a.stroke_width || a.strokeWidth || 3,
               }))
             : [],
           isTeacher: isTeacher,
@@ -13452,9 +14789,71 @@
           startX: 0,
           startY: 0,
           currentRect: null,
+          // Режим рисования (перо) и его параметры
+          drawMode: false,
+          drawColor: "#ff3b30",
+          drawWidth: 3,
+          currentStroke: null, // { pts: [[x,y]...] } в координатах canvas
+          suppressClick: false,
+          redraw: null, // назначается ниже — перерисовка слоя аннотаций
         };
 
         window._annotationInstances[instanceId] = instanceData;
+
+        // ===== ПАНЕЛЬ РИСОВАНИЯ (только учитель) =====
+        if (isTeacher) {
+          const existingBar = (wrapper.parentNode || container).querySelector(".ann-draw-toolbar");
+          if (existingBar) existingBar.remove();
+          const bar = document.createElement("div");
+          bar.className = "ann-draw-toolbar";
+          const swatches = ["#ff3b30", "#007aff", "#34c759", "#ff9500", "#af52de", "#000000"]
+            .map(
+              (c) =>
+                `<button class="ann-sw ${instanceData.drawColor === c ? "active" : ""}" data-color="${c}" style="background:${c}" title="Цвет пера"></button>`,
+            )
+            .join("");
+          bar.innerHTML = `
+            <button class="ann-mode-btn" data-mode="rect" title="Выделить область и прокомментировать">▭ Область</button>
+            <button class="ann-mode-btn" data-mode="stroke" title="Рисовать пером прямо на фото">✏️ Рисование</button>
+            <span class="ann-sw-group">${swatches}</span>
+            <select class="ann-width" title="Толщина пера">
+              <option value="2">Тонкое</option>
+              <option value="3" selected>Обычное</option>
+              <option value="5">Жирное</option>
+            </select>
+            <button class="ann-clear-draw" title="Удалить все рисунки (комментарии останутся)">🧹 Стереть рисунки</button>
+          `;
+          wrapper.parentNode.insertBefore(bar, wrapper);
+          bar.addEventListener("mousedown", (e) => e.stopPropagation());
+          bar.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const modeBtn = e.target.closest(".ann-mode-btn");
+            if (modeBtn) {
+              instanceData.drawMode = modeBtn.dataset.mode === "stroke";
+              bar.querySelectorAll(".ann-mode-btn").forEach((b) => b.classList.toggle("active", b === modeBtn));
+              canvas.style.cursor = instanceData.drawMode ? "crosshair" : "crosshair";
+              return;
+            }
+            const sw = e.target.closest(".ann-sw");
+            if (sw) {
+              instanceData.drawColor = sw.dataset.color;
+              bar.querySelectorAll(".ann-sw").forEach((b) => b.classList.toggle("active", b === sw));
+              return;
+            }
+            if (e.target.closest(".ann-clear-draw")) {
+              clearAllDrawings();
+            }
+          });
+          const widthSel = bar.querySelector(".ann-width");
+          if (widthSel) {
+            widthSel.addEventListener("change", function () {
+              instanceData.drawWidth = Math.max(1, Math.min(24, parseFloat(this.value) || 3));
+            });
+          }
+          // активная кнопка по умолчанию — «Область»
+          const rectBtn = bar.querySelector('.ann-mode-btn[data-mode="rect"]');
+          if (rectBtn) rectBtn.classList.add("active");
+        }
 
         function getScale() {
           const img = wrapper.querySelector("img");
@@ -13498,18 +14897,48 @@
       }
 
         function drawAnnotations() {
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const ctx = canvas.getContext("2d");          ctx.clearRect(0, 0, canvas.width, canvas.height);
           const data = window._annotationInstances[instanceId];
           if (!data || data.annotations.length === 0) return;
           const scale = getScale();
           data.annotations.forEach((ann, index) => {
+            ctx.save();
+            const color = ann.isVoice ? "#8e44ad" : ann.color || "#ff3b30";
+            // ===== РИСУНОК ПЕРОМ: ломаная по точкам =====
+            if (ann.kind === "stroke" && ann.points && ann.points.length >= 6) {
+              ctx.strokeStyle = color;
+              ctx.lineWidth = Math.max(1.5, (ann.strokeWidth || 3) * Math.min(scale.scaleX, scale.scaleY) * 1.6);
+              ctx.lineCap = "round";
+              ctx.lineJoin = "round";
+              ctx.beginPath();
+              for (let k = 0; k + 1 < ann.points.length; k += 2) {
+                const px = ann.points[k] * scale.scaleX + scale.offsetX;
+                const py = ann.points[k + 1] * scale.scaleY + scale.offsetY;
+                if (k === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+              }
+              ctx.stroke();
+              // маркер у начала мазка
+              const sx = ann.points[0] * scale.scaleX + scale.offsetX;
+              const sy = ann.points[1] * scale.scaleY + scale.offsetY;
+              const fontSize = Math.max(12, 15 * Math.min(scale.scaleX, scale.scaleY));
+              ctx.font = `bold ${fontSize}px Arial`;
+              ctx.textAlign = "left";
+              ctx.textBaseline = "top";
+              ctx.fillStyle = "rgba(255,255,255,0.85)";
+              const tag = (ann.isVoice ? "🎙️" : ann.comment ? "💬" : "✏️") + " #" + (index + 1);
+              const tw = ctx.measureText(tag).width;
+              ctx.fillRect(sx + 2, sy - 2 - fontSize, tw + 6, fontSize + 4);
+              ctx.fillStyle = color;
+              ctx.fillText(tag, sx + 5, sy - fontSize);
+              ctx.restore();
+              return;
+            }
+            // ===== ОБЫЧНАЯ ПРЯМОУГОЛЬНАЯ АННОТАЦИЯ =====
             const x = ann.x * scale.scaleX + scale.offsetX;
             const y = ann.y * scale.scaleY + scale.offsetY;
             const w = ann.w * scale.scaleX;
             const h = ann.h * scale.scaleY;
-            ctx.save();
-            const color = ann.isVoice ? "#8e44ad" : ann.color || "#ff3b30";
             ctx.fillStyle = color + "30";
             ctx.fillRect(x, y, w, h);
             ctx.strokeStyle = color;
@@ -13526,6 +14955,12 @@
             ctx.restore();
           });
         }
+        instanceData.redraw = drawAnnotations;
+        // Глобальный доступ к перерисовке (используется renderStudentAnnotations)
+        window.drawAnnotationsForInstance = function (iid) {
+          const d = window._annotationInstances && window._annotationInstances[iid];
+          if (d && typeof d.redraw === "function") d.redraw();
+        };
 
         function updateCommentList() {
           const data = window._annotationInstances[instanceId];
@@ -13557,7 +14992,7 @@
             ${data.annotations
               .map((ann, index) => {
                 const color = ann.isVoice ? "#8e44ad" : ann.color || "#ff3b30";
-                const icon = ann.isVoice ? "🎙️" : "💬";
+                const icon = ann.isVoice ? "🎙️" : ann.kind === "stroke" ? "✏️" : "💬";
                 const isVoice = ann.isVoice;
                 const hasAudio = isVoice && ann.audioPath;
                 const duration = ann.duration || 0;
@@ -13569,12 +15004,12 @@
                 }
 
                 return `
-                    <div style="padding:6px 10px;border-left:3px solid ${color};margin-bottom:4px;background:white;border-radius:4px;font-size:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;"
+                    <div data-ann-idx="${index}" style="padding:6px 10px;border-left:3px solid ${color};margin-bottom:4px;background:white;border-radius:4px;font-size:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;"
                          onmouseover="this.style.background='#e8f0fe'"
                          onmouseout="this.style.background='white'">
                         <div style="flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:120px;">
                             <span style="font-weight:bold;font-size:11px;color:${color};">${icon} #${index + 1}</span>
-                            <span style="font-weight:500;font-size:12px;word-break:break-word;">${ann.comment || "Без текста"}</span>
+                            <span style="font-weight:500;font-size:12px;word-break:break-word;">${ann.comment || (ann.kind === "stroke" ? "Рисунок" : "Без текста")}</span>
                             ${isVoice && duration > 0 ? `<span style="font-size:10px;color:#999;white-space:nowrap;">⏱ ${formatDuration(duration)}</span>` : ""}
                         </div>
                         <div style="display:flex;gap:4px;flex-shrink:0;">
@@ -13636,16 +15071,19 @@
                 width: Math.round(ann.w),
                 height: Math.round(ann.h),
                 comment: ann.comment || "",
-                color: ann.isVoice ? "#8e44ad" : "#ff3b30",
+                color: ann.isVoice ? "#8e44ad" : ann.color || "#ff3b30",
                 isVoice: ann.isVoice || false,
                 audioPath: ann.audioPath || null,
                 duration: ann.duration || 0,
+                kind: ann.kind === "stroke" ? "stroke" : "rect",
+                points: ann.kind === "stroke" && Array.isArray(ann.points) ? ann.points : null,
+                stroke_width: ann.strokeWidth || 3,
               }),
             });
             if (response.ok) {
               const data = await response.json();
               ann.id = data.id;
-              
+
               showHint("✅ Комментарий сохранён");
             }
           } catch (e) {
@@ -13746,7 +15184,8 @@
         };
 
         // ===== ЗАПИСЬ ГОЛОСОВОГО КОММЕНТАРИЯ =====
-        function startVoiceAnnotationRecording(instanceId, x, y, w, h) {
+        // extra — опционально: рисунок-мазок {kind, points, strokeWidth}
+        function startVoiceAnnotationRecording(instanceId, x, y, w, h, extra) {
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alert("❌ Ваш браузер не поддерживает запись голоса");
             return;
@@ -13832,11 +15271,14 @@
                   w: w,
                   h: h,
                   color: "#8e44ad",
-                  comment: "Голосовой комментарий к фото",
+                  comment: extra && extra.kind === "stroke" ? "Голосовой комментарий к рисунку" : "Голосовой комментарий к фото",
                   isVoice: true,
                   audioPath: null,
                   duration: duration,
                   audioBlob: audioBlob,
+                  kind: extra && extra.kind === "stroke" ? "stroke" : "rect",
+                  points: extra && Array.isArray(extra.points) ? extra.points : null,
+                  strokeWidth: (extra && extra.strokeWidth) || 3,
                 };
                 data.annotations.push(ann);
                 drawAnnotations();
@@ -13888,6 +15330,9 @@
                 isVoice: true,
                 duration: ann.duration || 0,
                 audioPath: null,
+                kind: ann.kind === "stroke" ? "stroke" : "rect",
+                points: ann.kind === "stroke" && Array.isArray(ann.points) ? ann.points : null,
+                stroke_width: ann.strokeWidth || 3,
               }),
             });
             if (!response.ok) {
@@ -13984,6 +15429,7 @@
         // ===== ЛОГИКА ВЫДЕЛЕНИЯ (ТОЛЬКО ДЛЯ УЧИТЕЛЯ) =====
         if (isTeacher) {
           canvas.addEventListener("mousedown", function (e) {
+            if (instanceData.drawMode) return; // работает перо — прямоугольники выключены
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -13994,7 +15440,7 @@
           });
 
           canvas.addEventListener("mousemove", function (e) {
-            if (!instanceData.isDrawing) return;
+            if (instanceData.drawMode || !instanceData.isDrawing) return;
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -14002,25 +15448,8 @@
             const currentY = (e.clientY - rect.top) * scaleY;
             instanceData.currentRect.w = currentX - instanceData.startX;
             instanceData.currentRect.h = currentY - instanceData.startY;
+            drawAnnotations();
             const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const scale = getScale();
-            instanceData.annotations.forEach((ann) => {
-              const x = ann.x * scale.scaleX + scale.offsetX;
-              const y = ann.y * scale.scaleY + scale.offsetY;
-              const w = ann.w * scale.scaleX;
-              const h = ann.h * scale.scaleY;
-              ctx.save();
-              const color = ann.isVoice ? "#8e44ad" : ann.color || "#ff3b30";
-              ctx.fillStyle = color + "30";
-              ctx.fillRect(x, y, w, h);
-              ctx.strokeStyle = color;
-              ctx.lineWidth = 2.5;
-              ctx.setLineDash(ann.isVoice ? [6, 4] : []);
-              ctx.strokeRect(x, y, w, h);
-              ctx.setLineDash([]);
-              ctx.restore();
-            });
             if (instanceData.currentRect) {
               const r = instanceData.currentRect;
               ctx.save();
@@ -14033,8 +15462,9 @@
           });
 
           canvas.addEventListener("mouseup", function (e) {
-            if (!instanceData.isDrawing) return;
+            if (instanceData.drawMode || !instanceData.isDrawing) return;
             instanceData.isDrawing = false;
+            instanceData.suppressClick = true;
             const r = instanceData.currentRect;
             if (!r) return;
             if (Math.abs(r.w) > 10 && Math.abs(r.h) > 10) {
@@ -14054,7 +15484,222 @@
               drawAnnotations();
             }
           });
+
+          // ===== ПЕРО: рисование по фото (pointer events — мышь и палец) =====
+          const strokePt = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const sx = canvas.width / rect.width;
+            const sy = canvas.height / rect.height;
+            return [(e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy];
+          };
+          canvas.addEventListener("pointerdown", function (e) {
+            if (!instanceData.drawMode || e.button === 2) return;
+            e.preventDefault();
+            try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+            instanceData.currentStroke = { pts: [strokePt(e)] };
+            instanceData.suppressClick = true;
+          });
+          canvas.addEventListener("pointermove", function (e) {
+            const st = instanceData.currentStroke;
+            if (!st) return;
+            const p = strokePt(e);
+            const last = st.pts[st.pts.length - 1];
+            if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 2) return;
+            st.pts.push(p);
+            // живой предпросмотр мазка
+            drawAnnotations();
+            const ctx = canvas.getContext("2d");
+            ctx.save();
+            ctx.strokeStyle = instanceData.drawColor;
+            ctx.lineWidth = instanceData.drawWidth;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            st.pts.forEach((q, k) => (k === 0 ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1])));
+            ctx.stroke();
+            ctx.restore();
+          });
+          const strokeUp = function () {
+            const st = instanceData.currentStroke;
+            instanceData.currentStroke = null;
+            if (!st || st.pts.length < 3) {
+              drawAnnotations();
+              return;
+            }
+            finishStroke(st);
+          };
+          canvas.addEventListener("pointerup", strokeUp);
+          canvas.addEventListener("pointercancel", strokeUp);
         }
+
+        // ===== ПЕРО ЗАВЕРШЕНО: переводим точки в координаты фото =====
+        function finishStroke(st) {
+          const scale = getScale();
+          const pts = [];
+          st.pts.forEach((p) => {
+            const nx = (p[0] - scale.offsetX) / scale.scaleX;
+            const ny = (p[1] - scale.offsetY) / scale.scaleY;
+            pts.push(Math.max(0, Math.min(scale.naturalWidth, nx)));
+            pts.push(Math.max(0, Math.min(scale.naturalHeight, ny)));
+          });
+          const xs = pts.filter((_, k) => k % 2 === 0);
+          const ys = pts.filter((_, k) => k % 2 === 1);
+          const stroke = {
+            kind: "stroke",
+            points: pts.map((v) => Math.round(v * 10) / 10),
+            x: Math.round(Math.min(...xs)),
+            y: Math.round(Math.min(...ys)),
+            w: Math.round(Math.max(...xs) - Math.min(...xs)),
+            h: Math.round(Math.max(...ys) - Math.min(...ys)),
+            color: instanceData.drawColor,
+            strokeWidth: instanceData.drawWidth,
+          };
+          if (stroke.w < 4 && stroke.h < 4) {
+            drawAnnotations();
+            return;
+          }
+          showStrokeTypeSelector(stroke);
+        }
+
+        // Рисунок готов: предложить привязать комментарий
+        function showStrokeTypeSelector(stroke) {
+          const overlay = document.createElement("div");
+          overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 99999;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(4px);
+        `;
+          overlay.innerHTML = `
+            <div style="background:white;border-radius:16px;padding:30px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <h3 style="margin:0 0 12px 0;font-size:18px;color:#333;">✏️ Рисунок на фото</h3>
+                <div style="background:#f0f4ff;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;color:#666;border-left:3px solid #667eea;">
+                    Привязать комментарий к рисунку? Ученик увидит его у своей работы.
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <button data-act="text" style="padding:14px 20px;background:#667eea;color:white;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:500;">💬 Текстовый комментарий</button>
+                    <button data-act="voice" style="padding:14px 20px;background:#e53e3e;color:white;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:500;">🎙️ Голосовой комментарий</button>
+                    <button data-act="none" style="padding:12px 20px;background:#34c759;color:white;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:500;">✏️ Только рисунок (без комментария)</button>
+                    <button data-act="cancel" style="padding:10px;background:transparent;color:#999;border:none;cursor:pointer;font-size:13px;margin-top:4px;">Отмена — рисунок не сохранится</button>
+                </div>
+            </div>
+        `;
+          document.body.appendChild(overlay);
+          overlay.addEventListener("click", function (e) {
+            if (e.target === this) this.remove();
+            const btn = e.target.closest("button[data-act]");
+            if (!btn) return;
+            overlay.remove();
+            const act = btn.dataset.act;
+            if (act === "cancel") {
+              drawAnnotations();
+              return;
+            }
+            if (act === "text") {
+              const comment = prompt("💬 Введите текст к рисунку:");
+              if (comment === null) {
+                drawAnnotations();
+                return;
+              }
+              const ann = { ...stroke, comment: comment.trim(), isVoice: false, audioPath: null, duration: 0 };
+              instanceData.annotations.push(ann);
+              drawAnnotations();
+              updateCommentList();
+              saveAnnotation(ann);
+              showHint("✏️ Рисунок с текстовым комментарием сохранён");
+            } else if (act === "voice") {
+              startVoiceAnnotationRecording(instanceId, stroke.x, stroke.y, stroke.w, stroke.h, stroke);
+            } else {
+              const ann = { ...stroke, comment: "", isVoice: false, audioPath: null, duration: 0 };
+              instanceData.annotations.push(ann);
+              drawAnnotations();
+              updateCommentList();
+              saveAnnotation(ann);
+              showHint("✏️ Рисунок сохранён");
+            }
+          });
+        }
+
+        // ===== СТЕРЕТЬ ВСЕ РИСУНКИ (комментарии-области остаются) =====
+        async function clearAllDrawings() {
+          const strokes = instanceData.annotations.filter((a) => a.kind === "stroke");
+          if (!strokes.length) {
+            showHint("Рисунков пока нет");
+            return;
+          }
+          if (!confirm("🧹 Удалить все рисунки на этом фото? (" + strokes.length + " шт.)")) return;
+          const token = localStorage.getItem("token");
+          for (const s of strokes) {
+            if (s.id) {
+              try {
+                await fetch(`/api/annotations/${s.id}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+              } catch (e) {}
+            }
+          }
+          instanceData.annotations = instanceData.annotations.filter((a) => a.kind !== "stroke");
+          drawAnnotations();
+          updateCommentList();
+          showHint("🧹 Рисунки удалены");
+        }
+
+        // ===== КЛИК ПО МЕТКЕ/РИСУНКУ: показать комментарий (учитель и ученик) =====
+        canvas.addEventListener("click", function (e) {
+          if (instanceData.suppressClick) {
+            instanceData.suppressClick = false;
+            return;
+          }
+          if (instanceData.currentStroke || instanceData.isDrawing || instanceData.drawMode) return;
+          const rect = canvas.getBoundingClientRect();
+          const sx = canvas.width / rect.width;
+          const sy = canvas.height / rect.height;
+          const px = (e.clientX - rect.left) * sx;
+          const py = (e.clientY - rect.top) * sy;
+          const scale = getScale();
+          let hitIdx = -1;
+          for (let i = instanceData.annotations.length - 1; i >= 0; i--) {
+            const ann = instanceData.annotations[i];
+            if (ann.kind === "stroke" && ann.points && ann.points.length >= 6) {
+              // попадание рядом с ломаной (±10px canvas)
+              let prev = null;
+              for (let k = 0; k + 1 < ann.points.length; k += 2) {
+                const qx = ann.points[k] * scale.scaleX + scale.offsetX;
+                const qy = ann.points[k + 1] * scale.scaleY + scale.offsetY;
+                if (prev) {
+                  const dx = qx - prev[0], dy = qy - prev[1];
+                  const l2 = dx * dx + dy * dy || 1;
+                  const t = Math.max(0, Math.min(1, ((px - prev[0]) * dx + (py - prev[1]) * dy) / l2));
+                  if (Math.hypot(px - (prev[0] + t * dx), py - (prev[1] + t * dy)) < 10) {
+                    hitIdx = i;
+                    break;
+                  }
+                }
+                prev = [qx, qy];
+              }
+            } else {
+              const x = ann.x * scale.scaleX + scale.offsetX;
+              const y = ann.y * scale.scaleY + scale.offsetY;
+              const w = ann.w * scale.scaleX;
+              const h = ann.h * scale.scaleY;
+              if (px >= x && px <= x + w && py >= y && py <= y + h) hitIdx = i;
+            }
+            if (hitIdx >= 0) break;
+          }
+          if (hitIdx >= 0 && window.highlightAnnotation) {
+            window.highlightAnnotation(instanceId, hitIdx);
+            // подсвечиваем и запись в списке комментариев
+            const entries = commentsContainer.querySelectorAll("[data-ann-idx]");
+            const el = Array.from(entries).find((n) => parseInt(n.dataset.annIdx, 10) === hitIdx);
+            if (el) {
+              el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+              el.style.transition = "background 0.3s";
+              el.style.background = "#fff3cd";
+              setTimeout(() => (el.style.background = "white"), 1200);
+            }
+          }
+        });
 
         // ===== ГЛОБАЛЬНЫЕ ФУНКЦИИ =====
         window.highlightAnnotation = function (id, index) {
@@ -14065,18 +15710,37 @@
           drawAnnotations();
           const scale = getScale();
           const ctx = canvas.getContext("2d");
-          const x = ann.x * scale.scaleX + scale.offsetX;
-          const y = ann.y * scale.scaleY + scale.offsetY;
-          const w = ann.w * scale.scaleX;
-          const h = ann.h * scale.scaleY;
-          ctx.save();
-          ctx.strokeStyle = "#007aff";
-          ctx.lineWidth = 4;
-          ctx.setLineDash([8, 6]);
-          ctx.strokeRect(x - 4, y - 4, w + 8, h + 8);
-          ctx.restore();
-          const icon = ann.isVoice ? "🎙️" : "💬";
-          showHint(icon + " " + ann.comment);
+          if (ann.kind === "stroke" && ann.points && ann.points.length >= 6) {
+            // Рисунок: обводим ломаную жирным контуром
+            ctx.save();
+            ctx.strokeStyle = "#007aff";
+            ctx.lineWidth = Math.max(3, (ann.strokeWidth || 3) + 2);
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.globalAlpha = 0.75;
+            ctx.beginPath();
+            for (let k = 0; k + 1 < ann.points.length; k += 2) {
+              const px = ann.points[k] * scale.scaleX + scale.offsetX;
+              const py = ann.points[k + 1] * scale.scaleY + scale.offsetY;
+              if (k === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.restore();
+          } else {
+            const x = ann.x * scale.scaleX + scale.offsetX;
+            const y = ann.y * scale.scaleY + scale.offsetY;
+            const w = ann.w * scale.scaleX;
+            const h = ann.h * scale.scaleY;
+            ctx.save();
+            ctx.strokeStyle = "#007aff";
+            ctx.lineWidth = 4;
+            ctx.setLineDash([8, 6]);
+            ctx.strokeRect(x - 4, y - 4, w + 8, h + 8);
+            ctx.restore();
+          }
+          const icon = ann.isVoice ? "🎙️" : ann.kind === "stroke" ? "✏️" : "💬";
+          showHint(icon + " " + (ann.comment || (ann.kind === "stroke" ? "Рисунок" : "Комментарий")));
         };
 
         window.deleteAnnotation = function (id, index) {
@@ -14293,6 +15957,9 @@
                       isVoice: a.isVoice || false,
                       audioPath: a.audioPath || null,
                       duration: a.duration || 0,
+                      kind: a.kind === "stroke" ? "stroke" : "rect",
+                      points: Array.isArray(a.points) ? a.points : null,
+                      strokeWidth: a.stroke_width || a.strokeWidth || 3,
                     });
                   }
                 });
@@ -17292,6 +18959,9 @@ const submissionIdValue = submission.id;
               h: a.height || a.h || 20,
               comment: a.comment || "",
               color: a.color || "#ff3b30",
+              kind: a.kind === "stroke" ? "stroke" : "rect",
+              points: Array.isArray(a.points) ? a.points : null,
+              strokeWidth: a.stroke_width || a.strokeWidth || 3,
             }));
 
             const ctx = canvas.getContext("2d");
@@ -17316,12 +18986,35 @@ const submissionIdValue = submission.id;
             const offsetY = (wrapperRect.height - displayHeight) / 2;
 
             data.annotations.forEach((ann, index) => {
+              ctx.save();
+              // Рисунок учителя — ломаная
+              if (ann.kind === "stroke" && ann.points && ann.points.length >= 6) {
+                ctx.strokeStyle = ann.color || "#ff3b30";
+                ctx.lineWidth = Math.max(1.5, (ann.strokeWidth || 3) * Math.min(scaleX, scaleY) * 1.6);
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                ctx.beginPath();
+                for (let k = 0; k + 1 < ann.points.length; k += 2) {
+                  const px = ann.points[k] * scaleX + offsetX;
+                  const py = ann.points[k + 1] * scaleY + offsetY;
+                  if (k === 0) ctx.moveTo(px, py);
+                  else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                ctx.fillStyle = ann.color || "#ff3b30";
+                const fontSize = Math.max(10, 14 * Math.min(scaleX, scaleY));
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.textAlign = "left";
+                ctx.textBaseline = "top";
+                ctx.fillText("✏️ #" + (index + 1), ann.points[0] * scaleX + offsetX + 4, ann.points[1] * scaleY + offsetY - fontSize - 2);
+                ctx.restore();
+                return;
+              }
               const x = ann.x * scaleX + offsetX;
               const y = ann.y * scaleY + offsetY;
               const w = ann.w * scaleX;
               const h = ann.h * scaleY;
 
-              ctx.save();
               ctx.fillStyle = (ann.color || "#ff3b30") + "30";
               ctx.fillRect(x, y, w, h);
               ctx.strokeStyle = ann.color || "#ff3b30";
@@ -17351,7 +19044,7 @@ const submissionIdValue = submission.id;
                                  onmouseover="this.style.background='#e8f0fe'"
                                  onmouseout="this.style.background='white'"
                                  onclick="highlightAnnotation('${id}', ${index})">
-                                <span>#${index + 1} ${ann.comment}</span>
+                                <span>${ann.kind === "stroke" ? "✏️" : "💬"} #${index + 1} ${ann.comment || (ann.kind === "stroke" ? "Рисунок" : "")}</span>
                             </div>
                         `,
                     )
@@ -17475,7 +19168,7 @@ const submissionIdValue = submission.id;
 
         document.addEventListener("keydown", function (e) {
           if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-          if (vp3d) return; // пока открыто окно 3D-пространства — клавиши обрабатывает оно
+          if (vp3d || ge) return; // пока открыто окно 3D/графика — клавиши обрабатывает оно
           const ctrl = e.ctrlKey || e.metaKey;
           if (ctrl && (e.key === "c" || e.key === "с")) {
             e.preventDefault();
@@ -17506,6 +19199,16 @@ const submissionIdValue = submission.id;
             document.getElementById("btn-select").click();
             return;
           }
+          if ((e.key === "k" || e.key === "K" || e.key === "л") && !ctrl) {
+            e.preventDefault();
+            document.getElementById("btn-stickers").click();
+            return;
+          }
+          if ((e.key === "g" || e.key === "G" || e.key === "п") && !ctrl) {
+            e.preventDefault();
+            document.getElementById("btn-graph").click();
+            return;
+          }
           if (ctrl && (e.key === "v" || e.key === "м")) {
             // НЕ перехватываем — пусть сработает событие 'paste'
             // Если есть что вставить из внутреннего буфера — вставим вручную
@@ -17520,6 +19223,13 @@ const submissionIdValue = submission.id;
             // Отмена незавершённого перетаскивания вершины — без сохранения
             if (isVertexDragging) {
               endVertexDrag(true);
+              return;
+            }
+            // Отмена ввода угла
+            if (angleDraft) {
+              angleDraft = null;
+              requestRender();
+              showHint("∠ Ввод угла отменён");
               return;
             }
             selected = [];
@@ -17976,7 +19686,7 @@ const submissionIdValue = submission.id;
           newObj.id = nextId++;
           const offsetX = 30,
             offsetY = 30;
-          if (newObj.type === "text" || newObj.type === "image") {
+          if (newObj.type === "text" || newObj.type === "image" || newObj.type === "sticker") {
             newObj.x += offsetX;
             newObj.y += offsetY;
           } else if (
@@ -18176,6 +19886,7 @@ const submissionIdValue = submission.id;
           selected = [];
           requestRender();
           vp3dRefreshFromBoard();
+          geRefreshFromBoard();
           showStatus("↩️ Отменено");
           saveBoardToServer();
         } else showStatus("❌ Нечего отменять");
@@ -18189,6 +19900,7 @@ const submissionIdValue = submission.id;
           selected = [];
           requestRender();
           vp3dRefreshFromBoard();
+          geRefreshFromBoard();
           showStatus("↪️ Повторено");
           saveBoardToServer();
         } else showStatus("❌ Нечего повторять");
@@ -18531,6 +20243,24 @@ const submissionIdValue = submission.id;
           e.stopPropagation();
           hideToolSidebar();
           setMode("space3d");
+        });
+
+        document.getElementById("btn-stickers").addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          setMode("sticker");
+          if (currentToolSidebar === "stickers") {
+            hideToolSidebar();
+          } else {
+            showToolSidebar("stickers");
+          }
+        });
+
+        document.getElementById("btn-graph").addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          hideToolSidebar();
+          setMode("graph");
         });
 
         document.getElementById("btn-pan").addEventListener("click", function () {
@@ -19005,6 +20735,10 @@ const submissionIdValue = submission.id;
                     state.size = obj.size;
                     state.x = obj.x;
                     state.y = obj.y;
+                  } else if (obj.type === "sticker") {
+                    state.size = obj.size || 48;
+                    state.x = obj.x;
+                    state.y = obj.y;
                   } else if (obj.type === "image") {
                     state.x = obj.x;
                     state.y = obj.y;
@@ -19153,8 +20887,64 @@ const submissionIdValue = submission.id;
             return;
           }
 
+          // ===== СТИКЕР: клик ставит эмодзи, режим сохраняется =====
+          if (mode === "sticker") {
+            const size = 48;
+            const obj = {
+              id: nextId++,
+              type: "sticker",
+              emoji: currentSticker,
+              x: coords.x - size / 2,
+              y: coords.y - size / 2,
+              size,
+              userId: getCurrentUserId(),
+            };
+            objects.push(obj);
+            saveBoardHistory();
+            render();
+            saveBoardToServer();
+            showHint(currentSticker + " Стикер поставлен — «Выбрать» (V), чтобы двигать");
+            return;
+          }
+
+          // ===== УГОЛ: три клика — вершина, концы двух лучей =====
+          if (mode === "angle") {
+            if (!angleDraft) angleDraft = { pts: [], mouse: { x: coords.x, y: coords.y } };
+            angleDraft.pts.push({ x: coords.x, y: coords.y });
+            if (angleDraft.pts.length >= 3) {
+              const obj = {
+                id: nextId++,
+                type: "angle",
+                x1: 0, y1: 0, x2: 0, y2: 0,
+                color: currentColor,
+                thickness: currentThickness,
+                dashed: isDashed,
+                dash: isDashed ? [6, 6] : [],
+                userId: getCurrentUserId(),
+                vertices: angleDraft.pts.slice(0, 3),
+              };
+              syncShapeBoundsFromVertices(obj);
+              angleDraft = null;
+              objects.push(obj);
+              selected = [obj.id];
+              setMode("select");
+              saveBoardHistory();
+              render();
+              saveBoardToServer();
+              showHint("∠ " + Math.round(angleDegreesOf(obj.vertices)) + "° — точки можно перетаскивать");
+            } else {
+              showHint(
+                angleDraft.pts.length === 1
+                  ? "∠ Вершина поставлена — кликните конец первого луча"
+                  : "∠ Первый луч готов — кликните конец второго луча",
+              );
+              render();
+            }
+            return;
+          }
+
           const shape = SHAPE_LIST.find((s) => s.id === mode);
-          if (mode === "segment" || mode === "ray" || mode === "line" || shape || mode === "sheet" || mode === "space3d") {
+          if (mode === "segment" || mode === "ray" || mode === "line" || shape || mode === "sheet" || mode === "space3d" || mode === "graph") {
             shapeStart = { x: coords.x, y: coords.y };
             shapeEnd = { x: coords.x, y: coords.y };
             return;
@@ -19200,6 +20990,13 @@ const submissionIdValue = submission.id;
           if (mode === "pan") return;
           e.preventDefault();
           const coords = getCoords(e);
+
+          // Превью угла: за мышью тянется следующий луч
+          if (mode === "angle" && angleDraft) {
+            angleDraft.mouse = { x: coords.x, y: coords.y };
+            render();
+            return;
+          }
           if (isSheetSelecting && editingSheet) {
             const idx = hitTestSheetText(coords.x, coords.y, editingSheet);
             sheetSelection.focus = idx;
@@ -19271,11 +21068,11 @@ const submissionIdValue = submission.id;
                   else if (resizeHandle === "r") { ax = rb.minX; ay = (rb.minY + rb.maxY) / 2; }
                   else { ax = 0; ay = 0; }
 
-                  if (state.type === "text") {
+                  if (state.type === "text" || state.type === "sticker") {
                     obj.x = ax + (state.x - ax) * sx;
                     obj.y = ay + (state.y - ay) * sy;
                     obj.size = Math.max(8, state.size * Math.min(sx, sy));
-                    updateTextDimensions(obj);
+                    if (state.type === "text") updateTextDimensions(obj);
                   } else if (state.type === "image") {
                     obj.x = ax + (state.x - ax) * sx;
                     obj.y = ay + (state.y - ay) * sy;
@@ -19482,6 +21279,13 @@ const submissionIdValue = submission.id;
                   obj.y1 = nMinY;
                   obj.x2 = nMaxX;
                   obj.y2 = nMaxY;
+                  return;
+                }
+
+                // ===== СТИКЕР: изменение размера (как у текста — плавно) =====
+                if (state.type === "sticker") {
+                  const totalDelta = (slowDx + slowDy) / 2;
+                  obj.size = Math.max(16, Math.min(400, (state.size || 48) + totalDelta));
                   return;
                 }
 
@@ -19907,16 +21711,39 @@ const submissionIdValue = submission.id;
           if (
             shapeStart &&
             shapeEnd &&
-            (mode === "segment" || mode === "ray" || mode === "line" || shape || mode === "sheet" || mode === "space3d")
+            (mode === "segment" || mode === "ray" || mode === "line" || shape || mode === "sheet" || mode === "space3d" || mode === "graph")
           ) {
-            // 3D-пространство ставится и простым кликом (область по умолчанию)
+            // 3D-пространство и график ставятся и простым кликом (область по умолчанию)
             if (
               Math.abs(shapeEnd.x - shapeStart.x) > 2 ||
               Math.abs(shapeEnd.y - shapeStart.y) > 2 ||
-              mode === "space3d"
+              mode === "space3d" ||
+              mode === "graph"
             ) {
               let obj;
-              if (mode === "space3d") {
+              if (mode === "graph") {
+                let w = Math.abs(shapeEnd.x - shapeStart.x);
+                let h = Math.abs(shapeEnd.y - shapeStart.y);
+                if (w < 120 || h < 90) {
+                  w = Math.max(w, 520);
+                  h = Math.max(h, 390);
+                }
+                const cx = (shapeStart.x + shapeEnd.x) / 2;
+                const cy = (shapeStart.y + shapeEnd.y) / 2;
+                obj = {
+                  id: nextId++,
+                  type: "graph",
+                  x1: cx - w / 2,
+                  y1: cy - h / 2,
+                  x2: cx + w / 2,
+                  y2: cy + h / 2,
+                  color: "#34c759",
+                  thickness: 2,
+                  dashed: false,
+                  userId: getCurrentUserId(),
+                  graph: gphDefault(),
+                };
+              } else if (mode === "space3d") {
                 let w = Math.abs(shapeEnd.x - shapeStart.x);
                 let h = Math.abs(shapeEnd.y - shapeStart.y);
                 if (w < 120 || h < 90) {
@@ -20025,6 +21852,12 @@ const submissionIdValue = submission.id;
                 showHint("🧊 Откройте пространство: двойной клик или кнопка «Открыть 3D»");
                 render();
               }
+              if (obj.type === "graph") {
+                selected = [obj.id];
+                setMode("select");
+                showHint("📈 Двойной клик или кнопка «Открыть график» — редактор функций");
+                render();
+              }
             }
             shapeStart = null;
             shapeEnd = null;
@@ -20072,6 +21905,11 @@ const submissionIdValue = submission.id;
             openViewport3D(found);
             e.preventDefault();
           }
+          // График — как 3D: только через объект «График»
+          if (found && found.type === "graph") {
+            openGraphEditor(found);
+            e.preventDefault();
+          }
         });
 
         // ============================================================
@@ -20106,6 +21944,9 @@ const submissionIdValue = submission.id;
 
         // ===== КНОПКА 3D + ВЬЮПОРТ =====
         initViewport3D();
+
+        // ===== КНОПКА ГРАФИКА + РЕДАКТОР =====
+        initGraphEditor();
 
         (function initSheetTextToolbar() {
           const boldBtn = document.getElementById("sheet-text-bold");
@@ -20769,6 +22610,9 @@ const submissionIdValue = submission.id;
               };
             } else if (obj.type === "image") {
               bounds = { minX: obj.x, maxX: obj.x + obj.width, minY: obj.y, maxY: obj.y + obj.height };
+            } else if (obj.type === "sticker") {
+              const sSize = Math.max(10, obj.size || 48);
+              bounds = { minX: obj.x, maxX: obj.x + sSize, minY: obj.y, maxY: obj.y + sSize };
             } else if (hasOwnVertices(obj)) {
               let vMinX = Infinity, vMaxX = -Infinity, vMinY = Infinity, vMaxY = -Infinity;
               obj.vertices.forEach((v) => {
@@ -20971,6 +22815,36 @@ const submissionIdValue = submission.id;
                 img.src = obj.imgData;
               });
               imagePromises.push(promise);
+              return;
+            }
+
+            // ----- СТИКЕР -----
+            if (obj.type === "sticker") {
+              const p = toScreen(obj.x, obj.y);
+              const size = Math.max(10, (obj.size || 48) * scale);
+              tempCtx.font = Math.round(size) + "px " + EMOJI_FONT;
+              tempCtx.textAlign = "left";
+              tempCtx.textBaseline = "top";
+              tempCtx.fillText(obj.emoji || "😀", Math.round(p.x), Math.round(p.y));
+              return;
+            }
+
+            // ----- ГРАФИК ФУНКЦИЙ -----
+            if (obj.type === "graph") {
+              const pa = toScreen(Math.min(obj.x1, obj.x2), Math.min(obj.y1, obj.y2));
+              const pb = toScreen(Math.max(obj.x1, obj.x2), Math.max(obj.y1, obj.y2));
+              tempCtx.save();
+              tempCtx.fillStyle = "#fff";
+              tempCtx.fillRect(pa.x, pa.y, pb.x - pa.x, pb.y - pa.y);
+              tempCtx.beginPath();
+              tempCtx.rect(pa.x, pa.y, pb.x - pa.x, pb.y - pa.y);
+              tempCtx.clip();
+              tempCtx.translate(pa.x, pa.y);
+              graphRender(tempCtx, pb.x - pa.x, pb.y - pa.y, gphGet(obj));
+              tempCtx.restore();
+              tempCtx.strokeStyle = obj.color || "#34c759";
+              tempCtx.lineWidth = Math.max(1, 1.6 * scale);
+              tempCtx.strokeRect(pa.x, pa.y, pb.x - pa.x, pb.y - pa.y);
               return;
             }
 
