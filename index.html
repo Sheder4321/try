@@ -8056,6 +8056,11 @@
             _pendingLoadBoardGen = 0;
             loadBoardFromServer(loadGen);
 
+            // Переподключаемся к WS-комнате текущей доски — без этого
+            // переходы через selectClassAndGoToBoard/deleteClass оставляли
+            // сокет в старой комнате и синхронизация не работала
+            joinWsRoom();
+
             // ===== Потом сайдбар =====
             loadBoardSidebarContent();
 
