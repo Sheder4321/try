@@ -91,7 +91,7 @@ const assignmentStorage = multer.diskStorage({
 const assignmentUpload = multer({ storage: assignmentStorage, limits: { fileSize: 20*1024*1024 } });
 
 // ============================================================
-// АУДИО: КОНВЕРТАЦИЯ webm mp4 (для iOS)
+// АУДИО: КОНВЕРТАЦИЯ webm → mp4 (для iOS)
 // ============================================================
 function findFfmpeg() {
   const explicit = process.env.FFMPEG_PATH;
@@ -313,12 +313,12 @@ app.post("/api/forgot-password", async (req, res) => {
     // Отправка письма идёт в фоне (fire-and-forget): даже если SMTP недоступен,
     // запрос вернётся мгновенно, а ошибка не заблокирует пользователя.
     sendPasswordResetEmail(email, rawToken).catch((err) => {
-      console.error("Ошибка фоновой отправки письма:", err && err.message ? err.message : err);
+      console.error("❌ Ошибка фоновой отправки письма:", err && err.message ? err.message : err);
     });
 
     res.json(genericResponse);
   } catch (error) {
-    console.error("Ошибка forgot-password:", error);
+    console.error("❌ Ошибка forgot-password:", error);
     res.json(genericResponse);
   }
 });
@@ -364,7 +364,7 @@ app.post("/api/reset-password", async (req, res) => {
 
     res.json({ message: "Пароль успешно изменён" });
   } catch (error) {
-    console.error("Ошибка reset-password:", error);
+    console.error("❌ Ошибка reset-password:", error);
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
@@ -428,7 +428,7 @@ app.post("/api/classes/:classId/invite", authenticateToken, requireTeacher, asyn
       max_uses: invite.max_uses,
     });
   } catch (error) {
-    console.error("Ошибка создания приглашения:", error);
+    console.error("❌ Ошибка создания приглашения:", error);
     res.status(500).json({ error: "Ошибка создания приглашения: " + error.message });
   }
 });
@@ -485,7 +485,7 @@ app.get("/api/invite/:token", async (req, res) => {
       is_already_member: isAlreadyMember,
     });
   } catch (error) {
-    console.error("Ошибка получения приглашения:", error);
+    console.error("❌ Ошибка получения приглашения:", error);
     res.status(500).json({ error: "Ошибка получения приглашения: " + error.message });
   }
 });
@@ -543,7 +543,7 @@ app.post("/api/invite/:token/join", authenticateToken, async (req, res) => {
       class_id: invite.class_id,
     });
   } catch (error) {
-    console.error("Ошибка присоединения к классу:", error);
+    console.error("❌ Ошибка присоединения к классу:", error);
     res.status(500).json({ error: "Ошибка присоединения к классу: " + error.message });
   }
 });
@@ -587,7 +587,7 @@ app.get("/api/classes/:classId/invites", authenticateToken, requireTeacher, asyn
 
     res.json(invites);
   } catch (error) {
-    console.error("Ошибка получения приглашений:", error);
+    console.error("❌ Ошибка получения приглашений:", error);
     res.status(500).json({ error: "Ошибка получения приглашений: " + error.message });
   }
 });
@@ -613,7 +613,7 @@ app.delete("/api/invite/:token", authenticateToken, requireTeacher, async (req, 
 
     res.json({ message: "Приглашение отключено" });
   } catch (error) {
-    console.error("Ошибка отключения приглашения:", error);
+    console.error("❌ Ошибка отключения приглашения:", error);
     res.status(500).json({ error: "Ошибка отключения приглашения: " + error.message });
   }
 });
@@ -649,7 +649,7 @@ app.post("/api/change-password", async (req, res) => {
     );
     res.json({ message: "Пароль изменён" });
   } catch (error) {
-    console.error("Ошибка смены пароля:", error);
+    console.error("❌ Ошибка смены пароля:", error);
     res.status(500).json({ error: "Ошибка смены пароля" });
   }
 });
@@ -663,7 +663,7 @@ app.post("/api/classes", requireTeacher, async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Ошибка создания класса:", error);
+    console.error("❌ Ошибка создания класса:", error);
     res.status(500).json({ error: "Ошибка создания класса: " + error.message });
   }
 });
@@ -702,7 +702,7 @@ app.get("/api/classes/my", async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error("Ошибка получения классов:", error);
+    console.error("❌ Ошибка получения классов:", error);
     res.status(500).json({ error: "Ошибка получения классов" });
   }
 });
@@ -792,7 +792,7 @@ app.delete("/api/classes/:classId/students/:studentId", requireTeacher, async (r
 
     res.json({ message: "Ученик удалён из класса" });
   } catch (error) {
-    console.error("Ошибка удаления ученика из класса:", error);
+    console.error("❌ Ошибка удаления ученика из класса:", error);
     res.status(500).json({ error: "Ошибка удаления ученика: " + error.message });
   }
 });
@@ -845,7 +845,7 @@ app.post("/api/classes/:classId/students/:studentId/reset-password", requireTeac
 
     res.json({ tempPassword, resetToken: rawToken });
   } catch (error) {
-    console.error("Ошибка сброса пароля ученика:", error);
+    console.error("❌ Ошибка сброса пароля ученика:", error);
     res.status(500).json({ error: "Ошибка сброса пароля: " + error.message });
   }
 });
@@ -869,7 +869,7 @@ app.delete("/api/classes/:classId", requireTeacher, async (req, res) => {
 
     res.json({ message: "Класс успешно удалён" });
   } catch (error) {
-    console.error("Ошибка удаления класса:", error);
+    console.error("❌ Ошибка удаления класса:", error);
     res.status(500).json({ error: "Ошибка удаления класса: " + error.message });
   }
 });
@@ -1133,7 +1133,7 @@ app.get("/api/assignments/:id", async (req, res) => {
 
     res.json(assignment);
   } catch (error) {
-    console.error("Ошибка получения задания:", error);
+    console.error("❌ Ошибка получения задания:", error);
     res.status(500).json({ error: "Ошибка получения задания: " + error.message });
   }
 });
@@ -1687,7 +1687,7 @@ app.post("/api/submissions/batch", upload.any(), async (req, res) => {
       autoResult,
     });
   } catch (error) {
-    console.error("Ошибка:", error);
+    console.error("❌ Ошибка:", error);
     res.status(500).json({ error: "Ошибка отправки ответов: " + error.message });
   }
 });
@@ -1771,7 +1771,7 @@ app.get("/api/submissions/:submissionId/full", async (req, res) => {
 
     res.json(submission);
   } catch (error) {
-    console.error("Ошибка получения полных данных:", error);
+    console.error("❌ Ошибка получения полных данных:", error);
     res.status(500).json({ error: "Ошибка получения данных: " + error.message });
   }
 });
@@ -1824,7 +1824,7 @@ app.post("/api/submissions/:submissionId/grade", requireTeacher, async (req, res
 
     res.json({ message: "Оценка сохранена" });
   } catch (error) {
-    console.error("Ошибка сохранения оценки:", error);
+    console.error("❌ Ошибка сохранения оценки:", error);
     res.status(500).json({ error: "Ошибка сохранения оценки: " + error.message });
   }
 });
@@ -1936,7 +1936,7 @@ app.post("/api/annotations", requireTeacher, async (req, res) => {
 
     res.json({ id: result.rows[0].id });
   } catch (error) {
-    console.error("Ошибка сохранения аннотации:", error);
+    console.error("❌ Ошибка сохранения аннотации:", error);
     res.status(500).json({ error: "Ошибка сохранения: " + error.message });
   }
 });
@@ -1995,7 +1995,7 @@ app.get("/api/annotations/:submissionId", async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Ошибка получения аннотаций:", error);
+    console.error("❌ Ошибка получения аннотаций:", error);
     res.status(500).json({ error: "Ошибка получения: " + error.message });
   }
 });
@@ -2035,12 +2035,12 @@ app.delete("/api/annotations/:id", requireTeacher, async (req, res) => {
         await pool.query(`DELETE FROM voice_comments WHERE id = $1`, [vc.id]);
       }
     } catch (e) {
-      console.error("Ошибка удаления голосового комментария аннотации:", e.message);
+      console.error("❌ Ошибка удаления голосового комментария аннотации:", e.message);
     }
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Ошибка удаления аннотации:", error);
+    console.error("❌ Ошибка удаления аннотации:", error);
     res.status(500).json({ error: "Ошибка удаления: " + error.message });
   }
 });
@@ -2077,7 +2077,7 @@ app.post("/api/voice-comments", requireTeacher, audioUpload.single("audio"), asy
   }
 
   try {
-    // ===== КОНВЕРТАЦИЯ webm mp4 (для совместимости с iOS) =====
+    // ===== КОНВЕРТАЦИЯ webm → mp4 (для совместимости с iOS) =====
     // Если браузер записал webm, а ffmpeg есть — транскодируем в AAC/mp4,
     // чтобы iPhone/планшет могли воспроизвести.
     let storedFsPath = req.file.path;
@@ -2085,7 +2085,7 @@ app.post("/api/voice-comments", requireTeacher, audioUpload.single("audio"), asy
     try {
       converted = await convertWebmToMp4(path.resolve(storedFsPath));
     } catch (e) {
-      console.error("Конвертация аудио пропущена:", e.message);
+      console.error("⚠️ Конвертация аудио пропущена:", e.message);
     }
     if (converted) {
       storedFsPath = converted;
@@ -2093,7 +2093,7 @@ app.post("/api/voice-comments", requireTeacher, audioUpload.single("audio"), asy
 
     let audioPath = storedFsPath.replace(/\\/g, "/");
     if (!audioPath.startsWith("uploads/")) {
-      // may be absolute привести к serve-пути
+      // may be absolute → привести к serve-пути
       audioPath = toServePath(audioPath);
     }
 
@@ -2106,7 +2106,7 @@ app.post("/api/voice-comments", requireTeacher, audioUpload.single("audio"), asy
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Ошибка сохранения голосового комментария:", error);
+    console.error("❌ Ошибка сохранения голосового комментария:", error);
     res.status(500).json({ error: "Ошибка сохранения: " + error.message });
   }
 });
@@ -2164,7 +2164,7 @@ app.get("/api/voice-comments/:submissionId", async (req, res) => {
 
     res.json(comments);
   } catch (error) {
-    console.error("Ошибка получения голосовых комментариев:", error);
+    console.error("❌ Ошибка получения голосовых комментариев:", error);
     res.status(500).json({ error: "Ошибка получения: " + error.message });
   }
 });
@@ -2191,7 +2191,7 @@ app.delete("/api/voice-comments/:id", requireTeacher, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Ошибка удаления голосового комментария:", error);
+    console.error("❌ Ошибка удаления голосового комментария:", error);
     res.status(500).json({ error: "Ошибка удаления: " + error.message });
   }
 });
@@ -2218,7 +2218,7 @@ app.post("/api/text-comments", requireTeacher, async (req, res) => {
       created_at: result.rows[0].created_at,
     });
   } catch (error) {
-    console.error("Ошибка сохранения текстового комментария:", error);
+    console.error("❌ Ошибка сохранения текстового комментария:", error);
     res.status(500).json({ error: "Ошибка сохранения: " + error.message });
   }
 });
@@ -2265,7 +2265,7 @@ app.get("/api/text-comments/:submissionId", async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Ошибка получения текстовых комментариев:", error);
+    console.error("❌ Ошибка получения текстовых комментариев:", error);
     res.status(500).json({ error: "Ошибка получения: " + error.message });
   }
 });
@@ -2285,7 +2285,7 @@ app.delete("/api/text-comments/:id", requireTeacher, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Ошибка удаления текстового комментария:", error);
+    console.error("❌ Ошибка удаления текстового комментария:", error);
     res.status(500).json({ error: "Ошибка удаления: " + error.message });
   }
 });
