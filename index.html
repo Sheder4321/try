@@ -247,8 +247,8 @@
         gap: 10px;
         flex-wrap: wrap;
       }
-      #vp3d-controls button,
-      #vp3d-controls select {
+      .vp3d-toolbar button,
+      .vp3d-toolbar select {
         padding: 6px 12px;
         border: 1px solid #dcdce4;
         background: #fff;
@@ -256,22 +256,26 @@
         font-size: 13px;
         cursor: pointer;
       }
-      #vp3d-controls button:hover { background: #f3f3f8; }
-      #vp3d-cut-label {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 13px;
-        cursor: pointer;
-        user-select: none;
+      .vp3d-toolbar button:hover { background: #f3f3f8; }
+      .vp3d-toolbar button:disabled,
+      .vp3d-toolbar select:disabled {
+        opacity: 0.45;
+        cursor: default;
       }
-      #vp3d-pos { width: 140px; }
-      #vp3d-pos-val {
-        font-size: 12px;
-        color: #666;
-        min-width: 34px;
-        font-variant-numeric: tabular-nums;
+      .vp3d-toolbar button:disabled:hover { background: #fff; }
+      .vp3d-toolbar button.active {
+        background: #e8ecff;
+        border-color: #5e5ce6;
+        color: #3b39b8;
       }
+      .vp3d-toolbar button.vp3d-accent {
+        background: #5e5ce6;
+        border-color: #5e5ce6;
+        color: #fff;
+      }
+      .vp3d-toolbar button.vp3d-accent:hover { background: #4a48d4; }
+      .vp3d-toolbar input[type="range"] { width: 120px; }
+      #vp3d-n-lbl select { padding: 4px 6px; }
       #vp3d-info {
         min-height: 16px;
         font-size: 12px;
@@ -6007,24 +6011,42 @@
       //   v: 1                                  версия формата
       //   cam: { theta, phi, dist, t:[x,y,z] }   орбитальная камера: азимут, угол
       //        места, расстояние до точки обзора t (перспектива, fov ≈ 45°)
-      //   cut: { on, axis:"x"|"y"|"z", pos, keep }  секущая плоскость axis = pos;
-      //        keep: 0 — обе части, 1 — оставить «+» сторону, -1 — «−» сторону
-      //   nextItemId, items: [ { id, kind:"cube"|"cylinder"|"sphere", c:[x,y,z],
-      //        r, color, mesh:{ v:[[x,y,z]…], e:[[a,b,show]…], f:[[i…]…] } } ]
+      //   cut: { on, axis:"x"|"y"|"z", pos, keep }  УСТАРЕЛО: осевая плоскость,
+      //        поле оставлено для совместимости со старыми досками (в UI не
+      //        редактируется, при открытии окна гасится)
+      //   nextItemId, items: [ { id, kind, c:[x,y,z], r, color, params,
+      //        sections, mesh:{ v:[[x,y,z]…], e:[[a,b,show]…], f:[[i…]…] } } ]
+      //        kind — вид тела из S3D_SHAPES (куб, параллелепипед, призмы,
+      //        пирамида, тетраэдр, цилиндр, конус, усечённый конус, сфера);
+      //        params.n — число сторон основания у призм/пирамид;
       //        mesh — реальная геометрия в мировых 3D-координатах пространства
       //        (вершины, рёбра, грани); e[2]==0 — служебное ребро (не рисуется,
-      //        но участвует в сечении). Без mesh меш восстанавливается из kind/c/r.
+      //        но участвует в сечении). Без mesh меш восстанавливается из
+      //        kind/c/r/params.
+      //   sections — сечения методом следов: [{ id, hidden, picks, poly }];
+      //        picks — опорные точки на теле ({k:"v",i} вершина,
+      //        {k:"e",a,b,t} точка ребра, {k:"f",tri,w} точка грани),
+      //        poly — многоугольник сечения (пересчитывается из picks).
       // 2D-фигуры (в т.ч. «проекции» куба/цилиндра/сферы) — обычные объекты доски
       // и с 3D не связаны: 3D открывается ТОЛЬКО через объект «3D-пространство».
+      // Набор тел ЕГЭ: n — у призм/пирамид есть параметр «число сторон основания»
       const S3D_SHAPES = [
         { id: "cube", label: "Куб", icon: "🧊" },
+        { id: "parallelepiped", label: "Параллелепипед", icon: "📦" },
+        { id: "prism", label: "Прямая призма", icon: "🔷", n: true, defN: 3 },
+        { id: "prism_oblique", label: "Наклонная призма", icon: "📐", n: true, defN: 3 },
+        { id: "pyramid", label: "Пирамида", icon: "🔺", n: true, defN: 4 },
+        { id: "tetrahedron", label: "Тетраэдр", icon: "🔻" },
         { id: "cylinder", label: "Цилиндр", icon: "🥫" },
+        { id: "cone", label: "Конус", icon: "🍦" },
+        { id: "frustum", label: "Усечённый конус", icon: "🪣" },
         { id: "sphere", label: "Сфера", icon: "🔮" },
       ];
       const S3D_AXIS = { x: 0, y: 1, z: 2 };
       const S3D_LIMIT = 3.2; // |x|,|z| центров фигур и положение плоскости
       const S3D_GRID = 3; // половина размера пола-сетки
       const S3D_MAX_ITEMS = 12;
+      const S3D_MAX_SECTIONS = 8;
       const S3D_COLORS = ["#5e5ce6", "#ff9500", "#34c759", "#ff3b30", "#007aff", "#af52de"];
       const S3D_LIGHT = (() => {
         const l = [-0.4, 0.9, 0.5];
@@ -6033,7 +6055,9 @@
       })();
       const s3dNormCache = new WeakMap();
       const s3dInfoCache = new WeakMap();
-      let vp3d = null; // { objId, sp, sel, canvas, g, W, H, dpr, pointers, gesture, commitTimer, sections }
+      // vp3d: { objId, sp, sel, selSec, secMode, secPicks, secItemId, secPreview,
+      //         canvas, g, W, H, dpr, pointers, gesture, commitTimer, sections }
+      let vp3d = null;
 
       const v3sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
       const v3dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -6052,32 +6076,111 @@
         return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
       }
 
-      // Геометрия фигуры: вершины/рёбра/грани в мировых координатах (центр c, размер r)
-      function s3dBuildMesh(kind, c, r) {
+      // Геометрия фигуры: вершины/рёбра/грани в мировых координатах (центр c, размер r).
+      // params: { n } — число сторон основания для призм и пирамид.
+      // Меш у всех тел выпуклый → сечение плоскостью строится пересечением
+      // «плоскость–ребро» и не зависит от конкретного вида (метод следов).
+      function s3dBuildMesh(kind, c, r, params) {
         const v = [], e = [], f = [];
         const add = (x, y, z) => v.push([s3dRound(c[0] + x), s3dRound(c[1] + y), s3dRound(c[2] + z)]);
-        if (kind === "cube") {
+        // кольцо из nn точек на высоте yy радиуса rad со сдвигом (ox, oz)
+        const ring = (yy, rad, ox, oz, nn) => {
+          const base = v.length;
+          for (let i = 0; i < nn; i++) {
+            const a = (i / nn) * Math.PI * 2;
+            add((ox || 0) + Math.cos(a) * rad, yy, (oz || 0) + Math.sin(a) * rad);
+          }
+          return base;
+        };
+        const ringEdges = (base, nn) => {
+          for (let i = 0; i < nn; i++) e.push([base + i, base + ((i + 1) % nn), 1]);
+        };
+        const cap = (base, nn) => f.push(Array.from({ length: nn }, (_, i) => base + i));
+        const box = (hx, hy, hz) => {
           // 8 вершин, 12 рёбер, 6 граней; индекс = 4*ix + 2*iy + iz
-          for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) add(x * r, y * r, z * r);
+          for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) add(x * hx, y * hy, z * hz);
           [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]]
             .forEach((p) => e.push([p[0], p[1], 1]));
           f.push([0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]);
-        } else if (kind === "cylinder") {
-          // Два кольца по N точек (низ 0..N-1, верх N..2N-1) + боковые грани + 2 основания, ось Y
-          const N = 24, rad = r * 0.8;
-          for (const y of [-1, 1]) {
-            for (let i = 0; i < N; i++) {
-              const a = (i / N) * Math.PI * 2;
-              add(Math.cos(a) * rad, y * r, Math.sin(a) * rad);
-            }
-          }
+        };
+
+        if (kind === "cube") {
+          box(r, r, r);
+        } else if (kind === "parallelepiped") {
+          // Прямоугольный параллелепипед: разные полуоси
+          box(r * 1.05, r * 0.7, r * 0.6);
+        } else if (kind === "prism" || kind === "prism_oblique") {
+          // Призма: два N-угольных основания, ось Y; у наклонной верхнее сдвинуто
+          const N = s3dClamp(Math.round((params && params.n) || 3), 3, 8);
+          const h2 = r * 0.75;
+          const sx = kind === "prism_oblique" ? r * 0.45 : 0;
+          const sz = kind === "prism_oblique" ? r * 0.28 : 0;
+          const b0 = ring(-h2, r * 0.95, 0, 0, N);
+          const t0 = ring(h2, r * 0.95, sx, sz, N);
+          ringEdges(b0, N);
+          ringEdges(t0, N);
           for (let i = 0; i < N; i++) {
-            const j = (i + 1) % N;
-            e.push([i, j, 1], [i + N, j + N, 1], [i, i + N, i % 3 === 0 ? 1 : 0]);
-            f.push([i, j, j + N, i + N]);
+            e.push([b0 + i, t0 + i, 1]);
+            f.push([b0 + i, b0 + ((i + 1) % N), t0 + ((i + 1) % N), t0 + i]);
           }
-          f.push(Array.from({ length: N }, (_, i) => i));
-          f.push(Array.from({ length: N }, (_, i) => N + i));
+          cap(b0, N);
+          cap(t0, N);
+        } else if (kind === "pyramid" || kind === "tetrahedron") {
+          // Пирамида: N-угольное основание + вершина. Тетраэдр — правильный
+          // (все рёбра равны), центрирован по центроиду
+          const eq = kind === "tetrahedron";
+          const N = eq ? 3 : s3dClamp(Math.round((params && params.n) || 4), 3, 8);
+          const rb = eq ? (r * 1.35) / Math.sqrt(3) : r * 0.95;
+          const hh = eq ? rb * Math.sqrt(2) : r * 1.5;
+          const yb = eq ? -hh / 4 : -hh / 2;
+          const ya = yb + hh;
+          const b = ring(yb, rb, 0, 0, N);
+          const apex = v.length;
+          add(0, ya, 0);
+          ringEdges(b, N);
+          for (let i = 0; i < N; i++) {
+            e.push([b + i, apex, 1]);
+            f.push([b + i, b + ((i + 1) % N), apex]);
+          }
+          cap(b, N);
+        } else if (kind === "cylinder") {
+          // Два кольца по N точек (низ, верх) + боковые грани + 2 основания, ось Y
+          const N = 24, rad = r * 0.8;
+          const b0 = ring(-r, rad, 0, 0, N);
+          const t0 = ring(r, rad, 0, 0, N);
+          ringEdges(b0, N);
+          ringEdges(t0, N);
+          for (let i = 0; i < N; i++) {
+            e.push([b0 + i, t0 + i, i % 3 === 0 ? 1 : 0]);
+            f.push([b0 + i, b0 + ((i + 1) % N), t0 + ((i + 1) % N), t0 + i]);
+          }
+          cap(b0, N);
+          cap(t0, N);
+        } else if (kind === "cone") {
+          // Конус: кольцо основания + вершина
+          const N = 24, h2 = r * 0.9;
+          const b = ring(-h2, r * 0.95, 0, 0, N);
+          const apex = v.length;
+          add(0, h2, 0);
+          ringEdges(b, N);
+          for (let i = 0; i < N; i++) {
+            e.push([b + i, apex, i % 3 === 0 ? 1 : 0]);
+            f.push([b + i, b + ((i + 1) % N), apex]);
+          }
+          cap(b, N);
+        } else if (kind === "frustum") {
+          // Усечённый конус: два кольца разных радиусов
+          const N = 24, h2 = r * 0.7;
+          const b0 = ring(-h2, r, 0, 0, N);
+          const t0 = ring(h2, r * 0.45, 0, 0, N);
+          ringEdges(b0, N);
+          ringEdges(t0, N);
+          for (let i = 0; i < N; i++) {
+            e.push([b0 + i, t0 + i, i % 3 === 0 ? 1 : 0]);
+            f.push([b0 + i, b0 + ((i + 1) % N), t0 + ((i + 1) % N), t0 + i]);
+          }
+          cap(b0, N);
+          cap(t0, N);
         } else if (kind === "sphere") {
           // Сетка широта/долгота: 2 полюса + (LAT-1) колец по LON точек
           const LAT = 12, LON = 24;
@@ -6090,17 +6193,17 @@
             }
           }
           add(0, r, 0);
-          const ring = (j, i) => 1 + (j - 1) * LON + (((i % LON) + LON) % LON);
+          const ringAt = (j, i) => 1 + (j - 1) * LON + (((i % LON) + LON) % LON);
           const top = 1 + (LAT - 1) * LON;
           for (let i = 0; i < LON; i++) {
             const show = i % 2 === 0 ? 1 : 0;
-            e.push([0, ring(1, i), show], [ring(LAT - 1, i), top, show]);
-            f.push([0, ring(1, i + 1), ring(1, i)], [top, ring(LAT - 1, i), ring(LAT - 1, i + 1)]);
+            e.push([0, ringAt(1, i), show], [ringAt(LAT - 1, i), top, show]);
+            f.push([0, ringAt(1, i + 1), ringAt(1, i)], [top, ringAt(LAT - 1, i), ringAt(LAT - 1, i + 1)]);
             for (let j = 1; j < LAT; j++) {
-              e.push([ring(j, i), ring(j, i + 1), 1]);
+              e.push([ringAt(j, i), ringAt(j, i + 1), 1]);
               if (j < LAT - 1) {
-                e.push([ring(j, i), ring(j + 1, i), show]);
-                f.push([ring(j, i), ring(j, i + 1), ring(j + 1, i + 1), ring(j + 1, i)]);
+                e.push([ringAt(j, i), ringAt(j + 1, i), show]);
+                f.push([ringAt(j, i), ringAt(j, i + 1), ringAt(j + 1, i + 1), ringAt(j + 1, i)]);
               }
             }
           }
@@ -6121,8 +6224,18 @@
         );
       }
 
-      function s3dMakeItem(id, kind, c, r, color) {
-        return { id, kind, c, r, color, mesh: s3dBuildMesh(kind, c, r) };
+      function s3dMakeItem(id, kind, c, r, color, params) {
+        const def = S3D_SHAPES.find((s) => s.id === kind);
+        const p = {};
+        if (def && def.n) p.n = s3dClamp(Math.round((params && params.n) || def.defN || 3), 3, 8);
+        return { id, kind, c, r, color, params: p, sections: [], mesh: s3dBuildMesh(kind, c, r, p) };
+      }
+
+      // Нижняя точка меша для посадки фигуры «на пол» при добавлении
+      function s3dFloorCenter(kind, x, z, r, params) {
+        const m = s3dBuildMesh(kind, [0, 0, 0], r, params);
+        const minY = m.v.reduce((mn, p) => Math.min(mn, p[1]), Infinity);
+        return [x, -minY + 0.02, z];
       }
 
       function s3dDefaultCam() {
@@ -6165,23 +6278,30 @@
         };
         const used = new Set();
         (Array.isArray(raw.items) ? raw.items : []).slice(0, 24).forEach((it) => {
-          if (!it || !S3D_SHAPES.some((s) => s.id === it.kind)) return;
+          const def = S3D_SHAPES.find((s) => s.id === (it && it.kind));
+          if (!it || !def) return;
           const cc = Array.isArray(it.c) && it.c.length === 3 && it.c.every(Number.isFinite) ? it.c.slice() : [0, 0.8, 0];
           const r = s3dClamp(num(it.r, 0.8), 0.2, 2);
+          const params = {};
+          if (def.n) params.n = s3dClamp(Math.round(num(it.params && it.params.n, def.defN || 3)), 3, 8);
           let id = Number.isInteger(it.id) && !used.has(it.id) ? it.id : 0;
           if (!id) {
             id = 1;
             while (used.has(id)) id++;
           }
           used.add(id);
-          sp.items.push({
+          const item = {
             id,
             kind: it.kind,
             c: cc,
             r,
             color: typeof it.color === "string" && /^#[0-9a-f]{6}$/i.test(it.color) ? it.color : S3D_COLORS[0],
-            mesh: s3dValidMesh(it.mesh) ? it.mesh : s3dBuildMesh(it.kind, cc, r),
-          });
+            params,
+            sections: [],
+            mesh: s3dValidMesh(it.mesh) ? it.mesh : s3dBuildMesh(it.kind, cc, r, params),
+          };
+          item.sections = s3dNormSections(item, it.sections);
+          sp.items.push(item);
         });
         sp.nextItemId = sp.items.reduce((m, it) => Math.max(m, it.id), 0) + 1;
         return sp;
@@ -6288,28 +6408,11 @@
         return [a, b];
       }
 
-      // Сечение выпуклого меша плоскостью axis = pos: пересечения «плоскость–ребро»
-      // (+ вершины на плоскости), упорядоченные по углу вокруг центроида
+      // Сечение меша осевой плоскостью axis = pos (ползунок) — обёртка над общей
       function s3dSection(item, axis, pos) {
-        const ci = S3D_AXIS[axis], EPS = 1e-6, m = item.mesh;
-        const pts = [];
-        m.v.forEach((p) => {
-          if (Math.abs(p[ci] - pos) < EPS) pts.push(p.slice());
-        });
-        m.e.forEach((e) => {
-          const A = m.v[e[0]], B = m.v[e[1]];
-          const da = A[ci] - pos, db = B[ci] - pos;
-          if (da * db < 0 && Math.abs(da) > EPS && Math.abs(db) > EPS) pts.push(v3lerp(A, B, da / (da - db)));
-        });
-        const uniq = [];
-        pts.forEach((p) => {
-          if (!uniq.some((q) => Math.abs(q[0] - p[0]) < 1e-4 && Math.abs(q[1] - p[1]) < 1e-4 && Math.abs(q[2] - p[2]) < 1e-4)) uniq.push(p);
-        });
-        if (uniq.length < 3) return [];
-        const [a, b] = ci === 0 ? [1, 2] : ci === 1 ? [0, 2] : [0, 1];
-        const cA = uniq.reduce((s, p) => s + p[a], 0) / uniq.length;
-        const cB = uniq.reduce((s, p) => s + p[b], 0) / uniq.length;
-        return uniq.sort((p, q) => Math.atan2(p[b] - cB, p[a] - cA) - Math.atan2(q[b] - cB, q[a] - cA));
+        const n = [0, 0, 0];
+        n[S3D_AXIS[axis]] = 1;
+        return s3dSectionPlane(item, n, pos);
       }
 
       function s3dSectionArea(pts, axis) {
@@ -6326,6 +6429,334 @@
       function s3dSectionName(n) {
         const names = { 3: "треугольник", 4: "четырёхугольник", 5: "пятиугольник", 6: "шестиугольник" };
         return n >= 12 ? "круг / эллипс" : names[n] || n + "-угольник";
+      }
+
+      // ============================================================
+      // СЕЧЕНИЯ МЕТОДОМ СЛЕДОВ (по выбранным на теле точкам)
+      // ============================================================
+      // item.sections: [{ id, hidden, picks, poly }]
+      //   picks — опорные точки на поверхности (переживают перестройку меша):
+      //     { k:"v", i }            — вершина i
+      //     { k:"e", a, b, t }      — точка на ребре a–b в доле t ∈ [0,1]
+      //     { k:"f", tri:[a,b,c], w:[u,v,w] } — точка грани, барицентрические
+      //         координаты в треугольнике-веере (v[a],v[b],v[c])
+      //   poly — построенный многоугольник сечения [[x,y,z]...] (мировые коорд.)
+      //   hidden — сечение скрыто (не удалено)
+
+      // Точка по её спецификации
+      function s3dResolvePick(item, pk) {
+        const m = item.mesh;
+        if (!pk || pk.k === "v") {
+          const p = m.v[pk && pk.i];
+          return p ? p.slice() : null;
+        }
+        if (pk.k === "e") {
+          const A = m.v[pk.a], B = m.v[pk.b];
+          return A && B ? v3lerp(A, B, s3dClamp(pk.t, 0, 1)) : null;
+        }
+        if (pk.k === "f") {
+          const A = m.v[pk.tri[0]], B = m.v[pk.tri[1]], C = m.v[pk.tri[2]];
+          if (!A || !B || !C) return null;
+          const [u, v2, w] = pk.w;
+          return [A[0] * u + B[0] * v2 + C[0] * w, A[1] * u + B[1] * v2 + C[1] * w, A[2] * u + B[2] * v2 + C[2] * w];
+        }
+        return null;
+      }
+
+      // Валидация спецификаций точек относительно текущего меша
+      function s3dNormPicks(item, arr) {
+        const m = item.mesh, nv = m.v.length;
+        const okI = (i) => Number.isInteger(i) && i >= 0 && i < nv;
+        return (Array.isArray(arr) ? arr : [])
+          .slice(0, 12)
+          .map((pk) => {
+            if (!pk || typeof pk !== "object") return null;
+            if (pk.k === "v" && okI(pk.i)) return { k: "v", i: pk.i };
+            if (pk.k === "e" && okI(pk.a) && okI(pk.b) && pk.a !== pk.b && Number.isFinite(pk.t))
+              return { k: "e", a: pk.a, b: pk.b, t: s3dClamp(pk.t, 0, 1) };
+            if (
+              pk.k === "f" &&
+              Array.isArray(pk.tri) && pk.tri.length === 3 && pk.tri.every(okI) &&
+              Array.isArray(pk.w) && pk.w.length === 3 && pk.w.every(Number.isFinite)
+            )
+              return { k: "f", tri: pk.tri.slice(), w: pk.w.slice() };
+            return null;
+          })
+          .filter(Boolean);
+      }
+
+      // Плоскость по ≥3 точкам (нормаль по Ньюэллу). Возвращает {n,d} или {err}
+      // err: "few" — мало точек, "line" — точки на одной прямой, "coplanar" — не в одной плоскости
+      function s3dPlaneFromPts(pts, tol) {
+        if (pts.length < 3) return { err: "few" };
+        const c = [0, 0, 0];
+        pts.forEach((p) => {
+          c[0] += p[0] / pts.length;
+          c[1] += p[1] / pts.length;
+          c[2] += p[2] / pts.length;
+        });
+        const n = [0, 0, 0];
+        for (let i = 0; i < pts.length; i++) {
+          const cr = v3cross(v3sub(pts[i], c), v3sub(pts[(i + 1) % pts.length], c));
+          n[0] += cr[0];
+          n[1] += cr[1];
+          n[2] += cr[2];
+        }
+        const nl = Math.hypot(n[0], n[1], n[2]);
+        if (nl < 1e-6) return { err: "line" };
+        n[0] /= nl;
+        n[1] /= nl;
+        n[2] /= nl;
+        const d = v3dot(n, c);
+        let dev = 0;
+        pts.forEach((p) => {
+          dev = Math.max(dev, Math.abs(v3dot(n, p) - d));
+        });
+        if (dev > (tol || 0.06)) return { err: "coplanar" };
+        return { n, d };
+      }
+
+      // Многоугольник сечения выпуклого меша произвольной плоскостью n·p = d:
+      // вершины на плоскости + пересечения «плоскость–ребро», по углу в плоскости
+      function s3dSectionPlane(item, n, d) {
+        const EPS = 1e-6, m = item.mesh;
+        const s = (p) => v3dot(n, p) - d;
+        const pts = [];
+        m.v.forEach((p) => {
+          if (Math.abs(s(p)) < EPS) pts.push(p.slice());
+        });
+        m.e.forEach((e) => {
+          const A = m.v[e[0]], B = m.v[e[1]];
+          const da = s(A), db = s(B);
+          if (da * db < 0 && Math.abs(da) > EPS && Math.abs(db) > EPS) pts.push(v3lerp(A, B, da / (da - db)));
+        });
+        const uniq = [];
+        pts.forEach((p) => {
+          if (!uniq.some((q) => Math.abs(q[0] - p[0]) < 1e-4 && Math.abs(q[1] - p[1]) < 1e-4 && Math.abs(q[2] - p[2]) < 1e-4))
+            uniq.push(p);
+        });
+        if (uniq.length < 3) return [];
+        const c = [0, 0, 0];
+        uniq.forEach((p) => {
+          c[0] += p[0] / uniq.length;
+          c[1] += p[1] / uniq.length;
+          c[2] += p[2] / uniq.length;
+        });
+        const ref = Math.abs(n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+        const u = v3norm(v3cross(n, ref));
+        const w = v3cross(n, u);
+        return uniq.sort(
+          (p, q) =>
+            Math.atan2(v3dot(v3sub(p, c), w), v3dot(v3sub(p, c), u)) -
+            Math.atan2(v3dot(v3sub(q, c), w), v3dot(v3sub(q, c), u)),
+        );
+      }
+
+      // Площадь многоугольника в 3D (векторная формула площади)
+      function s3dPolyArea(pts) {
+        const acc = [0, 0, 0];
+        for (let i = 0; i < pts.length; i++) {
+          const cr = v3cross(pts[i], pts[(i + 1) % pts.length]);
+          acc[0] += cr[0];
+          acc[1] += cr[1];
+          acc[2] += cr[2];
+        }
+        return Math.hypot(acc[0], acc[1], acc[2]) / 2;
+      }
+
+      // Строим сечение по выбранным точкам: плоскость + многоугольник + следы
+      // Возвращает { n, d, poly, traces } или { err, ru } — подсказку на русском
+      function s3dBuildSectionFromPicks(item, picks) {
+        const pts = picks.map((pk) => s3dResolvePick(item, pk));
+        if (pts.some((p) => !p)) return { err: "few", ru: "Некоторые точки больше не на фигуре — выберите заново" };
+        if (pts.length < 3) return { err: "few", ru: "Выберите минимум 3 точки на фигуре" };
+        const pl = s3dPlaneFromPts(pts, Math.max(0.05, item.r * 0.07));
+        if (pl.err === "line")
+          return { err: "line", ru: "Точки лежат на одной прямой — так не определить плоскость. Выберите точки не на одной линии" };
+        if (pl.err === "coplanar")
+          return { err: "coplanar", ru: "Точки не лежат в одной плоскости — уберите или передвиньте точку" };
+        if (!pl.n) return { err: "few", ru: "Выберите минимум 3 точки на фигуре" };
+        const poly = s3dSectionPlane(item, pl.n, pl.d);
+        if (poly.length < 3)
+          return { err: "empty", ru: "Плоскость не пересекает фигуру — выберите точки так, чтобы плоскость проходила сквозь тело" };
+        return { n: pl.n, d: pl.d, poly, traces: s3dTraces(item, pl.n, pl.d) };
+      }
+
+      // Вспомогательные следы: продолжение линии сечения в каждой грани до её краёв
+      // (метод следов ЕГЭ — след секущей плоскости на грани достраивается до рёбер)
+      function s3dTraces(item, n, d) {
+        const info = s3dMeshInfo(item.mesh), m = item.mesh;
+        const EPS = 1e-5;
+        const s = (p) => v3dot(n, p) - d;
+        const out = [];
+        m.f.forEach((face, k) => {
+          const hits = [];
+          face.forEach((vi, i) => {
+            const A = m.v[vi], B = m.v[face[(i + 1) % face.length]];
+            const da = s(A), db = s(B);
+            if (Math.abs(da) < EPS) hits.push(A.slice());
+            if (da * db < 0 && Math.abs(da) > EPS && Math.abs(db) > EPS) hits.push(v3lerp(A, B, da / (da - db)));
+          });
+          const uq = [];
+          hits.forEach((p) => {
+            if (!uq.some((q) => Math.abs(q[0] - p[0]) < 1e-4 && Math.abs(q[1] - p[1]) < 1e-4 && Math.abs(q[2] - p[2]) < 1e-4))
+              uq.push(p);
+          });
+          if (uq.length < 2) return;
+          // Направление следа: перпендикулярно нормалям секущей плоскости и грани
+          const fn = info.fn[k];
+          const u = v3cross(n, fn);
+          const ul = Math.hypot(u[0], u[1], u[2]);
+          if (ul < 1e-4) return; // плоскость параллельна грани — следа нет
+          const ud = [u[0] / ul, u[1] / ul, u[2] / ul];
+          const q = uq[0];
+          // Продлеваем след до краёв грани: прямая q + t·ud ∩ рёбра грани (проекция в 2D)
+          const drop = Math.abs(fn[0]) > Math.abs(fn[1]) ? (Math.abs(fn[0]) > Math.abs(fn[2]) ? 0 : 2) : Math.abs(fn[1]) > Math.abs(fn[2]) ? 1 : 2;
+          const ax = [0, 1, 2].filter((i) => i !== drop);
+          const qx = q[ax[0]], qy = q[ax[1]];
+          const ux = ud[ax[0]], uy = ud[ax[1]];
+          let tmin = Infinity, tmax = -Infinity;
+          face.forEach((vi, i) => {
+            const A = m.v[vi], B = m.v[face[(i + 1) % face.length]];
+            const axA = A[ax[0]], ayA = A[ax[1]];
+            const ex = B[ax[0]] - axA, ey = B[ax[1]] - ayA;
+            // q + t·u = A + s·e → [u, -e]·[t, s] = A - q
+            const det = ux * -ey - uy * -ex;
+            if (Math.abs(det) < 1e-9) return;
+            const rx = axA - qx, ry = ayA - qy;
+            const t = (rx * -ey - ry * -ex) / det;
+            const ss = (ux * ry - uy * rx) / det;
+            if (ss >= -0.02 && ss <= 1.02) {
+              if (t < tmin) tmin = t;
+              if (t > tmax) tmax = t;
+            }
+          });
+          uq.forEach((p) => {
+            const t = (p[ax[0]] - qx) * ux + (p[ax[1]] - qy) * uy;
+            if (t < tmin) tmin = t;
+            if (t > tmax) tmax = t;
+          });
+          if (tmin > tmax || !isFinite(tmin)) return;
+          out.push({ a: [q[0] + ud[0] * tmin, q[1] + ud[1] * tmin, q[2] + ud[2] * tmin], b: [q[0] + ud[0] * tmax, q[1] + ud[1] * tmax, q[2] + ud[2] * tmax] });
+        });
+        return out;
+      }
+
+      // Точка внутри полигона грани (проекция на плоскость грани, чёт-нечет)
+      function s3dPointInFace(m, face, fn, q) {
+        const drop = Math.abs(fn[0]) > Math.abs(fn[1]) ? (Math.abs(fn[0]) > Math.abs(fn[2]) ? 0 : 2) : Math.abs(fn[1]) > Math.abs(fn[2]) ? 1 : 2;
+        const ax = [0, 1, 2].filter((i) => i !== drop);
+        const qx = q[ax[0]], qy = q[ax[1]];
+        let inside = false;
+        for (let i = 0, j = face.length - 1; i < face.length; j = i++) {
+          const A = m.v[face[i]], B = m.v[face[j]];
+          const axA = A[ax[0]], ayA = A[ax[1]], bx = B[ax[0]], by = B[ax[1]];
+          if (ayA > qy !== by > qy && qx < ((bx - axA) * (qy - ayA)) / (by - ayA) + axA) inside = !inside;
+        }
+        return inside;
+      }
+
+      // Барицентрические координаты точки в веерном треугольнике грани
+      function s3dFaceTri(m, face, fn, q) {
+        const drop = Math.abs(fn[0]) > Math.abs(fn[1]) ? (Math.abs(fn[0]) > Math.abs(fn[2]) ? 0 : 2) : Math.abs(fn[1]) > Math.abs(fn[2]) ? 1 : 2;
+        const ax = [0, 1, 2].filter((i) => i !== drop);
+        const qx = q[ax[0]], qy = q[ax[1]];
+        for (let i = 1; i < face.length - 1; i++) {
+          const tri = [face[0], face[i], face[i + 1]];
+          const A = m.v[tri[0]], B = m.v[tri[1]], C = m.v[tri[2]];
+          const x0 = A[ax[0]], y0 = A[ax[1]], x1 = B[ax[0]], y1 = B[ax[1]], x2 = C[ax[0]], y2 = C[ax[1]];
+          const den = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2);
+          if (Math.abs(den) < 1e-12) continue;
+          const u = ((y1 - y2) * (qx - x2) + (x2 - x1) * (qy - y2)) / den;
+          const v2 = ((y2 - y0) * (qx - x2) + (x0 - x2) * (qy - y2)) / den;
+          const w = 1 - u - v2;
+          if (u >= -1e-6 && v2 >= -1e-6 && w >= -1e-6) return { tri, w: [u, v2, w] };
+        }
+        return null;
+      }
+
+      // Пик на поверхности фигуры по лучу: ближайшая грань → точка → классификация
+      // (вершина / ребро / внутри грани). Возвращает { p, pick } или null
+      function s3dPickSurface(item, ray) {
+        const info = s3dMeshInfo(item.mesh), m = item.mesh;
+        let best = null;
+        m.f.forEach((face, k) => {
+          const fn = info.fn[k];
+          const den = v3dot(fn, ray.d);
+          if (Math.abs(den) < 1e-9) return;
+          const t = v3dot(fn, v3sub(info.fc[k], ray.o)) / den;
+          if (t < 0.2 || (best && t >= best.t)) return;
+          const q = [ray.o[0] + ray.d[0] * t, ray.o[1] + ray.d[1] * t, ray.o[2] + ray.d[2] * t];
+          if (!s3dPointInFace(m, face, fn, q)) return;
+          best = { t, q, face: k };
+        });
+        if (!best) return null;
+        const q = best.q;
+        // 1) близко к вершине → вершина
+        let vi = -1, vd = Infinity;
+        m.v.forEach((p, i) => {
+          const dd = Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+          if (dd < vd) {
+            vd = dd;
+            vi = i;
+          }
+        });
+        if (vd < Math.max(0.07, item.r * 0.1)) return { p: m.v[vi].slice(), pick: { k: "v", i: vi } };
+        // 2) близко к ребру грани → точка на ребре
+        const face = m.f[best.face];
+        let ea = -1, eb = -1, ed = Infinity, et = 0;
+        face.forEach((a, i) => {
+          const b = face[(i + 1) % face.length];
+          const A = m.v[a], B = m.v[b];
+          const ab = v3sub(B, A);
+          const l2 = v3dot(ab, ab) || 1;
+          const tt = s3dClamp(v3dot(v3sub(q, A), ab) / l2, 0, 1);
+          const px = A[0] + ab[0] * tt - q[0], py = A[1] + ab[1] * tt - q[1], pz = A[2] + ab[2] * tt - q[2];
+          const dd = Math.hypot(px, py, pz);
+          if (dd < ed) {
+            ed = dd;
+            ea = a;
+            eb = b;
+            et = tt;
+          }
+        });
+        if (ed < Math.max(0.05, item.r * 0.08)) {
+          const A = m.v[ea], B = m.v[eb];
+          return { p: v3lerp(A, B, et), pick: { k: "e", a: ea, b: eb, t: et } };
+        }
+        // 3) внутри грани → барицентрические координаты
+        const tri = s3dFaceTri(m, face, info.fn[best.face], q);
+        if (tri) return { p: q, pick: { k: "f", tri: tri.tri, w: tri.w } };
+        return { p: q, pick: { k: "v", i: vi } }; // запасной вариант
+      }
+
+      // Перестроить сохранённые сечения после изменения меша фигуры
+      function s3dRebuildSections(item) {
+        (item.sections || []).forEach((sec) => {
+          const b = s3dBuildSectionFromPicks(item, sec.picks);
+          if (b && b.poly) sec.poly = b.poly;
+        });
+      }
+
+      // Нормализация сечений при загрузке: пересчитываем poly из picks
+      function s3dNormSections(item, arr) {
+        const out = [];
+        const used = new Set();
+        (Array.isArray(arr) ? arr : []).slice(0, S3D_MAX_SECTIONS).forEach((s, i) => {
+          if (!s || typeof s !== "object") return;
+          const picks = s3dNormPicks(item, s.picks);
+          if (picks.length < 3) return;
+          const built = s3dBuildSectionFromPicks(item, picks);
+          if (!built || !built.poly) return;
+          let id = Number.isInteger(s.id) && !used.has(s.id) ? s.id : 0;
+          if (!id) {
+            id = 1;
+            while (used.has(id)) id++;
+          }
+          used.add(id);
+          out.push({ id, hidden: !!s.hidden, picks, poly: built.poly });
+        });
+        return out;
       }
 
       // Рендер сцены в контекст g размером W×H (общий для доски и модального окна)
@@ -6465,6 +6896,67 @@
             g.stroke();
           });
         }
+
+        // ===== Подтверждённые сечения фигур (метод следов) =====
+        sp.items.forEach((item) => {
+          (item.sections || []).forEach((sec) => {
+            if (sec.hidden || !Array.isArray(sec.poly) || sec.poly.length < 3) return;
+            if (sec.poly.some((p) => nearFn(p) <= 0)) return;
+            const pp = sec.poly.map(proj);
+            const selSec = opts.selSec && opts.selSec.itemId === item.id && opts.selSec.id === sec.id;
+            g.beginPath();
+            pp.forEach((p, i) => (i === 0 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y)));
+            g.closePath();
+            g.fillStyle = selSec ? "rgba(191,90,242,0.5)" : "rgba(255,106,0,0.42)";
+            g.fill();
+            g.strokeStyle = selSec ? "#bf5af2" : "#ff6a00";
+            g.lineWidth = selSec ? 3 : 2.4;
+            g.stroke();
+          });
+        });
+
+        // ===== Предпросмотр сечения: пунктирные следы по граням + контур =====
+        const pv = opts.preview;
+        if (pv && pv.poly && pv.poly.length >= 3) {
+          g.setLineDash([7, 4]);
+          g.strokeStyle = "#ff9500";
+          g.lineWidth = 1.2;
+          (pv.traces || []).forEach((tr) => line(tr.a, tr.b, [nearFn]));
+          g.setLineDash([]);
+          if (pv.poly.every((p) => nearFn(p) > 0)) {
+            const pp = pv.poly.map(proj);
+            g.beginPath();
+            pp.forEach((p, i) => (i === 0 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y)));
+            g.closePath();
+            g.fillStyle = "rgba(255,106,0,0.3)";
+            g.fill();
+            g.strokeStyle = "#ff6a00";
+            g.lineWidth = 2;
+            g.setLineDash([4, 3]);
+            g.stroke();
+            g.setLineDash([]);
+          }
+        }
+
+        // ===== Отмеченные пользователем точки =====
+        (opts.picks || []).forEach((pk) => {
+          const item = sp.items.find((i) => i.id === pk.itemId);
+          if (!item) return;
+          const p3 = s3dResolvePick(item, pk.pick) || pk.p;
+          if (!p3 || nearFn(p3) <= 0) return;
+          const s = proj(p3);
+          g.beginPath();
+          g.arc(s.x, s.y, 7, 0, Math.PI * 2);
+          g.fillStyle = "#ffffff";
+          g.fill();
+          g.strokeStyle = "#ff6a00";
+          g.lineWidth = 2.5;
+          g.stroke();
+          g.beginPath();
+          g.arc(s.x, s.y, 2.6, 0, Math.PI * 2);
+          g.fillStyle = "#ff6a00";
+          g.fill();
+        });
         g.restore();
         return res;
       }
@@ -6485,6 +6977,30 @@
             if (inside && z < bestZ) {
               bestZ = z;
               best = item.id;
+            }
+          });
+        });
+        return best;
+      }
+
+      // Под каким сечением точка экрана (x, y) — для выделения/скрытия/удаления
+      function s3dPickSection(sp, W, H, x, y) {
+        const cm = s3dCamera(sp.cam, W, H);
+        let best = null, bestZ = Infinity;
+        sp.items.forEach((item) => {
+          (item.sections || []).forEach((sec) => {
+            if (sec.hidden || !Array.isArray(sec.poly) || sec.poly.length < 3) return;
+            const pp = sec.poly.map((p) => s3dProject(cm, p));
+            if (pp.some((p) => p.z < 0.2)) return;
+            let inside = false;
+            for (let i = 0, j = pp.length - 1; i < pp.length; j = i++) {
+              if (pp[i].y > y !== pp[j].y > y && x < ((pp[j].x - pp[i].x) * (y - pp[i].y)) / (pp[j].y - pp[i].y) + pp[i].x)
+                inside = !inside;
+            }
+            const z = pp.reduce((s, p) => s + p.z, 0) / pp.length;
+            if (inside && z < bestZ) {
+              bestZ = z;
+              best = { itemId: item.id, id: sec.id };
             }
           });
         });
@@ -6541,6 +7057,12 @@
           objId: obj.id,
           sp: JSON.parse(JSON.stringify(s3dGet(obj))),
           sel: null,
+          selSec: null,       // выделенное сечение { itemId, id }
+          secMode: false,     // режим отметки точек
+          secPicks: [],       // [{ itemId, pick, p }] — отмеченные точки
+          secItemId: null,    // фигура, на которой идёт отметка
+          secPreview: null,   // { itemId, n, d, poly, traces } — предпросмотр сечения
+          secErr: "",         // текст ошибки выбора точек
           canvas: cv,
           g: cv.getContext("2d"),
           W: 640, H: 440, dpr: 1,
@@ -6549,6 +7071,8 @@
           commitTimer: null,
           sections: [],
         };
+        // Старую секущую плоскость по оси больше не редактируем — гасим её
+        vp3d.sp.cut.on = false;
         const first = vp3d.sp.items[0];
         vp3d.sel = first ? first.id : null;
         vp3dResize();
@@ -6589,38 +7113,43 @@
         const g = vp3d.g;
         g.setTransform(vp3d.dpr, 0, 0, vp3d.dpr, 0, 0);
         g.clearRect(0, 0, vp3d.W, vp3d.H);
-        const res = s3dRender(g, vp3d.W, vp3d.H, vp3d.sp, { sel: vp3d.sel });
+        const res = s3dRender(g, vp3d.W, vp3d.H, vp3d.sp, {
+          sel: vp3d.sel,
+          selSec: vp3d.selSec,
+          picks: vp3d.secPicks,
+          preview: vp3d.secPreview,
+        });
         vp3d.sections = res.sections;
         const info = document.getElementById("vp3d-info");
         if (info) {
-          const cut = vp3d.sp.cut;
-          if (!cut.on) info.textContent = "";
-          else if (!res.sections.length) info.textContent = "✂️ Плоскость не пересекает фигуры";
-          else
-            info.textContent =
-              "✂️ Сечение: " +
-              res.sections
-                .map((s) => {
-                  const lab = (S3D_SHAPES.find((x) => x.id === s.kind) || {}).label || s.kind;
-                  return `${lab} — ${s3dSectionName(s.n)}, S ≈ ${s.area.toFixed(2)}`;
-                })
-                .join(" · ");
+          if (vp3d.secMode) {
+            if (vp3d.secErr) info.textContent = "⚠️ " + vp3d.secErr;
+            else if (vp3d.secPreview)
+              info.textContent = `Предпросмотр: ${s3dSectionName(vp3d.secPreview.poly.length)}, S ≈ ${s3dPolyArea(vp3d.secPreview.poly).toFixed(2)} — «✓ Сохранить» или «✕» отмена`;
+            else if (vp3d.secPicks.length >= 3) info.textContent = `Точек: ${vp3d.secPicks.length} — нажмите «✂ Сечение»`;
+            else if (vp3d.secPicks.length) info.textContent = `Точек: ${vp3d.secPicks.length} — нужно минимум 3`;
+            else info.textContent = "📍 Кликайте по фигуре: точки ставятся на вершинах, рёбрах и гранях";
+          } else {
+            const sec = vp3dSelectedSection();
+            info.textContent = sec ? `Сечение: ${s3dSectionName(sec.poly.length)}, S ≈ ${s3dPolyArea(sec.poly).toFixed(2)}` : "";
+          }
         }
+      }
+
+      // Выделенное сечение на выделенной/любой фигуре
+      function vp3dSelectedSection() {
+        if (!vp3d || !vp3d.selSec) return null;
+        const it = vp3d.sp.items.find((i) => i.id === vp3d.selSec.itemId);
+        return (it && (it.sections || []).find((s) => s.id === vp3d.selSec.id)) || null;
       }
 
       function vp3dSyncControls() {
         if (!vp3d) return;
         const $ = (id) => document.getElementById(id);
-        const cut = vp3d.sp.cut;
-        if ($("vp3d-cut")) $("vp3d-cut").checked = cut.on;
-        if ($("vp3d-axis")) $("vp3d-axis").value = cut.axis;
-        if ($("vp3d-pos")) $("vp3d-pos").value = cut.pos;
-        if ($("vp3d-pos-val")) $("vp3d-pos-val").textContent = cut.pos.toFixed(2);
-        if ($("vp3d-keep")) $("vp3d-keep").value = String(cut.keep);
         const it = vp3dItem();
         const row = $("vp3d-item-row");
         if (row) row.style.opacity = it ? "1" : "0.45";
-        ["vp3d-size", "vp3d-height", "vp3d-color", "vp3d-del"].forEach((id) => {
+        ["vp3d-size", "vp3d-height", "vp3d-color", "vp3d-del", "vp3d-n"].forEach((id) => {
           if ($(id)) $(id).disabled = !it;
         });
         if (it) {
@@ -6628,15 +7157,34 @@
           if ($("vp3d-height")) $("vp3d-height").value = it.c[1];
           if ($("vp3d-color")) $("vp3d-color").value = it.color;
         }
+        // n — число сторон основания (только у призм/пирамид)
+        const hasN = it && (S3D_SHAPES.find((s) => s.id === it.kind) || {}).n;
+        const nLbl = $("vp3d-n-lbl");
+        if (nLbl) nLbl.style.display = hasN ? "inline-flex" : "none";
+        if (hasN && $("vp3d-n")) $("vp3d-n").value = String((it.params && it.params.n) || 3);
         const title = $("vp3d-title");
         if (title) {
           const kind = it ? S3D_SHAPES.find((s) => s.id === it.kind) : null;
           title.textContent = "🧊 3D-пространство" + (kind ? " · " + kind.icon + " " + kind.label : "");
         }
         const add = vp3d.sp.items.length >= S3D_MAX_ITEMS;
-        ["vp3d-add-cube", "vp3d-add-cylinder", "vp3d-add-sphere"].forEach((id) => {
+        ["vp3d-add", "vp3d-add-kind"].forEach((id) => {
           if ($(id)) $(id).disabled = add;
         });
+        // Сечения методом следов
+        const secBtn = $("vp3d-sec");
+        if (secBtn) secBtn.classList.toggle("active", !!vp3d.secMode);
+        if ($("vp3d-sec-join")) $("vp3d-sec-join").disabled = !(vp3d.secMode && vp3d.secPicks.length >= 3 && !vp3d.secPreview);
+        if ($("vp3d-sec-ok")) $("vp3d-sec-ok").style.display = vp3d.secPreview ? "" : "none";
+        if ($("vp3d-sec-cancel"))
+          $("vp3d-sec-cancel").style.display = vp3d.secMode && (vp3d.secPicks.length || vp3d.secPreview) ? "" : "none";
+        const sec = vp3dSelectedSection();
+        if ($("vp3d-sec-eye")) {
+          $("vp3d-sec-eye").disabled = !sec;
+          $("vp3d-sec-eye").textContent = sec && sec.hidden ? "🚫" : "👁";
+          $("vp3d-sec-eye").title = sec && sec.hidden ? "Показать сечение" : "Скрыть сечение";
+        }
+        if ($("vp3d-sec-del")) $("vp3d-sec-del").disabled = !sec;
       }
 
       // Каждое завершённое 3D-изменение: запись в объект + история + сохранение + sync
@@ -6652,6 +7200,11 @@
         sp.cam.dist = s3dRound(sp.cam.dist);
         sp.cam.t = sp.cam.t.map(s3dRound);
         sp.cut.pos = s3dRound(sp.cut.pos);
+        sp.items.forEach((it) =>
+          (it.sections || []).forEach((s) => {
+            s.poly = s.poly.map((p) => p.map(s3dRound));
+          }),
+        );
         obj.space3d = sp;
         saveBoardHistory();
         render();
@@ -6675,17 +7228,27 @@
         }
         vp3d.sp = JSON.parse(JSON.stringify(s3dGet(obj)));
         if (vp3d.sel != null && !vp3d.sp.items.some((i) => i.id === vp3d.sel)) vp3d.sel = null;
+        if (vp3d.selSec && !vp3dSelectedSection()) vp3d.selSec = null;
+        if (vp3d.secItemId && !vp3d.sp.items.some((i) => i.id === vp3d.secItemId)) {
+          vp3d.secPicks = [];
+          vp3d.secItemId = null;
+          vp3d.secPreview = null;
+        }
         vp3dSyncControls();
         vp3dRender();
       }
 
       function vp3dAddItem(kind) {
         if (!vp3d || vp3d.sp.items.length >= S3D_MAX_ITEMS) return;
+        const def = S3D_SHAPES.find((s) => s.id === kind) || S3D_SHAPES[0];
         const sp = vp3d.sp, r = 0.8;
         const cells = [[0, 0], [-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, 2], [-2, 2], [2, -2]];
         const free = cells.find((c) => sp.items.every((i) => Math.hypot(i.c[0] - c[0], i.c[2] - c[1]) > 1.5));
         const cell = free || cells[sp.items.length % cells.length];
-        const item = s3dMakeItem(sp.nextItemId++, kind, [cell[0], r, cell[1]], r, S3D_COLORS[sp.items.length % S3D_COLORS.length]);
+        const params = def.n ? { n: def.defN } : {};
+        // сажаем тело на «пол» — нижняя точка меша на y = 0
+        const c = s3dFloorCenter(def.id, cell[0], cell[1], r, params);
+        const item = s3dMakeItem(sp.nextItemId++, def.id, c, r, S3D_COLORS[sp.items.length % S3D_COLORS.length], params);
         sp.items.push(item);
         vp3d.sel = item.id;
         vp3dSyncControls();
@@ -6698,13 +7261,102 @@
         if (!it) return;
         vp3d.sp.items = vp3d.sp.items.filter((i) => i.id !== it.id);
         vp3d.sel = null;
+        if (vp3d.selSec && vp3d.selSec.itemId === it.id) vp3d.selSec = null;
+        if (vp3d.secItemId === it.id) {
+          vp3d.secPicks = [];
+          vp3d.secItemId = null;
+          vp3d.secPreview = null;
+        }
         vp3dSyncControls();
         vp3dRender();
         vp3dCommit();
       }
 
       function vp3dRebuildItem(it) {
-        it.mesh = s3dBuildMesh(it.kind, it.c, it.r);
+        it.mesh = s3dBuildMesh(it.kind, it.c, it.r, it.params);
+        s3dRebuildSections(it); // сечения привязаны к точкам — пересчитываем полигоны
+      }
+
+      // ---- сечение методом следов: сбор точек → предпросмотр → подтверждение ----
+      function vp3dSecToggleMode(on) {
+        if (!vp3d) return;
+        vp3d.secMode = on === undefined ? !vp3d.secMode : !!on;
+        if (!vp3d.secMode) {
+          vp3d.secPicks = [];
+          vp3d.secItemId = null;
+          vp3d.secPreview = null;
+        }
+        vp3d.secErr = "";
+        vp3dSyncControls();
+        vp3dRender();
+      }
+
+      function vp3dSecClear() {
+        if (!vp3d) return;
+        vp3d.secPicks = [];
+        vp3d.secItemId = null;
+        vp3d.secPreview = null;
+        vp3d.secErr = "";
+        vp3dSyncControls();
+        vp3dRender();
+      }
+
+      // «✂ Сечение» — строим плоскость по отмеченным точкам и показываем следы
+      function vp3dSecJoin() {
+        if (!vp3d || vp3d.secPicks.length < 3) return;
+        const it = vp3d.sp.items.find((i) => i.id === vp3d.secItemId);
+        if (!it) return;
+        const b = s3dBuildSectionFromPicks(it, vp3d.secPicks.map((p) => p.pick));
+        vp3d.secErr = "";
+        if (!b || !b.poly) {
+          vp3d.secErr = (b && b.ru) || "Не удалось построить сечение — выберите точки иначе";
+          vp3d.secPreview = null;
+        } else {
+          vp3d.secPreview = { itemId: it.id, n: b.n, d: b.d, poly: b.poly, traces: b.traces };
+        }
+        vp3dSyncControls();
+        vp3dRender();
+      }
+
+      // «✓» — сохранить сечение на фигуре
+      function vp3dSecConfirm() {
+        const pv = vp3d && vp3d.secPreview;
+        if (!pv) return;
+        const it = vp3d.sp.items.find((i) => i.id === pv.itemId);
+        if (!it) return;
+        it.sections = (it.sections || []).slice(0, S3D_MAX_SECTIONS);
+        const nid = it.sections.reduce((m, s) => Math.max(m, s.id || 0), 0) + 1;
+        it.sections.push({ id: nid, hidden: false, picks: vp3d.secPicks.map((p) => p.pick), poly: pv.poly.map((p) => p.slice()) });
+        vp3d.sel = it.id;
+        vp3d.selSec = { itemId: it.id, id: nid };
+        vp3d.secPicks = [];
+        vp3d.secItemId = null;
+        vp3d.secPreview = null;
+        vp3d.secErr = "";
+        vp3d.secMode = false;
+        vp3dSyncControls();
+        vp3dRender();
+        vp3dCommit();
+      }
+
+      function vp3dSecEye() {
+        const sec = vp3dSelectedSection();
+        if (!sec) return;
+        sec.hidden = !sec.hidden;
+        vp3dSyncControls();
+        vp3dRender();
+        vp3dCommit();
+      }
+
+      function vp3dSecDelete() {
+        const sec = vp3dSelectedSection();
+        if (!sec) return;
+        const it = vp3d.sp.items.find((i) => i.id === vp3d.selSec.itemId);
+        if (it) it.sections = (it.sections || []).filter((s) => s.id !== sec.id);
+        vp3d.selSec = null;
+        vp3dSyncControls();
+        vp3dRender();
+        vp3dCommit();
       }
 
       // Биндинги окна 3D — вызывается из initAllEventListeners,
@@ -6738,9 +7390,20 @@
           const el = $(id);
           if (el) el.addEventListener(ev, fn);
         };
-        on("vp3d-add-cube", "click", () => vp3dAddItem("cube"));
-        on("vp3d-add-cylinder", "click", () => vp3dAddItem("cylinder"));
-        on("vp3d-add-sphere", "click", () => vp3dAddItem("sphere"));
+        // Список тел ЕГЭ — заполняем из каталога
+        const kindSel = $("vp3d-add-kind");
+        if (kindSel && !kindSel.options.length) {
+          S3D_SHAPES.forEach((s) => {
+            const o = document.createElement("option");
+            o.value = s.id;
+            o.textContent = s.icon + " " + s.label;
+            kindSel.appendChild(o);
+          });
+        }
+        on("vp3d-add", "click", function () {
+          const sel = $("vp3d-add-kind");
+          vp3dAddItem(sel && sel.value ? sel.value : "cube");
+        });
         on("vp3d-del", "click", vp3dDeleteSelected);
         on("vp3d-reset", "click", function () {
           if (!vp3d) return;
@@ -6748,36 +7411,22 @@
           vp3dRender();
           vp3dCommit();
         });
-        on("vp3d-cut", "change", function () {
-          if (!vp3d) return;
-          vp3d.sp.cut.on = this.checked;
-          vp3dRender();
-          vp3dCommit();
-        });
-        on("vp3d-axis", "change", function () {
-          if (!vp3d) return;
-          vp3d.sp.cut.axis = this.value;
-          vp3dRender();
-          vp3dCommit();
-        });
-        on("vp3d-keep", "change", function () {
-          if (!vp3d) return;
-          vp3d.sp.cut.keep = parseInt(this.value, 10) || 0;
-          if (vp3d.sp.cut.keep) vp3d.sp.cut.on = true;
+        // Сечение методом следов
+        on("vp3d-sec", "click", () => vp3dSecToggleMode());
+        on("vp3d-sec-join", "click", vp3dSecJoin);
+        on("vp3d-sec-ok", "click", vp3dSecConfirm);
+        on("vp3d-sec-cancel", "click", vp3dSecClear);
+        on("vp3d-sec-eye", "click", vp3dSecEye);
+        on("vp3d-sec-del", "click", vp3dSecDelete);
+        on("vp3d-n", "change", function () {
+          const it = vp3dItem();
+          if (!it) return;
+          it.params = it.params || {};
+          it.params.n = s3dClamp(Math.round(parseFloat(this.value) || 3), 3, 8);
+          vp3dRebuildItem(it);
           vp3dSyncControls();
           vp3dRender();
           vp3dCommit();
-        });
-        on("vp3d-pos", "input", function () {
-          if (!vp3d) return;
-          vp3d.sp.cut.pos = s3dClamp(parseFloat(this.value) || 0, -S3D_LIMIT, S3D_LIMIT);
-          vp3d.sp.cut.on = true;
-          const c = $("vp3d-cut");
-          if (c) c.checked = true;
-          const val = $("vp3d-pos-val");
-          if (val) val.textContent = vp3d.sp.cut.pos.toFixed(2);
-          vp3dRender();
-          vp3dCommitDebounced();
         });
         on("vp3d-size", "input", function () {
           const it = vp3dItem();
@@ -6842,15 +7491,62 @@
             }
             if (vp3d.pointers.size > 2) return;
             const panBtn = e.button === 1 || e.button === 2 || e.shiftKey;
-            const hit = panBtn ? null : s3dPick(vp3d.sp, vp3d.W, vp3d.H, p.x, p.y);
+            // Режим «📍 Точки»: клик по фигуре ставит/снимает точку сечения
+            if (vp3d.secMode && !panBtn) {
+              const cm = s3dCamera(vp3d.sp.cam, vp3d.W, vp3d.H);
+              const ray = s3dRay(cm, p.x, p.y);
+              let surf = null, surfZ = Infinity;
+              vp3d.sp.items.forEach((it) => {
+                const h = s3dPickSurface(it, ray);
+                if (!h) return;
+                const z = s3dProject(cm, h.p).z;
+                if (z < surfZ) {
+                  surfZ = z;
+                  surf = { itemId: it.id, p: h.p, pick: h.pick };
+                }
+              });
+              if (surf) {
+                if (vp3d.secItemId && vp3d.secItemId !== surf.itemId) {
+                  const def = S3D_SHAPES.find((s) => s.id === (vp3d.sp.items.find((i) => i.id === vp3d.secItemId) || {}).kind);
+                  vp3d.secErr = "Все точки сечения — на одной фигуре («" + ((def && def.label) || "фигура") + "»)";
+                } else {
+                  const dup = vp3d.secPicks.findIndex(
+                    (pk) => Math.hypot(pk.p[0] - surf.p[0], pk.p[1] - surf.p[1], pk.p[2] - surf.p[2]) < 0.05,
+                  );
+                  if (dup >= 0) vp3d.secPicks.splice(dup, 1);
+                  else if (vp3d.secPicks.length < 12) vp3d.secPicks.push(surf);
+                  vp3d.secItemId = vp3d.secPicks.length ? vp3d.secPicks[0].itemId : null;
+                  vp3d.secPreview = null;
+                  vp3d.secErr = "";
+                }
+                vp3d.gesture = { type: "none" };
+                vp3dSyncControls();
+                vp3dRender();
+                return;
+              }
+              // промах — дальше как обычно: пустое место крутит обзор
+            }
+            // Клик по готовому сечению — выделить его (для скрытия/удаления)
+            const secHit = panBtn ? null : s3dPickSection(vp3d.sp, vp3d.W, vp3d.H, p.x, p.y);
+            if (secHit) {
+              vp3d.sel = secHit.itemId;
+              vp3d.selSec = secHit;
+              vp3d.gesture = { type: "none" };
+              vp3dSyncControls();
+              vp3dRender();
+              return;
+            }
+            const hit = panBtn || vp3d.secMode ? null : s3dPick(vp3d.sp, vp3d.W, vp3d.H, p.x, p.y);
             if (hit != null) {
               vp3d.sel = hit;
+              vp3d.selSec = null;
               const it = vp3dItem();
               vp3d.gesture = { type: "move", start: groundHit(p, it.c[1]), c0: it.c.slice(), changed: false };
               vp3dSyncControls();
             } else {
               if (!panBtn) {
                 vp3d.sel = null;
+                vp3d.selSec = null;
                 vp3dSyncControls();
               }
               vp3d.gesture = { type: panBtn ? "pan" : "orbit", x: p.x, y: p.y, changed: false };
@@ -9778,12 +10474,20 @@
                     </div>
                     <canvas id="vp3d-canvas" width="640" height="440"></canvas>
                     <div id="vp3d-controls" class="vp3d-toolbar">
-                        <button id="vp3d-add-cube" title="Добавить куб">🧊 Куб</button>
-                        <button id="vp3d-add-cylinder" title="Добавить цилиндр">🥫 Цилиндр</button>
-                        <button id="vp3d-add-sphere" title="Добавить сферу">🔮 Сфера</button>
+                        <select id="vp3d-add-kind" title="Вид тела"></select>
+                        <button id="vp3d-add" title="Добавить тело на сцену">➕ Добавить</button>
                         <button id="vp3d-del" title="Удалить выделенную фигуру">🗑</button>
                         <span class="vp3d-sep"></span>
                         <span id="vp3d-item-row">
+                            <label class="vp3d-lbl" id="vp3d-n-lbl" title="Число сторон основания">n =
+                                <select id="vp3d-n">
+                                    <option>3</option>
+                                    <option>4</option>
+                                    <option>5</option>
+                                    <option>6</option>
+                                    <option>8</option>
+                                </select>
+                            </label>
                             <label class="vp3d-lbl" title="Размер фигуры">Размер
                                 <input type="range" id="vp3d-size" min="0.3" max="1.5" step="0.05">
                             </label>
@@ -9795,24 +10499,17 @@
                     </div>
                     <div class="vp3d-toolbar">
                         <button id="vp3d-reset" title="Сбросить вращение и масштаб">↺ Сброс</button>
-                        <label id="vp3d-cut-label" title="Секущая плоскость">
-                            <input type="checkbox" id="vp3d-cut"> ✂️ Сечение
-                        </label>
-                        <select id="vp3d-axis" title="Ось сечения">
-                            <option value="x">⊥ X</option>
-                            <option value="y" selected>⊥ Y</option>
-                            <option value="z">⊥ Z</option>
-                        </select>
-                        <input type="range" id="vp3d-pos" min="-3.2" max="3.2" step="0.05" value="0" title="Положение плоскости">
-                        <span id="vp3d-pos-val">0.00</span>
-                        <select id="vp3d-keep" title="Какую часть оставить">
-                            <option value="0" selected>обе части</option>
-                            <option value="1">оставить «+»</option>
-                            <option value="-1">оставить «−»</option>
-                        </select>
+                        <span class="vp3d-sep"></span>
+                        <button id="vp3d-sec" title="Режим отметки точек на фигуре">📍 Точки</button>
+                        <button id="vp3d-sec-join" title="Построить сечение по отмеченным точкам (нужно ≥3)">✂ Сечение</button>
+                        <button id="vp3d-sec-ok" class="vp3d-accent" title="Подтвердить и сохранить сечение">✓ Сохранить</button>
+                        <button id="vp3d-sec-cancel" title="Очистить отмеченные точки">✕</button>
+                        <span class="vp3d-sep"></span>
+                        <button id="vp3d-sec-eye" title="Показать / скрыть выделенное сечение">👁</button>
+                        <button id="vp3d-sec-del" title="Удалить выделенное сечение">🗑✂</button>
                     </div>
                     <div id="vp3d-info"></div>
-                    <div id="vp3d-hint">Тяни пустое место — вращение · колесо — масштаб · Shift / средняя кнопка — сдвиг · фигуру — переместить · двойной палец — пинч</div>
+                    <div id="vp3d-hint">Тяни пустое место — вращение · колесо — масштаб · Shift / средняя кнопка — сдвиг · фигуру — переместить · «📍 Точки» — отметить точки сечения (вершины, рёбра, грани), затем «✂ Сечение»</div>
                 </div>
             </div>
 
