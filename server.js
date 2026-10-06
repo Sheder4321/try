@@ -184,7 +184,7 @@ app.use("/uploads", express.static("uploads", { maxAge: "7d", immutable: true })
 
 
 app.post("/api/register", async (req, res) => {
-  const { username, password, role = "student", fullName, email } = req.body;
+  const { username, password, role = "student", fullName, email, consent } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ error: "Логин и пароль обязательны" });
@@ -195,11 +195,16 @@ app.post("/api/register", async (req, res) => {
   if (password.length < 6) {
     return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
   }
+  if (consent !== true) {
+    return res.status(400).json({
+      error: "Необходимо принять условия Пользовательского соглашения и дать согласие на обработку персональных данных",
+    });
+  }
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      "INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, role",
+      "INSERT INTO users (username, password_hash, role, full_name, email, consent_accepted_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP) RETURNING id, username, role",
       [username, hashedPassword, role, fullName || username, email.toLowerCase().trim()],
     );
     const user = result.rows[0];
@@ -623,6 +628,81 @@ app.delete("/api/invite/:token", authenticateToken, requireTeacher, async (req, 
 // API /api (классы и далее) — требуется авторизация
 // ============================================================
 app.use("/api", authenticateToken);
+
+// Профиль текущего пользователя: данные аккаунта + классы (+ последние работы)
+app.get("/api/profile", async (req, res) => {
+  try {
+    const userResult = await pool.query(
+      "SELECT id, username, role, full_name, email, created_at, consent_accepted_at FROM users WHERE id = $1",
+      [req.user.id],
+    );
+    if (userResult.rows.length === 0) return res.status(404).json({ error: "Пользователь не найден" });
+    const u = userResult.rows[0];
+
+    let classesQuery, recentQuery, params = [req.user.id];
+    if (req.user.role === "teacher") {
+      classesQuery = `
+        SELECT c.id, c.name, c.description, c.created_at,
+               COUNT(DISTINCT cs.student_id) AS student_count
+        FROM classes c
+        LEFT JOIN class_students cs ON c.id = cs.class_id
+        WHERE c.teacher_id = $1
+        GROUP BY c.id
+        ORDER BY c.created_at DESC`;
+      recentQuery = `
+        SELECT s.id, s.status, s.score, s.submitted_at, s.created_at,
+               a.title AS assignment_title, a.class_id,
+               COALESCE(u.full_name, u.username) AS student_name
+        FROM submissions s
+        JOIN assignments a ON s.assignment_id = a.id
+        JOIN users u ON s.student_id = u.id
+        WHERE a.teacher_id = $1
+        ORDER BY s.created_at DESC
+        LIMIT 5`;
+    } else {
+      classesQuery = `
+        SELECT c.id, c.name, c.description, c.created_at,
+               COALESCE(u.full_name, u.username) AS teacher_name,
+               COUNT(DISTINCT cs2.student_id) AS student_count
+        FROM classes c
+        JOIN class_students cs ON c.id = cs.class_id AND cs.student_id = $1
+        JOIN users u ON c.teacher_id = u.id
+        LEFT JOIN class_students cs2 ON c.id = cs2.class_id
+        GROUP BY c.id, u.full_name, u.username
+        ORDER BY c.created_at DESC`;
+      recentQuery = `
+        SELECT s.id, s.status, s.score, s.submitted_at, s.created_at,
+               a.title AS assignment_title, a.class_id, a.max_score
+        FROM submissions s
+        JOIN assignments a ON s.assignment_id = a.id
+        WHERE s.student_id = $1
+        ORDER BY s.created_at DESC
+        LIMIT 5`;
+    }
+
+    const [classesResult, recentResult] = await Promise.all([
+      pool.query(classesQuery, params),
+      pool.query(recentQuery, params),
+    ]);
+
+    res.json({
+      user: {
+        id: u.id,
+        username: u.username,
+        role: u.role,
+        fullName: u.full_name,
+        email: u.email,
+        createdAt: u.created_at,
+        consentAcceptedAt: u.consent_accepted_at,
+      },
+      classes: classesResult.rows,
+      recentSubmissions: recentResult.rows,
+    });
+  } catch (error) {
+    console.error("Ошибка получения профиля:", error);
+    res.status(500).json({ error: "Ошибка получения профиля" });
+  }
+});
 
 // Смена пароля из своей сессии (в т.ч. обязательная после входа по временному паролю)
 app.post("/api/change-password", async (req, res) => {

@@ -158,6 +158,120 @@
         background: #34c759;
       }
 
+      /* ===== ПОДСКАЗКА ВЕРШИН ===== */
+      #vertex-hint {
+        position: absolute;
+        z-index: 100000;
+        display: none;
+        transform: translateX(-50%);
+        padding: 3px 10px;
+        background: rgba(255, 149, 0, 0.92);
+        color: #fff;
+        border-radius: 6px;
+        font-size: 12px;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+
+      /* ===== КНОПКА 3D ===== */
+      #view3d-btn {
+        position: absolute;
+        z-index: 100000;
+        display: none;
+        padding: 6px 14px;
+        background: #5e5ce6;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 4px 16px rgba(94, 92, 230, 0.4);
+        transition: all 0.2s ease;
+        pointer-events: auto;
+        white-space: nowrap;
+      }
+      #view3d-btn:hover {
+        background: #4a48d4;
+        transform: translateY(-2px);
+      }
+
+      /* ===== 3D-ВЬЮПОРТ ===== */
+      #viewport3d-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 300000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(20, 20, 40, 0.55);
+      }
+      #viewport3d-panel {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        padding: 12px 14px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      #vp3d-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      #vp3d-title {
+        font-weight: 600;
+        font-size: 15px;
+      }
+      #vp3d-close {
+        border: none;
+        background: #f0f0f3;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      #vp3d-close:hover { background: #e4e4ea; }
+      #vp3d-canvas {
+        border-radius: 10px;
+        background: linear-gradient(180deg, #f7f8fc 0%, #eceef6 100%);
+        cursor: grab;
+        touch-action: none;
+      }
+      #vp3d-canvas:active { cursor: grabbing; }
+      #vp3d-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      #vp3d-controls button,
+      #vp3d-controls select {
+        padding: 6px 12px;
+        border: 1px solid #dcdce4;
+        background: #fff;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      #vp3d-controls button:hover { background: #f3f3f8; }
+      #vp3d-cut-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+      }
+      #vp3d-pos { width: 140px; }
+      #vp3d-hint {
+        font-size: 11px;
+        color: #8a8a95;
+        text-align: center;
+      }
+
       /* ===== ПАНЕЛЬ ФОРМАТИРОВАНИЯ ЛИСТА ===== */
       #sheet-text-toolbar {
         position: absolute;
@@ -3093,6 +3207,15 @@
             <option value="student">Ученик</option>
             <option value="teacher">Учитель</option>
           </select>
+          <label id="consent-wrap" style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#555;text-align:left;line-height:1.4;padding:4px;border-radius:6px;transition:0.2s;">
+            <input type="checkbox" id="register-consent" style="width:auto;margin:2px 0 0;flex-shrink:0;" />
+            <span>
+              Я принимаю условия
+              <a href="#" onclick="event.preventDefault();showLegalDoc('offer')" style="color:#667eea;">Пользовательского соглашения</a>
+              и даю согласие на обработку персональных данных в соответствии с
+              <a href="#" onclick="event.preventDefault();showLegalDoc('privacy')" style="color:#667eea;">Политикой обработки персональных данных</a>
+            </span>
+          </label>
           <button type="submit" class="auth-btn">Зарегистрироваться</button>
         </form>
       </div>
@@ -3109,7 +3232,8 @@
         </div>
       </header>
       <nav class="nav" id="main-nav">
-        <button class="active" data-page="board" onclick="loadPage('board')">Доска</button>
+        <button class="active" data-page="profile" onclick="loadPage('profile')">Профиль</button>
+        <button data-page="board" onclick="loadPage('board')">Доска</button>
         <button data-page="classes" onclick="loadPage('classes')">Классы</button>
         <button data-page="assignments" onclick="loadPage('assignments')">Задания</button>
       </nav>
@@ -4195,6 +4319,17 @@
       function getObjectBounds(obj) {
         if (!obj) return null;
         let x1, x2, y1, y2;
+        if (Array.isArray(obj.vertices) && obj.vertices.length >= 3 && isVertexShape(obj)) {
+          // Фигура с отредактированными вершинами — границы по точкам
+          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+          obj.vertices.forEach((v) => {
+            if (v.x < minX) minX = v.x;
+            if (v.x > maxX) maxX = v.x;
+            if (v.y < minY) minY = v.y;
+            if (v.y > maxY) maxY = v.y;
+          });
+          return { minX: minX, maxX: maxX, minY: minY, maxY: maxY };
+        }
         if (obj.type === "free-line" && obj.points && obj.points.length > 0) {
           x1 = Math.min(...obj.points.map((p) => p.x));
           x2 = Math.max(...obj.points.map((p) => p.x));
@@ -4881,6 +5016,7 @@
         drawObjects();
         drawTempShape();
         updateSelectionFrame();
+        drawVertexAnchors(ctx);
         updateSelectionBox();
         updateStatus();
       }
@@ -4969,15 +5105,19 @@
 
           if (obj.type !== "free-line") {
             const isLine = obj.type === "segment" || obj.type === "ray" || obj.type === "line";
-            drawShape(
-              ctx,
-              obj.type,
-              screenP1,
-              screenP2,
-              obj.color || currentColor,
-              worldThickness,
-              isLine ? obj.dashed || false : false,
-            );
+            if (Array.isArray(obj.vertices) && isVertexShape(obj)) {
+              drawShapeVertices(ctx, obj);
+            } else {
+              drawShape(
+                ctx,
+                obj.type,
+                screenP1,
+                screenP2,
+                obj.color || currentColor,
+                worldThickness,
+                isLine ? obj.dashed || false : false,
+              );
+            }
             return;
           }
 
@@ -5428,6 +5568,584 @@
         ctx.setLineDash([]);
       }
 
+      // ============================================================
+      // РЕДАКТИРУЕМЫЕ ВЕРШИНЫ ФИГУР
+      // ============================================================
+      // obj.vertices — массив {x, y} в МИРОВЫХ координатах в порядке
+      // отрисовки (как строит drawShape). Старые доски без vertices
+      // рисуются из рамки x1..y2 как раньше — вершины материализуются
+      // лениво при первом перетаскивании точки.
+      const VERTEX_SHAPES = [
+        "triangle", "triangle_eq", "triangle_right", "square", "rect",
+        "parallelogram", "rhombus", "trapezoid", "hexagon", "cube",
+      ];
+      let isVertexDragging = false;
+      let vertexDrag = null; // { objId, index }
+
+      function isVertexShape(obj) {
+        return !!obj && VERTEX_SHAPES.indexOf(obj.type) >= 0;
+      }
+
+      // Канонические вершины фигуры из её рамки (совместимость со старыми досками).
+      // Порядок для cube: [B,C,D,A, E,F,G,H] — передняя грань 0-1-2-3, задняя 4-5-6-7.
+      function getShapeVertices(obj) {
+        if (Array.isArray(obj.vertices) && obj.vertices.length >= 3) return obj.vertices;
+        const x1 = obj.x1, y1 = obj.y1, x2 = obj.x2, y2 = obj.y2;
+        const w = x2 - x1, h = y2 - y1;
+        const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+        switch (obj.type) {
+          case "triangle":
+            return [{ x: cx, y: y1 }, { x: x1, y: y2 }, { x: x2, y: y2 }];
+          case "triangle_right":
+            return [{ x: x1, y: y1 }, { x: x1, y: y2 }, { x: x2, y: y2 }];
+          case "triangle_eq": {
+            const side = Math.min(Math.abs(w), Math.abs(h));
+            const h3 = (side * Math.sqrt(3)) / 2;
+            return [{ x: cx, y: y1 }, { x: cx - side / 2, y: y1 + h3 }, { x: cx + side / 2, y: y1 + h3 }];
+          }
+          case "square":
+          case "rect":
+            return [{ x: x1, y: y1 }, { x: x2, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 }];
+          case "parallelogram": {
+            const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+            const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+            const shift = (maxX - minX) * 0.25;
+            return [
+              { x: minX + shift, y: minY }, { x: maxX, y: minY },
+              { x: maxX - shift, y: maxY }, { x: minX, y: maxY },
+            ];
+          }
+          case "rhombus":
+            return [{ x: cx, y: Math.min(y1, y2) }, { x: Math.max(x1, x2), y: cy }, { x: cx, y: Math.max(y1, y2) }, { x: Math.min(x1, x2), y: cy }];
+          case "trapezoid": {
+            const topW = w * 0.5;
+            return [
+              { x: cx - topW / 2, y: y1 }, { x: cx + topW / 2, y: y1 },
+              { x: x2, y: y2 }, { x: x1, y: y2 },
+            ];
+          }
+          case "hexagon": {
+            const hx = Math.abs(w) / 2, hy = Math.abs(h) / 2;
+            const v = [];
+            for (let i = 0; i < 6; i++) {
+              const a = (Math.PI / 180) * (30 + i * 60);
+              v.push({ x: cx + hx * Math.cos(a), y: cy + hy * Math.sin(a) });
+            }
+            return v;
+          }
+          case "cube": {
+            const sideC = Math.min(Math.abs(w), Math.abs(h));
+            const s2 = sideC * 0.5;
+            const off = s2 * 0.35;
+            const g1y = cy - s2 / 2 + off;
+            return [
+              { x: cx - s2 / 2, y: g1y },           // 0 B — передний левый верх
+              { x: cx + s2 / 2, y: g1y },           // 1 C — передний правый верх
+              { x: cx + s2 / 2, y: g1y + s2 },      // 2 D — передний правый низ
+              { x: cx - s2 / 2, y: g1y + s2 },      // 3 A — передний левый низ
+              { x: cx - s2 / 2 + off, y: g1y - off },     // 4 E — задний левый верх
+              { x: cx + s2 / 2 + off, y: g1y - off },     // 5 F — задний правый верх
+              { x: cx + s2 / 2 + off, y: g1y + s2 - off }, // 6 G — задний правый низ
+              { x: cx - s2 / 2 + off, y: g1y + s2 - off }, // 7 H — задний левый низ
+            ];
+          }
+        }
+        return [];
+      }
+
+      // Материализуем вершины объекта (лениво — при первом редактировании)
+      function ensureShapeVertices(obj) {
+        if (!Array.isArray(obj.vertices) || obj.vertices.length < 3) {
+          obj.vertices = getShapeVertices(obj);
+        }
+        return obj.vertices;
+      }
+
+      // Синхронизируем рамку x1..y2 с границами вершин
+      function syncShapeBoundsFromVertices(obj) {
+        if (!Array.isArray(obj.vertices) || obj.vertices.length === 0) return;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        obj.vertices.forEach((v) => {
+          if (v.x < minX) minX = v.x;
+          if (v.x > maxX) maxX = v.x;
+          if (v.y < minY) minY = v.y;
+          if (v.y > maxY) maxY = v.y;
+        });
+        obj.x1 = minX;
+        obj.x2 = maxX;
+        obj.y1 = minY;
+        obj.y2 = maxY;
+      }
+
+      // Отрисовка фигуры по сохранённым вершинам (вершины мировые → экранные)
+      function drawShapeVertices(ctx, obj) {
+        const verts = obj.vertices.map((v) => worldToScreen(v.x, v.y));
+        const thickness = (obj.thickness || currentThickness) * zoom;
+        ctx.save();
+        ctx.strokeStyle = obj.color || "#000";
+        ctx.fillStyle = (obj.color || "#000000") + "20";
+        ctx.lineWidth = thickness || 2;
+        ctx.lineJoin = "round";
+        ctx.setLineDash([]);
+        if (obj.type === "cube" && verts.length === 8) {
+          const poly = (ids) => {
+            ctx.beginPath();
+            ctx.moveTo(verts[ids[0]].x, verts[ids[0]].y);
+            for (let i = 1; i < ids.length; i++) ctx.lineTo(verts[ids[i]].x, verts[ids[i]].y);
+            ctx.closePath();
+            ctx.stroke();
+          };
+          poly([0, 1, 2, 3]); // передняя грань
+          poly([0, 4, 5, 1]); // верхняя грань
+          poly([1, 5, 6, 2]); // правая грань
+          ctx.setLineDash(getDashPattern(thickness, 1));
+          ctx.beginPath(); ctx.moveTo(verts[4].x, verts[4].y); ctx.lineTo(verts[7].x, verts[7].y); ctx.stroke(); // E→H
+          ctx.beginPath(); ctx.moveTo(verts[7].x, verts[7].y); ctx.lineTo(verts[3].x, verts[3].y); ctx.stroke(); // H→A
+          ctx.beginPath(); ctx.moveTo(verts[7].x, verts[7].y); ctx.lineTo(verts[6].x, verts[6].y); ctx.stroke(); // H→G
+          ctx.setLineDash([]);
+          ctx.restore();
+          return;
+        }
+        ctx.beginPath();
+        verts.forEach((v, i) => (i === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y)));
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Квадратные якоря вершин выделенной фигуры (круглые = рамка ресайза)
+      function drawVertexAnchors(ctx) {
+        if (mode !== "select" || selected.length !== 1) return;
+        const obj = objects.find((o) => o.id === selected[0]);
+        if (!isVertexShape(obj)) return;
+        const verts = getShapeVertices(obj);
+        const s = 7;
+        ctx.save();
+        verts.forEach((v) => {
+          const p = worldToScreen(v.x, v.y);
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#ff9500";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.rect(p.x - s, p.y - s, s * 2, s * 2);
+          ctx.fill();
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      // Хит-тест по вершинам выделенной фигуры (координаты — пиксели canvas)
+      function checkVertexHit(e) {
+        if (mode !== "select" || selected.length !== 1) return null;
+        const obj = objects.find((o) => o.id === selected[0]);
+        if (!isVertexShape(obj)) return null;
+        const verts = getShapeVertices(obj);
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+        const R = 16;
+        for (let i = 0; i < verts.length; i++) {
+          const p = worldToScreen(verts[i].x, verts[i].y);
+          const dx = mx - p.x, dy = my - p.y;
+          if (dx * dx + dy * dy < R * R) return { objId: obj.id, index: i };
+        }
+        return null;
+      }
+
+      // Перетаскивание вершины: инварианты по типу фигуры
+      function applyVertexDrag(obj, index, wx, wy) {
+        ensureShapeVertices(obj);
+        const v = obj.vertices;
+        if (index < 0 || index >= v.length) return;
+        if (obj.type === "rect" || obj.type === "square") {
+          const opp = v[(index + 2) % 4];
+          const adj1 = (index + 1) % 4;
+          const adj2 = (index + 3) % 4;
+          let nx = wx, ny = wy;
+          if (obj.type === "square") {
+            // Квадрат остаётся квадратом: сторона = max(|dx|,|dy|) от противоположного угла
+            const s = Math.max(Math.abs(wx - opp.x), Math.abs(wy - opp.y));
+            nx = opp.x + (wx >= opp.x ? 1 : -1) * s;
+            ny = opp.y + (wy >= opp.y ? 1 : -1) * s;
+          }
+          v[index] = { x: nx, y: ny };
+          // Прямоугольник остаётся осевым: соседние вершины делят x или y
+          if (index % 2 === 0) {
+            v[adj1] = { x: v[adj1].x, y: ny };
+            v[adj2] = { x: nx, y: v[adj2].y };
+          } else {
+            v[adj1] = { x: nx, y: v[adj1].y };
+            v[adj2] = { x: v[adj2].x, y: ny };
+          }
+        } else if (obj.type === "cube") {
+          // Куб остаётся кубом: точка задаёт новую рамку, проекция пересчитывается
+          const xs = v.map((p, i) => (i === index ? wx : p.x));
+          const ys = v.map((p, i) => (i === index ? wy : p.y));
+          const regen = { type: "cube", x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
+          obj.vertices = getShapeVertices(regen);
+        } else {
+          // Свободное перетаскивание точки
+          v[index] = { x: wx, y: wy };
+        }
+        syncShapeBoundsFromVertices(obj);
+      }
+
+      // ============================================================
+      // 3D-ВЬЮПОРТ: orbit/pan/zoom + сечение плоскостью
+      // ============================================================
+      // Данные хранятся на объекте доски в obj.shape3d (JSONB):
+      //   cam: { theta, phi, dist, panX, panY } — орбита, масштаб, сдвиг камеры
+      //   cut: { on, axis: "x"|"y"|"z", t: -1..1 } — секущая плоскость
+      // Геометрия не дублируется в объекте: меш строится по типу фигуры
+      // в нормированных координатах [-1..1]^3.
+      const SHAPES_3D = ["cube", "cylinder", "sphere"];
+      let vp3d = null; // { objId, mesh, cam, cut, canvas, ctx, drag, commitTimer }
+
+      function is3DShape(obj) {
+        return !!obj && SHAPES_3D.indexOf(obj.type) >= 0;
+      }
+
+      function buildMesh3D(type) {
+        const verts = [], edges = [], faces = [];
+        if (type === "cube") {
+          // 8 вершин / 12 рёбер / 6 граней
+          for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1])
+            verts.push({ x, y, z });
+          edges.push(
+            [0, 1], [2, 3], [4, 5], [6, 7],
+            [0, 2], [1, 3], [4, 6], [5, 7],
+            [0, 4], [1, 5], [2, 6], [3, 7]
+          );
+          faces.push(
+            [0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1],
+            [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]
+          );
+        } else if (type === "cylinder") {
+          // Два кольца по N сегментов + боковые грани, ось — Y
+          const N = 24;
+          for (let i = 0; i < N; i++) {
+            const a = (i / N) * Math.PI * 2;
+            verts.push({ x: Math.cos(a), y: -1, z: Math.sin(a) });
+          }
+          for (let i = 0; i < N; i++) {
+            const a = (i / N) * Math.PI * 2;
+            verts.push({ x: Math.cos(a), y: 1, z: Math.sin(a) });
+          }
+          for (let i = 0; i < N; i++) {
+            const j = (i + 1) % N;
+            edges.push([i, j], [i + N, j + N], [i, i + N]);
+            faces.push([i, j, j + N, i + N]);
+          }
+          faces.push(Array.from({ length: N }, (_, i) => i));
+          faces.push(Array.from({ length: N }, (_, i) => 2 * N - 1 - i));
+        } else if (type === "sphere") {
+          // lat/long-сетка
+          const LAT = 12, LON = 24;
+          for (let j = 0; j <= LAT; j++) {
+            const th = (j / LAT) * Math.PI - Math.PI / 2;
+            for (let i = 0; i < LON; i++) {
+              const ph = (i / LON) * Math.PI * 2;
+              verts.push({
+                x: Math.cos(th) * Math.cos(ph),
+                y: Math.sin(th),
+                z: Math.cos(th) * Math.sin(ph),
+              });
+            }
+          }
+          for (let j = 0; j < LAT; j++) {
+            for (let i = 0; i < LON; i++) {
+              const a = j * LON + i;
+              const b = j * LON + ((i + 1) % LON);
+              const c = (j + 1) * LON + i;
+              const d = (j + 1) * LON + ((i + 1) % LON);
+              edges.push([a, b], [a, c]);
+              faces.push([a, b, d, c]);
+            }
+          }
+        }
+        return { verts, edges, faces };
+      }
+
+      // Проекция 3D→2D: орбита (theta вокруг Y, phi вокруг X) + перспектива
+      function vp3dProject(v) {
+        const cam = vp3d.cam;
+        const W = vp3d.canvas.width, H = vp3d.canvas.height;
+        const cosT = Math.cos(cam.theta), sinT = Math.sin(cam.theta);
+        const cosP = Math.cos(cam.phi), sinP = Math.sin(cam.phi);
+        let x = v.x * cosT + v.z * sinT;
+        let z = -v.x * sinT + v.z * cosT;
+        let y = v.y * cosP - z * sinP;
+        z = v.y * sinP + z * cosP;
+        const camZ = 4 * cam.dist;
+        const f = camZ / (camZ + z);
+        const scale = Math.min(W, H) * 0.28;
+        return { x: W / 2 + (x + cam.panX) * scale * f, y: H / 2 - (y + cam.panY) * scale * f, z: z };
+      }
+
+      // Пересечение рёбер меша с секущей плоскостью
+      function vp3dCutPoints() {
+        const axis = vp3d.cut.axis, t = vp3d.cut.t;
+        const pts = [];
+        vp3d.mesh.edges.forEach((e) => {
+          const A = vp3d.mesh.verts[e[0]], B = vp3d.mesh.verts[e[1]];
+          const da = A[axis] - t, db = B[axis] - t;
+          if ((da > 0 && db > 0) || (da < 0 && db < 0) || (da === 0 && db === 0)) return;
+          const s = da / (da - db);
+          pts.push({
+            x: A.x + (B.x - A.x) * s,
+            y: A.y + (B.y - A.y) * s,
+            z: A.z + (B.z - A.z) * s,
+          });
+        });
+        const uniq = [];
+        pts.forEach((p) => {
+          if (!uniq.some((q) => Math.abs(q.x - p.x) < 1e-4 && Math.abs(q.y - p.y) < 1e-4 && Math.abs(q.z - p.z) < 1e-4)) uniq.push(p);
+        });
+        return uniq;
+      }
+
+      // Упорядочиваем точки контура по углу вокруг центроида в базисе плоскости
+      function vp3dSortContour(pts) {
+        const n = pts.length;
+        const c = pts.reduce((s, p) => ({ x: s.x + p.x / n, y: s.y + p.y / n, z: s.z + p.z / n }), { x: 0, y: 0, z: 0 });
+        const ax = vp3d.cut.axis;
+        const u = ax === "x" ? "y" : "x";
+        const w = ax === "x" ? "z" : ax === "y" ? "z" : "y";
+        return pts.slice().sort((a, b) => Math.atan2(a[w] - c[w], a[u] - c[u]) - Math.atan2(b[w] - c[w], b[u] - c[u]));
+      }
+
+      function vp3dRender() {
+        if (!vp3d) return;
+        const g = vp3d.ctx;
+        const W = vp3d.canvas.width, H = vp3d.canvas.height;
+        g.clearRect(0, 0, W, H);
+        const obj = objects.find((o) => o.id === vp3d.objId);
+        const baseColor = (obj && obj.color) || "#5e5ce6";
+        const proj = vp3d.mesh.verts.map(vp3dProject);
+
+        // Грани — полупрозрачные, рисуем от дальних к ближним
+        vp3d.mesh.faces
+          .map((f) => ({ ids: f, depth: f.reduce((s, i) => s + proj[i].z, 0) / f.length }))
+          .sort((a, b) => b.depth - a.depth)
+          .forEach((f) => {
+            g.beginPath();
+            f.ids.forEach((id, i) => (i === 0 ? g.moveTo(proj[id].x, proj[id].y) : g.lineTo(proj[id].x, proj[id].y)));
+            g.closePath();
+            g.fillStyle = baseColor + "22";
+            g.fill();
+          });
+
+        // Рёбра
+        g.strokeStyle = baseColor;
+        g.lineWidth = 1.5;
+        vp3d.mesh.edges.forEach((e) => {
+          g.beginPath();
+          g.moveTo(proj[e[0]].x, proj[e[0]].y);
+          g.lineTo(proj[e[1]].x, proj[e[1]].y);
+          g.stroke();
+        });
+
+        // Сечение: транслюцентная плоскость + подсвеченный контур
+        if (vp3d.cut.on) {
+          const ax = vp3d.cut.axis, t = vp3d.cut.t, ext = 1.7;
+          const mk = (u, w) => (ax === "x" ? { x: t, y: u, z: w } : ax === "y" ? { x: u, y: t, z: w } : { x: u, y: w, z: t });
+          const plane = [mk(-ext, -ext), mk(ext, -ext), mk(ext, ext), mk(-ext, ext)].map(vp3dProject);
+          g.beginPath();
+          plane.forEach((p, i) => (i === 0 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y)));
+          g.closePath();
+          g.fillStyle = "rgba(255, 149, 0, 0.14)";
+          g.fill();
+          g.setLineDash([6, 4]);
+          g.strokeStyle = "#ff9500";
+          g.lineWidth = 1;
+          g.stroke();
+          g.setLineDash([]);
+
+          const pts = vp3dCutPoints();
+          if (pts.length >= 3) {
+            const poly = vp3dSortContour(pts).map(vp3dProject);
+            g.beginPath();
+            poly.forEach((p, i) => (i === 0 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y)));
+            g.closePath();
+            g.fillStyle = "rgba(255, 149, 0, 0.35)";
+            g.fill();
+            g.strokeStyle = "#ff6a00";
+            g.lineWidth = 2.5;
+            g.stroke();
+          }
+        }
+      }
+
+      function openViewport3D(obj) {
+        if (!is3DShape(obj)) return;
+        const overlay = document.getElementById("viewport3d-overlay");
+        const cv = document.getElementById("vp3d-canvas");
+        if (!overlay || !cv) return;
+        const d = obj.shape3d || {};
+        vp3d = {
+          objId: obj.id,
+          mesh: buildMesh3D(obj.type),
+          cam: Object.assign({ theta: -0.7, phi: 0.45, dist: 1, panX: 0, panY: 0 }, d.cam || {}),
+          cut: Object.assign({ on: false, axis: "y", t: 0 }, d.cut || {}),
+          canvas: cv,
+          ctx: cv.getContext("2d"),
+          drag: null,
+          commitTimer: null,
+        };
+        const titles = { cube: "🧊 Куб", cylinder: "🥫 Цилиндр", sphere: "🔮 Сфера" };
+        const tEl = document.getElementById("vp3d-title");
+        if (tEl) tEl.textContent = titles[obj.type] || "3D-модель";
+        const cutEl = document.getElementById("vp3d-cut");
+        const axisEl = document.getElementById("vp3d-axis");
+        const posEl = document.getElementById("vp3d-pos");
+        if (cutEl) cutEl.checked = vp3d.cut.on;
+        if (axisEl) axisEl.value = vp3d.cut.axis;
+        if (posEl) posEl.value = Math.round(vp3d.cut.t * 100);
+        overlay.style.display = "flex";
+        vp3dRender();
+      }
+
+      function closeViewport3D() {
+        const overlay = document.getElementById("viewport3d-overlay");
+        if (overlay) overlay.style.display = "none";
+        vp3d = null;
+      }
+
+      // Каждое завершённое 3D-изменение: история + сохранение + WebSocket-синк
+      function vp3dCommit() {
+        if (!vp3d) return;
+        const obj = objects.find((o) => o.id === vp3d.objId);
+        if (!obj) return;
+        obj.shape3d = { cam: Object.assign({}, vp3d.cam), cut: Object.assign({}, vp3d.cut) };
+        saveBoardHistory();
+        render();
+        saveBoardToServer();
+      }
+
+      // Для колеса и слайдера — один коммит на жест
+      function vp3dCommitDebounced() {
+        if (!vp3d) return;
+        clearTimeout(vp3d.commitTimer);
+        vp3d.commitTimer = setTimeout(vp3dCommit, 500);
+      }
+
+      // Биндинги 3D-вьюпорта — вызывается из initAllEventListeners,
+      // когда разметка доски уже вставлена в DOM
+      let _vp3dWindowBound = false;
+      function initViewport3D() {
+        const btn = document.getElementById("view3d-btn");
+        if (btn) {
+          btn.addEventListener("mousedown", function (e) {
+            e.stopPropagation();
+          });
+          btn.addEventListener("mouseup", function (e) {
+            e.stopPropagation();
+          });
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            const obj = selected.length === 1 ? objects.find((o) => o.id === selected[0]) : null;
+            if (is3DShape(obj)) openViewport3D(obj);
+          });
+        }
+        const closeBtn = document.getElementById("vp3d-close");
+        if (closeBtn) closeBtn.addEventListener("click", closeViewport3D);
+        const overlay = document.getElementById("viewport3d-overlay");
+        if (overlay) {
+          overlay.addEventListener("mousedown", function (e) {
+            if (e.target === overlay) closeViewport3D();
+          });
+        }
+        const resetBtn = document.getElementById("vp3d-reset");
+        if (resetBtn) {
+          resetBtn.addEventListener("click", function () {
+            if (!vp3d) return;
+            vp3d.cam = { theta: -0.7, phi: 0.45, dist: 1, panX: 0, panY: 0 };
+            vp3dRender();
+            vp3dCommit();
+          });
+        }
+        const cutEl = document.getElementById("vp3d-cut");
+        if (cutEl) {
+          cutEl.addEventListener("change", function () {
+            if (!vp3d) return;
+            vp3d.cut.on = cutEl.checked;
+            vp3dRender();
+            vp3dCommit();
+          });
+        }
+        const axisEl = document.getElementById("vp3d-axis");
+        if (axisEl) {
+          axisEl.addEventListener("change", function () {
+            if (!vp3d) return;
+            vp3d.cut.axis = axisEl.value;
+            vp3dRender();
+            vp3dCommit();
+          });
+        }
+        const posEl = document.getElementById("vp3d-pos");
+        if (posEl) {
+          posEl.addEventListener("input", function () {
+            if (!vp3d) return;
+            vp3d.cut.t = parseInt(posEl.value, 10) / 100;
+            if (!vp3d.cut.on) {
+              vp3d.cut.on = true;
+              if (cutEl) cutEl.checked = true;
+            }
+            vp3dRender();
+            vp3dCommitDebounced();
+          });
+        }
+        const cv = document.getElementById("vp3d-canvas");
+        if (cv) {
+          cv.addEventListener("mousedown", function (e) {
+            if (!vp3d) return;
+            e.preventDefault();
+            vp3d.drag = { x: e.clientX, y: e.clientY, pan: e.button === 1 || e.shiftKey };
+          });
+          if (!_vp3dWindowBound) {
+            _vp3dWindowBound = true;
+            window.addEventListener("mousemove", function (e) {
+              if (!vp3d || !vp3d.drag) return;
+              const dx = e.clientX - vp3d.drag.x;
+              const dy = e.clientY - vp3d.drag.y;
+              vp3d.drag.x = e.clientX;
+              vp3d.drag.y = e.clientY;
+              if (vp3d.drag.pan) {
+                const scale = Math.min(vp3d.canvas.width, vp3d.canvas.height) * 0.28;
+                vp3d.cam.panX += dx / scale;
+                vp3d.cam.panY -= dy / scale;
+              } else {
+                vp3d.cam.theta += dx * 0.01;
+                vp3d.cam.phi = Math.max(-1.45, Math.min(1.45, vp3d.cam.phi + dy * 0.01));
+              }
+              vp3dRender();
+            });
+            window.addEventListener("mouseup", function () {
+              if (vp3d && vp3d.drag) {
+                vp3d.drag = null;
+                vp3dCommit();
+              }
+            });
+            window.addEventListener("keydown", function (e) {
+              if (e.key === "Escape" && vp3d) closeViewport3D();
+            });
+          }
+          cv.addEventListener("wheel", function (e) {
+            if (!vp3d) return;
+            e.preventDefault();
+            vp3d.cam.dist = Math.max(0.45, Math.min(3.5, vp3d.cam.dist * (e.deltaY > 0 ? 1.1 : 0.9)));
+            vp3dRender();
+            vp3dCommitDebounced();
+          }, { passive: false });
+          cv.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+          });
+        }
+      }
+
       // Строки текста с учётом маркированного списка (• добавляется при отрисовке, в тексте не хранится)
       function getTextDisplayLines(obj) {
         const lines = (obj.text || "").split("\n");
@@ -5599,6 +6317,8 @@
       function updateSelectionFrame() {
         const frame = document.getElementById("selection-frame");
         const handles = document.getElementById("resize-handles");
+        const vhint = document.getElementById("vertex-hint");
+        const btn3d = document.getElementById("view3d-btn");
         if (!frame || !handles) return;
         if (selected.length > 0 && !_blockSheetEditBtn) {
           updateSheetEditButton();
@@ -5609,6 +6329,8 @@
         if (!b) {
           frame.style.display = "none";
           handles.style.display = "none";
+          if (vhint) vhint.style.display = "none";
+          if (btn3d) btn3d.style.display = "none";
           return;
         }
 
@@ -5645,6 +6367,28 @@
           updateSheetEditButton();
         } else {
           forceHideSheetEditButton();
+        }
+
+        // ===== Подсказка вершин + кнопка 3D для одиночно выделенной фигуры =====
+        const singleObj = selected.length === 1 ? objects.find((o) => o.id === selected[0]) : null;
+        if (vhint) {
+          if (mode === "select" && isVertexShape(singleObj)) {
+            vhint.textContent = "Тяните точки фигуры";
+            vhint.style.left = p1.x + w / 2 + "px";
+            vhint.style.top = p2.y + 14 + "px";
+            vhint.style.display = "block";
+          } else {
+            vhint.style.display = "none";
+          }
+        }
+        if (btn3d) {
+          if (mode === "select" && is3DShape(singleObj)) {
+            btn3d.style.left = p2.x + 12 + "px";
+            btn3d.style.top = p1.y + "px";
+            btn3d.style.display = "block";
+          } else {
+            btn3d.style.display = "none";
+          }
         }
       }
 
@@ -7540,6 +8284,9 @@
           } else if (obj.type === "free-line" && obj.points) {
             base.points = obj.points.map((p) => ({ x: p.x, y: p.y }));
           }
+          if (Array.isArray(obj.vertices)) {
+            base.vertices = obj.vertices.map((v) => ({ x: v.x, y: v.y }));
+          }
           groupBasePositions.push(base);
         });
         if (canvas) canvas.style.cursor = "grabbing";
@@ -7566,6 +8313,12 @@
             obj.points.forEach((p, i) => {
               p.x = base.points[i].x + dx;
               p.y = base.points[i].y + dy;
+            });
+          }
+          if (base.vertices && Array.isArray(obj.vertices)) {
+            obj.vertices.forEach((v, i) => {
+              v.x = base.vertices[i].x + dx;
+              v.y = base.vertices[i].y + dy;
             });
           }
         });
@@ -7810,14 +8563,254 @@
         document.querySelectorAll("#main-nav button").forEach((b) => b.classList.remove("active"));
         const activeBtn = document.querySelector(`#main-nav button[data-page="${page}"]`);
         if (activeBtn) activeBtn.classList.add("active");
-        if (page === "board") loadBoardPage();
+        if (page === "profile") loadProfilePage();
+        else if (page === "board") loadBoardPage();
         else if (page === "classes") loadClassesPage();
         else if (page === "assignments") loadAssignmentsPage();
+      }
+
+      // ============================================================
+      // СТРАНИЦА ПРОФИЛЯ (главная после входа)
+      // ============================================================
+      function loadProfilePage() {
+        const area = document.getElementById("content-area");
+        if (!area) return;
+        area.innerHTML = `<div class="content-page"><div class="card"><div class="empty">Загрузка...</div></div></div>`;
+
+        const token = localStorage.getItem("token");
+        fetch("/api/profile", { headers: { Authorization: `Bearer ${token}` } })
+          .then((res) => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+          })
+          .then((data) => renderProfilePage(data))
+          .catch((e) => {
+            area.innerHTML = `<div class="content-page"><div class="card"><div class="empty">Ошибка загрузки профиля</div></div></div>`;
+          });
+      }
+
+      function renderProfilePage(data) {
+        const area = document.getElementById("content-area");
+        if (!area) return;
+        const u = data.user || {};
+        const isTeacher = u.role === "teacher";
+        const classes = Array.isArray(data.classes) ? data.classes : [];
+        const recent = Array.isArray(data.recentSubmissions) ? data.recentSubmissions : [];
+
+        const statusText = { pending: "На проверке", graded: "Оценено", returned: "Возвращено" };
+        const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("ru-RU") : "");
+
+        const classesHtml = classes.length
+          ? classes
+              .map(
+                (c) => `
+            <div class="ccard" onclick="selectClassAndGoToBoard(${c.id})">
+              <div style="font-weight:600;font-size:15px;color:#333;margin-bottom:4px;">${c.name}</div>
+              ${c.description ? `<div style="font-size:12px;color:#777;margin-bottom:8px;">${c.description}</div>` : ""}
+              <div style="font-size:12px;color:#999;display:flex;gap:10px;flex-wrap:wrap;">
+                <span>👥 ${c.student_count || 0}</span>
+                ${!isTeacher && c.teacher_name ? `<span>👨‍🏫 ${c.teacher_name}</span>` : ""}
+              </div>
+              ${
+                isTeacher
+                  ? `<button class="btn-secondary" style="margin-top:10px;font-size:12px;" onclick="event.stopPropagation();openClassManage(${c.id})">⚙ Управление</button>`
+                  : ""
+              }
+            </div>`,
+              )
+              .join("")
+          : `<div class="empty" style="grid-column:1/-1;">${
+              isTeacher ? "Классов пока нет — создайте первый" : "Вы пока не состоите ни в одном классе"
+            }</div>`;
+
+        const recentHtml = recent.length
+          ? recent
+              .map(
+                (s) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;gap:8px;flex-wrap:wrap;">
+              <div>
+                <div style="font-size:14px;font-weight:500;color:#333;">${s.assignment_title || "Задание"}</div>
+                <div style="font-size:12px;color:#999;">
+                  ${isTeacher ? `${s.student_name} • ` : ""}${fmtDate(s.submitted_at || s.created_at)}
+                </div>
+              </div>
+              <div style="font-size:13px;${s.score != null ? "color:#059669;font-weight:600;" : "color:#999;"}">
+                ${s.score != null ? `${s.score}${s.max_score ? " / " + s.max_score : ""} балл.` : statusText[s.status] || s.status}
+              </div>
+            </div>`,
+              )
+              .join("")
+          : `<div class="empty">${isTeacher ? "Работ учеников пока нет" : "Работ пока нет"}</div>`;
+
+        area.innerHTML = `
+          <div class="content-page">
+            <div class="card" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:28px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div>
+                  <div style="font-size:22px;font-weight:700;">${u.fullName || u.username}</div>
+                  <div style="opacity:0.85;font-size:14px;margin-top:4px;">
+                    ${isTeacher ? "👨‍🏫 Учитель" : "🎓 Ученик"}${u.email ? " • " + u.email : ""}
+                  </div>
+                </div>
+                <button onclick="loadPage('board')" style="padding:10px 22px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">
+                  🎨 Открыть доску
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="flex-between">
+                <h3 style="margin:0;">${isTeacher ? "Мои классы" : "Мои классы"}</h3>
+                ${
+                  isTeacher
+                    ? `<button class="btn-primary" style="padding:8px 18px;font-size:13px;" onclick="showCreateClass()">+ Создать класс</button>`
+                    : `<button class="btn-primary" style="padding:8px 18px;font-size:13px;background:#34c759;" onclick="showJoinByLink()">Присоединиться по ссылке</button>`
+                }
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+                ${classesHtml}
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="flex-between">
+                <h3 style="margin:0;">${isTeacher ? "Последние работы учеников" : "Мои работы и оценки"}</h3>
+                <button class="btn-secondary" style="font-size:12px;" onclick="loadPage('assignments')">Все задания →</button>
+              </div>
+              ${recentHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      // ============================================================
+      // СТРАНИЦА УПРАВЛЕНИЯ КЛАССОМ (ученики + приглашения)
+      // ============================================================
+      let manageClassId = null;
+
+      function openClassManage(classId) {
+        manageClassId = classId;
+        currentPage = "class-manage";
+        document.querySelectorAll("#main-nav button").forEach((b) => b.classList.remove("active"));
+        renderClassManage();
+      }
+
+      async function renderClassManage() {
+        const area = document.getElementById("content-area");
+        if (!area || !manageClassId) return;
+        area.innerHTML = `<div class="content-page"><div class="card"><div class="empty">Загрузка...</div></div></div>`;
+
+        const token = localStorage.getItem("token");
+        const isTeacher = currentUser?.role === "teacher";
+        try {
+          const [clsRes, studentsRes, invitesRes] = await Promise.all([
+            fetch(`/api/classes/${manageClassId}`, { headers: { Authorization: `Bearer ${token}` } }),
+            fetch(`/api/classes/${manageClassId}/students`, { headers: { Authorization: `Bearer ${token}` } }),
+            isTeacher
+              ? fetch(`/api/classes/${manageClassId}/invites`, { headers: { Authorization: `Bearer ${token}` } })
+              : Promise.resolve(null),
+          ]);
+          const cls = await clsRes.json();
+          const students = await studentsRes.json();
+          const invites = invitesRes ? await invitesRes.json() : [];
+          if (!clsRes.ok) throw new Error(cls.error || "Ошибка");
+
+          const fmtDate = (d) => (d ? new Date(d).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
+
+          const studentsHtml = Array.isArray(students) && students.length
+            ? students
+                .map(
+                  (s) => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;gap:8px;">
+                <div>
+                  <div style="font-size:14px;font-weight:500;">${s.full_name || s.username}</div>
+                  <div style="font-size:12px;color:#999;">@${s.username}</div>
+                </div>
+                ${
+                  isTeacher
+                    ? `<div style="display:flex;gap:4px;">
+                        <button class="btn-secondary" title="Сбросить пароль" onclick="resetStudentPassword(${manageClassId}, ${s.id}, decodeURIComponent('${encodeURIComponent(s.full_name || s.username)}'))">🔑</button>
+                        <button class="btn-secondary" title="Удалить из класса" style="color:#e53e3e;" onclick="removeStudentFromClass(${manageClassId}, ${s.id})">✕</button>
+                      </div>`
+                    : ""
+                }
+              </div>`,
+                )
+                .join("")
+            : `<div class="empty">Учеников пока нет</div>`;
+
+          const invitesHtml = isTeacher
+            ? `<div class="card">
+                <div class="flex-between">
+                  <h3 style="margin:0;">Пригласительные ссылки</h3>
+                  <button class="btn-primary" style="padding:8px 18px;font-size:13px;" onclick="generateInviteLink(${manageClassId})">+ Создать ссылку</button>
+                </div>
+                ${
+                  Array.isArray(invites) && invites.length
+                    ? invites
+                        .map(
+                          (inv) => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;gap:8px;flex-wrap:wrap;">
+                      <div style="font-size:12px;color:#555;word-break:break-all;flex:1;min-width:200px;font-family:monospace;">${inv.url}</div>
+                      <div style="font-size:11px;color:#999;white-space:nowrap;">${inv.used_count}/${inv.max_uses} • до ${fmtDate(inv.expires_at)}</div>
+                      <div style="display:flex;gap:4px;">
+                        <button class="btn-secondary" style="font-size:12px;" onclick="navigator.clipboard.writeText('${inv.url}').then(()=>showHint('Ссылка скопирована'))">📋</button>
+                        <button class="btn-secondary" style="font-size:12px;color:#e53e3e;" onclick="disableInvite('${inv.token}')">✕</button>
+                      </div>
+                    </div>`,
+                        )
+                        .join("")
+                    : `<div class="empty">Активных ссылок нет</div>`
+                }
+              </div>`
+            : "";
+
+          area.innerHTML = `
+            <div class="content-page">
+              <div class="card">
+                <div class="flex-between" style="margin-bottom:0;">
+                  <div>
+                    <h3 style="margin:0 0 4px;font-size:18px;">${cls.name || "Класс"}</h3>
+                    ${cls.description ? `<div style="font-size:13px;color:#777;">${cls.description}</div>` : ""}
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn-secondary" onclick="loadPage('profile')">← Профиль</button>
+                    <button class="btn-primary" style="padding:8px 18px;font-size:13px;" onclick="selectClassAndGoToBoard(${manageClassId})">🎨 Доска класса</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3>Ученики (${Array.isArray(students) ? students.length : 0})</h3>
+                ${studentsHtml}
+              </div>
+
+              ${invitesHtml}
+            </div>
+          `;
+        } catch (e) {
+          area.innerHTML = `<div class="content-page"><div class="card"><div class="empty">Ошибка: ${e.message}</div></div></div>`;
+        }
+      }
+
+      async function disableInvite(token) {
+        if (!confirm("Отключить эту пригласительную ссылку?")) return;
+        try {
+          const res = await fetch(`/api/invite/${token}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          });
+          if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+          renderClassManage();
+        } catch (e) {
+          alert("Ошибка: " + e.message);
+        }
       }
 
       function loadBoardPage() {
         const area = document.getElementById("content-area");
         if (!area) return;
+        closeViewport3D();
         area.innerHTML = `
         <div id="board-container" style="width:100%;height:100%;position:relative;background:white;overflow:hidden;">
             <!-- ===== ЛЕВАЯ ПАНЕЛЬ ИНСТРУМЕНТОВ ===== -->
@@ -7955,6 +8948,36 @@
             <button id="sheet-edit-btn" title="Редактировать текст на листе">
                 Редактировать
             </button>
+
+            <!-- ===== ПОДСКАЗКА ВЕРШИН ФИГУРЫ ===== -->
+            <div id="vertex-hint">Тяните точки фигуры</div>
+
+            <!-- ===== КНОПКА ОТКРЫТИЯ 3D-ВЬЮПОРТА ===== -->
+            <button id="view3d-btn" title="Открыть 3D-модель">🧊 3D</button>
+
+            <!-- ===== 3D-ВЬЮПОРТ (orbit/pan/zoom + сечение) ===== -->
+            <div id="viewport3d-overlay">
+                <div id="viewport3d-panel">
+                    <div id="vp3d-header">
+                        <span id="vp3d-title">🧊 3D-модель</span>
+                        <button id="vp3d-close" title="Закрыть">✕</button>
+                    </div>
+                    <canvas id="vp3d-canvas" width="640" height="440"></canvas>
+                    <div id="vp3d-controls">
+                        <button id="vp3d-reset" title="Сбросить вращение и масштаб">↺ Сброс</button>
+                        <label id="vp3d-cut-label" title="Секущая плоскость">
+                            <input type="checkbox" id="vp3d-cut"> Сечение
+                        </label>
+                        <select id="vp3d-axis" title="Ось сечения">
+                            <option value="x">по X</option>
+                            <option value="y" selected>по Y</option>
+                            <option value="z">по Z</option>
+                        </select>
+                        <input type="range" id="vp3d-pos" min="-100" max="100" value="0" title="Положение плоскости">
+                    </div>
+                    <div id="vp3d-hint">Тяните — вращение · колесо — масштаб · средняя кнопка / Shift — сдвиг</div>
+                </div>
+            </div>
 
             <!-- ===== ПАНЕЛЬ ФОРМАТИРОВАНИЯ ТЕКСТА НА ЛИСТЕ ===== -->
             <div id="sheet-text-toolbar">
@@ -8318,8 +9341,9 @@
               throw new Error(err.error || "Ошибка удаления");
             }
             showHint("Ученик удалён из класса");
-            // Обновляем только боковую панель, не уходя со страницы/доски
+            // Обновляем только боковую панель/страницу управления, не уходя со страницы/доски
             if (typeof loadBoardSidebarContent === "function") loadBoardSidebarContent();
+            if (currentPage === "class-manage") renderClassManage();
           })
           .catch((e) => alert("Ошибка: " + e.message));
       }
@@ -8436,6 +9460,7 @@
           loadBoardSidebarContent();
           if (currentPage === "classes") loadClassesPage();
           if (currentPage === "assignments") loadAssignmentsPage();
+          if (currentPage === "profile") loadProfilePage();
           showHint("✅ Вы присоединились к классу!");
         } catch (error) {
           alert("❌ " + error.message);
@@ -9009,9 +10034,10 @@
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
           closeModal();
-           // alert("✅ Класс создан! Код: " + data.invite_code);
+          showHint("✅ Класс создан!");
           loadBoardSidebarContent();
-          loadClassesPage();
+          if (currentPage === "classes") loadClassesPage();
+          if (currentPage === "profile") loadProfilePage();
         } catch (error) {
           alert(error.message);
         }
@@ -14866,6 +15892,44 @@ const submissionIdValue = submission.id;
       }
 
       // ============================================================
+      // ЮРИДИЧЕСКИЕ ДОКУМЕНТЫ (оферта + политика ПДн)
+      // ============================================================
+      const LEGAL_DOCS = {
+        offer: {
+          title: "Пользовательское соглашение",
+          body: `<p><b>1. Общие положения.</b> Настоящее Пользовательское соглашение (далее — «Соглашение») регулирует отношения между администрацией образовательной платформы (далее — «Платформа») и пользователем (далее — «Пользователь») при использовании сервиса.</p>
+<p><b>2. Предмет соглашения.</b> Платформа предоставляет Пользователю доступ к инструментам для организации учебного процесса: интерактивные доски, классы, задания, проверка работ и комментирование. Регистрация и использование Платформы означает полное и безоговорочное принятие условий настоящего Соглашения.</p>
+<p><b>3. Регистрация и аккаунт.</b> Пользователь обязуется предоставлять достоверные данные при регистрации, хранить пароль в тайне и не передавать доступ третьим лицам. Учитель несёт ответственность за действия созданных им учебных групп в рамках Платформы.</p>
+<p><b>4. Правила использования.</b> Запрещается размещать материалы, нарушающие законодательство РФ, права третьих лиц, а также использовать Платформу для рассылки спама и вредоносного ПО. Администрация вправе ограничить доступ при нарушении правил.</p>
+<p><b>5. Интеллектуальная собственность.</b> Материалы, размещаемые Пользователем, остаются его собственностью; Пользователь предоставляет Платформе право их хранения и отображения в рамках функционала сервиса.</p>
+<p><b>6. Ограничение ответственности.</b> Платформа предоставляется «как есть». Администрация не несёт ответственности за временную недоступность сервиса и за содержание материалов, размещаемых пользователями.</p>
+<p><b>7. Изменение условий.</b> Администрация вправе изменять условия Соглашения; актуальная версия доступна в интерфейсе регистрации. Продолжение использования Платформы после изменений означает согласие с ними.</p>`,
+        },
+        privacy: {
+          title: "Политика обработки персональных данных",
+          body: `<p><b>1. Общие положения.</b> Настоящая Политика определяет порядок обработки персональных данных пользователей образовательной платформы в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных». Регистрируясь, Пользователь даёт согласие на обработку своих персональных данных на условиях, изложенных ниже.</p>
+<p><b>2. Состав обрабатываемых данных.</b> Платформа обрабатывает: фамилию и имя, адрес электронной почты, логин, роль (учитель/ученик), сведения о принадлежности к учебным классам, содержимое работ, ответов, комментариев и досок, а также технические данные (дата регистрации, дата согласия).</p>
+<p><b>3. Цели обработки.</b> Данные используются исключительно для: идентификации Пользователя, организации учебного процесса (классы, задания, проверка работ), восстановления доступа к аккаунту и улучшения работы сервиса. Передача данных третьим лицам не осуществляется, за исключением случаев, предусмотренных законодательством.</p>
+<p><b>4. Порядок и сроки хранения.</b> Данные хранятся на сервере Платформы в защищённой базе данных на протяжении всего срока действия аккаунта. Пароли хранятся только в виде криптографического хеша. При удалении аккаунта персональные данные удаляются в течение 30 дней.</p>
+<p><b>5. Права субъекта данных.</b> Пользователь вправе: получать информацию об обработке своих данных, требовать их уточнения, блокирования или уничтожения, а также отозвать согласие на обработку, направив запрос администратору Платформы. Отзыв согласия влечёт прекращение доступа к сервису.</p>
+<p><b>6. Меры защиты.</b> Применяются организационные и технические меры защиты: хеширование паролей, разграничение доступа по ролям, передача данных по защищённому протоколу HTTPS.</p>
+<p><b>7. Заключительные положения.</b> Согласие действует с момента регистрации до его отзыва Пользователем. По всем вопросам обработки персональных данных обращайтесь к администратору Платформы.</p>`,
+        },
+      };
+
+      function showLegalDoc(key) {
+        const doc = LEGAL_DOCS[key];
+        if (!doc) return;
+        openModal(`
+          <h2>${doc.title}</h2>
+          <div style="max-height:60vh;overflow-y:auto;font-size:13px;color:#444;line-height:1.55;padding-right:8px;text-align:left;">${doc.body}</div>
+          <div class="modal-actions" style="margin-top:12px;">
+            <button class="btn-primary" onclick="closeModal()">Закрыть</button>
+          </div>
+        `);
+      }
+
+      // ============================================================
       // ГЛОБАЛЬНЫЕ КЛАВИАТУРНЫЕ СОБЫТИЯ
       // ============================================================
       function addGlobalKeyListeners() {
@@ -14935,6 +15999,11 @@ const submissionIdValue = submission.id;
           document.getElementById("auth-error").textContent = "";
         });
       });
+
+      // Переход по /#register (например, со страницы приглашения) — открываем вкладку регистрации
+      if (window.location.hash === "#register") {
+        document.querySelector('.auth-tabs button[data-tab="register"]')?.click();
+      }
 
       async function handleGlobalPaste() {
         try {
@@ -15230,13 +16299,23 @@ const submissionIdValue = submission.id;
             return;
           }
 
+          const consentWrap = document.getElementById("consent-wrap");
+          const consent = document.getElementById("register-consent");
+          consentWrap.style.boxShadow = "none";
+          if (!consent.checked) {
+            document.getElementById("auth-error").textContent =
+              "Необходимо принять условия Пользовательского соглашения и дать согласие на обработку персональных данных";
+            consentWrap.style.boxShadow = "0 0 0 2px #e53e3e";
+            return;
+          }
+
           const fullName = `${name} ${surname}`.trim();
 
           try {
             const response = await fetch("/api/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ username, email, password, role, fullName, name, surname }),
+              body: JSON.stringify({ username, email, password, role, fullName, name, surname, consent: true }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
@@ -15282,7 +16361,7 @@ const submissionIdValue = submission.id;
         document.getElementById("user-name").textContent = currentUser.fullName || currentUser.username;
         document.getElementById("user-role").textContent = currentUser.role === "teacher" ? "Учитель" : "Ученик";
         loadBoardSidebarContent();
-        loadPage("board");
+        loadPage("profile");
         initWebSocket();
         if (currentUser.mustChangePassword) setTimeout(showForcedPasswordChange, 400);
       }
@@ -15330,7 +16409,7 @@ const submissionIdValue = submission.id;
             document.getElementById("user-role").textContent =
               currentUser.role === "teacher" ? "Учитель" : "Ученик";
             loadBoardSidebarContent();
-            loadPage("board");
+            loadPage("profile");
             initWebSocket();
             if (currentUser.mustChangePassword) setTimeout(showForcedPasswordChange, 400);
             return;
@@ -16260,6 +17339,15 @@ const submissionIdValue = submission.id;
         document.addEventListener("mouseup", function (e) {
           isErasing = false;
           eraserCooldown = false;
+          // Вершина отпущена за пределами canvas — завершаем как обычный драг
+          if (isVertexDragging) {
+            isVertexDragging = false;
+            vertexDrag = null;
+            if (canvas) canvas.style.cursor = "default";
+            saveBoardHistory();
+            render();
+            saveBoardToServer();
+          }
 
           // ===== НЕ СБРАСЫВАЕМ РЕЖИМ, ЕСЛИ КЛИК ПО ЛЮБОМУ ЭЛЕМЕНТУ ПАНЕЛИ ЛИСТА =====
           const sheetToolbar = document.getElementById("sheet-text-toolbar");
@@ -16373,12 +17461,32 @@ const submissionIdValue = submission.id;
                     state.x2 = obj.x2;
                     state.y2 = obj.y2;
                   }
+                  if (Array.isArray(obj.vertices)) {
+                    state.vertices = obj.vertices.map((v) => ({ x: v.x, y: v.y }));
+                  }
                   return state;
                 })
                 .filter((s) => s !== null);
 
               canvas.style.cursor = "grabbing";
               return;
+            }
+
+            // ===== ВЕРШИНЫ ФИГУРЫ: тащим точку (после маркеров ресайза, до drag'а объекта) =====
+            if (selected.length === 1) {
+              const vh = checkVertexHit(e);
+              if (vh) {
+                e.stopPropagation();
+                e.preventDefault();
+                const vObj = objects.find((o) => o.id === vh.objId);
+                if (vObj) {
+                  ensureShapeVertices(vObj);
+                  isVertexDragging = true;
+                  vertexDrag = { objId: vObj.id, index: vh.index };
+                  canvas.style.cursor = "move";
+                }
+                return;
+              }
             }
           }
 
@@ -16530,6 +17638,15 @@ const submissionIdValue = submission.id;
 
           if (isDraggingGroup) {
             applyDragGroup(coords);
+            return;
+          }
+
+          if (isVertexDragging && vertexDrag) {
+            const vObj = objects.find((o) => o.id === vertexDrag.objId);
+            if (vObj) {
+              applyVertexDrag(vObj, vertexDrag.index, coords.x, coords.y);
+              render();
+            }
             return;
           }
 
@@ -16990,6 +18107,23 @@ const submissionIdValue = submission.id;
                 obj.x2 = newMaxX;
                 obj.y2 = newMaxY;
               });
+
+              // ===== ВЕРШИНЫ: масштабируем сохранённые точки вместе с рамкой =====
+              window._resizeStartState.forEach((state) => {
+                if (!state.vertices) return;
+                const obj = objects.find((o) => o.id === state.id);
+                if (!obj || !Array.isArray(obj.vertices)) return;
+                const oMinX = Math.min(state.x1, state.x2), oMaxX = Math.max(state.x1, state.x2);
+                const oMinY = Math.min(state.y1, state.y2), oMaxY = Math.max(state.y1, state.y2);
+                const nMinX = Math.min(obj.x1, obj.x2), nMaxX = Math.max(obj.x1, obj.x2);
+                const nMinY = Math.min(obj.y1, obj.y2), nMaxY = Math.max(obj.y1, obj.y2);
+                const sx = oMaxX - oMinX > 0 ? (nMaxX - nMinX) / (oMaxX - oMinX) : 1;
+                const sy = oMaxY - oMinY > 0 ? (nMaxY - nMinY) / (oMaxY - oMinY) : 1;
+                obj.vertices = state.vertices.map((v) => ({
+                  x: nMinX + (v.x - oMinX) * sx,
+                  y: nMinY + (v.y - oMinY) * sy,
+                }));
+              });
             }
 
             render();
@@ -17053,6 +18187,16 @@ const submissionIdValue = submission.id;
 
           if (isDraggingGroup) {
             endDragGroup();
+            return;
+          }
+
+          if (isVertexDragging) {
+            isVertexDragging = false;
+            vertexDrag = null;
+            canvas.style.cursor = "default";
+            saveBoardHistory();
+            render();
+            saveBoardToServer();
             return;
           }
 
@@ -17299,6 +18443,9 @@ const submissionIdValue = submission.id;
             }
           });
         }
+
+        // ===== КНОПКА 3D + ВЬЮПОРТ =====
+        initViewport3D();
 
         (function initSheetTextToolbar() {
           const boldBtn = document.getElementById("sheet-text-bold");

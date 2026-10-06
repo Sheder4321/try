@@ -97,6 +97,9 @@ ALTER TABLE assignments ADD COLUMN IF NOT EXISTS target_student_ids JSONB;
 -- Флаг «сменить пароль при входе»: ставится при сбросе пароля учителем
 ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT FALSE;
 
+-- Дата и факт согласия с офертой и обработкой персональных данных (152-ФЗ)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_accepted_at TIMESTAMPTZ;
+
 CREATE TABLE IF NOT EXISTS submission_files (
     id SERIAL PRIMARY KEY,
     submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
@@ -185,6 +188,7 @@ CREATE INDEX IF NOT EXISTS idx_text_comments_submission ON text_comments(submiss
 CREATE INDEX IF NOT EXISTS idx_class_invites_class ON class_invites(class_id);
 CREATE INDEX IF NOT EXISTS idx_reset_tokens_hash ON password_reset_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_reset_tokens_user ON password_reset_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_consent ON users(consent_accepted_at);
 
 -- 8. UNIQUE НА EMAIL (если ещё нет)
 DO $$
